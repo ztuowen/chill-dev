@@ -8,7 +8,7 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_SUBST([CCLD],["$""(CXX)"])
 AC_DEFINE([OMEGA_VERSION],["0.1.0"],[Omega version])
 
-AM_PROG_AR
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AM_PROG_LEX
 AC_PROG_CC
 AC_PROG_CXX
