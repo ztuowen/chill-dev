@@ -47,7 +47,7 @@ link_directories(${ROSEHOME}/lib ${BOOSTOME}/lib)
 
 include_directories(
     include
-    ${PROJECT_SOURCE_DIR}/omegalib/include 
+    ${PROJECT_SOURCE_DIR}/omegalib/include
     ${ROSEHOME}/include
     ${ROSEHOME}/include/rose
     ${BOOSTHOME}/include
