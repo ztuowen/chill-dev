@@ -13,7 +13,7 @@
    03/2009 Upgrade Omega's interaction with compiler to IR_Code, by Chun Chen.
 *****************************************************************************/
 
-#include <codegen.h>
+#include <code_gen/codegen.h>
 // #include <code_gen/output_repr.h>
 #include "omegatools.hh"
 #include "ir_code.hh"

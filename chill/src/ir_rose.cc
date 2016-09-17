@@ -927,7 +927,7 @@ IR_ScalarSymbol *IR_roseCode::CreateScalarSymbol(const IR_Symbol *sym, int) {
   if (typeid(*sym) == typeid(IR_roseScalarSymbol)) {
     SgType *tn =
       static_cast<const IR_roseScalarSymbol *>(sym)->vs_->get_type();
-    sprintf(str1, "newVariable%i\0", i_);
+    sprintf(str1, "newVariable%i", i_);
     SgVariableDeclaration* defn = buildVariableDeclaration(str1, tn);
     i_++;
     
@@ -958,7 +958,7 @@ IR_ScalarSymbol *IR_roseCode::CreateScalarSymbol(const IR_Symbol *sym, int) {
           "in CreateScalarSymbol: symbol not an array nor a pointer!");
     }
     
-    sprintf(str1, "newVariable%i\0", i_);
+    sprintf(str1, "newVariable%i", i_);
     i_++;
     
     SgVariableDeclaration* defn1 = buildVariableDeclaration(str1, tn1);

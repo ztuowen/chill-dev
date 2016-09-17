@@ -2,7 +2,7 @@
 #define LOOP_HH
 
 #include <omega.h>
-#include <codegen.h>
+#include <code_gen/codegen.h>
 #include <code_gen/CG.h>
 #include <vector>
 #include <map>

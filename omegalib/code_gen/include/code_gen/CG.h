@@ -2,7 +2,7 @@
 #define _CG_H
 
 #include <omega/Relation.h>
-#include <basic/boolset.h>
+#include <basic/BoolSet.h>
 #include <code_gen/CG_outputBuilder.h>
 #include <vector>
 

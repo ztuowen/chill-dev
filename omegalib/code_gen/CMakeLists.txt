@@ -13,7 +13,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-write-strings")
 
 include_directories(
     include
-    ${OMEGAROOT}/basic/include
     ${OMEGAROOT}/omega_lib/include
     ${ROSEHOME}/include/rose
     ${BOOSTHOME}/include

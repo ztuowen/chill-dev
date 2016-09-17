@@ -13,7 +13,7 @@
 *****************************************************************************/
 
 #include <omega/omega_core/oc_i.h>
-#include <basic/boolset.h>
+#include <basic/BoolSet.h>
 #include <vector>
 
 namespace omega {

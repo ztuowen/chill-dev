@@ -24,7 +24,7 @@
 
 #include <limits.h>
 #include <math.h>
-#include <codegen.h>
+#include <code_gen/codegen.h>
 #include <code_gen/CG_utils.h>
 #include <iostream>
 #include <algorithm>

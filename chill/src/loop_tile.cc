@@ -5,7 +5,7 @@
  *      Author: anand
  */
 
-#include <codegen.h>
+#include <code_gen/codegen.h>
 #include "loop.hh"
 #include "omegatools.hh"
 #include "ir_code.hh"

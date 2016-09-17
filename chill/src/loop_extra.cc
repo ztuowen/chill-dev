@@ -11,7 +11,7 @@
    07/31/10 Created by Chun Chen
 *****************************************************************************/
 
-#include <codegen.h>
+#include <code_gen/codegen.h>
 #include <code_gen/CG_utils.h>
 #include "loop.hh"
 #include "omegatools.hh"

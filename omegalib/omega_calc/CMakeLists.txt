@@ -10,7 +10,6 @@ include_directories(
     include
     ${OMEGAROOT}/omega_lib/include
     ${OMEGAROOT}/code_gen/include
-    ${OMEGAROOT}/basic/include
     )
 
 string(TIMESTAMP build_date "\\\"%m/%d/%Y\\\"")

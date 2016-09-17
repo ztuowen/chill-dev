@@ -14,7 +14,7 @@
 
 #include <assert.h>
 #include <omega.h>
-#include <basic/boolset.h>
+#include <basic/BoolSet.h>
 #include <vector>
 #include <list>
 #include <set>

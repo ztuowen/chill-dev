@@ -1,6 +1,6 @@
 set(BASIC_SRC
-    ${OMEGAROOT}/basic/src/ConstString.cc
-    ${OMEGAROOT}/basic/src/Link.cc
+    src/basic/ConstString.cc
+    src/basic/Link.cc
     )
 
 set(OC_SRC 

@@ -3,7 +3,7 @@
 
 #include <omega.h>
 #include <code_gen/CG_outputBuilder.h>
-#include <basic/boolset.h>
+#include <basic/BoolSet.h>
 #include <vector>
 #include <set>
 #include <map>
