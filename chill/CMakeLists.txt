@@ -57,3 +57,6 @@ include_directories(
 add_executable(chill ${CORE_SRC} ${PYTHON_SRC} ${IR_CHILL_SRC})
 target_link_libraries(chill ${CORE_LIBS} ${PYTHON_LIBRARY})
 add_dependencies(chill omega codegen)
+
+install(TARGETS chill
+        RUNTIME DESTINATION bin)
