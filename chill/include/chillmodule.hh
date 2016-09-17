@@ -11,11 +11,9 @@
 
 //static PyMethodDef ChillMethods[] ; 
 
-#ifndef CUDACHILL
 void finalize_loop(int loop_num_start, int loop_num_end);
 int get_loop_num_start();
 int get_loop_num_end();
-#endif
-
 PyMODINIT_FUNC initchill() ;   // pass C methods to python
+
 #endif

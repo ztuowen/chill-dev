@@ -118,12 +118,3 @@ simap_t* make_cond_item_level(int n) {
   return nmap;
 }
 
-/*simap_t* make_cond_item_variable(const char* varname) {
-  simap_t* nmap = new simap_t();
-#ifdef PYTHON
-  PyObject* globals = PyEval_GetGlobals();
-  PyObject* itemval = PyDict_GetItemString(globals, varname);
-  
-#elif LUA
-#endif
-}*/
