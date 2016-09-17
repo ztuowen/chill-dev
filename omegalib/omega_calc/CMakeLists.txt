@@ -29,4 +29,5 @@ add_dependencies(omega_calc omega codegen)
 target_link_libraries(omega_calc omega codegen)
 
 install(TARGETS omega_calc
-        RUNTIME DESTINATION bin)
+        DESTINATION bin
+        COMPONENT omega_calc OPTIONAL)
