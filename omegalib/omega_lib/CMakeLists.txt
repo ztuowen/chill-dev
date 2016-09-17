@@ -62,3 +62,9 @@ add_library(omega
     ${REL_SRC}
     ${FANCY_SRC}
     )
+
+install(TARGETS omega
+    ARCHIVE DESTINATION lib/static)
+
+install(DIRECTORY include
+    DESTINATION .)

@@ -23,3 +23,8 @@ add_library(codegen
     )
 
 add_dependencies(codegen omega)
+
+install(TARGETS codegen
+    ARCHIVE DESTINATION lib/static)
+install(DIRECTORY include
+    DESTINATION .)

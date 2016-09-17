@@ -10,5 +10,11 @@ if (NOT DEFINED BOOSTHOME)
 endif()
 
 add_subdirectory(chill)
-add_subdirectory(omegalib)
 add_subdirectory(doxygen)
+
+if (NOT DEFINED OMEGAHOME)
+    message( WARNING "OMEGAHOME is not set, use bundled omegalib")
+    add_subdirectory(omegalib)
+else()
+    message( WARNING "OMEGAHOME set to ${OMEGAHOME}, use prebuilt omegalib")
+endif()

@@ -43,11 +43,18 @@ set(COMMON_FLAGS "-DBUILD_ROSE -DCHILL_BUILD_DATE=\"${build_date}\" -DCHILL_BUIL
 
 set(CMAKE_CXX_FLAGS "-DPYTHON ${COMMON_FLAGS}")
 
+if (DEFINED OMEGAHOME)
+    link_directories(${OMEGAHOME}/lib/static)
+    set(OMEGA_INC ${OMEGAHOME}/include)
+else()
+    set(OMEGA_INC ${PROJECT_SOURCE_DIR}/omegalib/include)
+endif()
+
 link_directories(${ROSEHOME}/lib ${BOOSTOME}/lib)
 
 include_directories(
     include
-    ${PROJECT_SOURCE_DIR}/omegalib/include
+    ${OMEGA_INC}
     ${ROSEHOME}/include
     ${ROSEHOME}/include/rose
     ${BOOSTHOME}/include
@@ -56,7 +63,10 @@ include_directories(
 
 add_executable(chill ${CORE_SRC} ${PYTHON_SRC} ${IR_CHILL_SRC})
 target_link_libraries(chill ${CORE_LIBS} ${PYTHON_LIBRARY})
-add_dependencies(chill omega codegen)
+
+if (NOT DEFINED OMEGAHOME)
+    add_dependencies(chill omega codegen)
+endif()
 
 install(TARGETS chill
         RUNTIME DESTINATION bin)
