@@ -5,3 +5,8 @@
 3. `cmake -DROSEHOME=<ROSEHOME> -DBOOSTHOME=<BOOSTHOME> -H. -Bbuild`
 4. `cmake --build build -- -j10`
 
+# Doc
+
+* CHiLL.pdf
+* `cmake --build build -- doc`
+
