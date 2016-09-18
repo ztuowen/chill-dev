@@ -7,10 +7,7 @@ template<class T> class Iterator;
 template<class T> class Any_Iterator;
 
 
-/*
- * protocol for any kind of collection
- */
-
+//! protocol for any kind of collection
 template<class T> class Collection {
 public:
     virtual Iterator<T> *new_iterator() = 0;
@@ -20,21 +17,20 @@ public:
 };
 
 
-/*
+/*!
  * protocol for collections whose elements are ordered
  * by the way they are entered into the collection, and
  * whose elements can be accessed by "index"
  *
  * note that the implementation need not be a linked list
  */
-
 template<class T> class Sequence : public Collection<T> {
 public:
     virtual const T &operator[](int) const = 0;
     virtual       T &operator[](int)       = 0;
 
-    virtual int index(const T &) const = 0;  // Y in X --> X[X.index(Y)] == Y
-};
+    /*! Y in X --> X[X.index(Y)] == Y */
+    virtual int index(const T &) const = 0;  };
 
 } // namespace
 

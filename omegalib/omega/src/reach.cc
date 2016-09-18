@@ -1,12 +1,12 @@
 #include <omega.h>
 #include <omega/Relations.h>
-#include <basic/Dynamic_Array.h>
+#include <basic/DynamicArray.h>
 #include <omega/reach.h>
 
 namespace omega {
 
-typedef Dynamic_Array1<Relation> Rel_Array1;
-typedef Dynamic_Array2<Relation> Rel_Array2;
+typedef DynamicArray1<Relation> Rel_Array1;
+typedef DynamicArray2<Relation> Rel_Array2;
 
 // This is from parallelism.c, modified
 

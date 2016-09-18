@@ -16,20 +16,19 @@ namespace omega {
 #endif
 #endif
 
-/* 
-   List_Element: one item in a list and the pointer to the next.
-   Each such object should be pointed to by either exactly one
-    other List_Element or by some other pointer(s), exactly one
-    of which will delete the List_Element.
-   ListElements should ONLY be allocated on the heap.
- */
-
 #if ListElementFreeList
   // g++ 2.5.8 does not allow static data in template classes, so...
   extern void *kludgy_List_Element_new(size_t size);
   extern void  kludgy_List_Element_delete(void *ptr, size_t size);
 #endif
-
+/*! 
+ * \brief List_Element: one item in a list and the pointer to the next.
+ *
+ * Each such object should be pointed to by either exactly one
+ * other List_Element or by some other pointer(s), exactly one
+ * of which will delete the List_Element.
+ * ListElements should ONLY be allocated on the heap.
+ */
 template <class T> class List_Element {
 public:
 #if ListElementFreeList

@@ -9,7 +9,7 @@
 #include <basic/Tuple.h>
 #include <basic/Section.h>
 #include <basic/Exit.h>
-#include <basic/Dynamic_Array.h>
+#include <basic/DynamicArray.h>
 #include <omega.h>
 #include <omega/AST.h>
 
@@ -64,9 +64,9 @@ instantiate_Map(EQ_Handle,Variable_ID);
 instantiate_Map(Variable_ID,Set<Variable_ID>);
 instantiate_Map(Const_String, Relation *);
 
-instantiate_Dynamic_Array1(Coef_Var_Decl *);
-instantiate_Dynamic_Array1(Relation);
-instantiate_Dynamic_Array2(Relation);
+instantiate_DynamicArray1(Coef_Var_Decl *);
+instantiate_DynamicArray1(Relation);
+instantiate_DynamicArray2(Relation);
 
 
 /* Stuff required by calculator: */

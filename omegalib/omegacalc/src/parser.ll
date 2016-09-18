@@ -20,7 +20,7 @@
 #include <iostream>
 #include <fstream>
 #include <omega_calc/AST.h>
-#include <basic/Dynamic_Array.h>
+#include <basic/DynamicArray.h>
 #include "parser.tab.hh"
 #include <omega_calc/myflex.h>
 

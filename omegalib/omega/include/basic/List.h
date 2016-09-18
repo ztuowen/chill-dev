@@ -4,11 +4,6 @@
 /*
  *  Linked lists with an interface like a bit of libg++'s SLList class
  */
-
-
-#if 0
-#include <basic/assert.h> /* List requires assert which needs Exit which */
-#endif                    /* needs List!  just include assert in List.c  */
 #include <stdio.h>  // for NULL
 #include <basic/Iterator.h>
 #include <basic/Collection.h>

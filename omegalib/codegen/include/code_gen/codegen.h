@@ -15,10 +15,14 @@ public:
   static const int var_substitution_threshold;
   
 protected:
-  std::vector<std::vector<Relation> > projected_IS_; // projected_IS_[level-1][new stmt#]
-  std::vector<Relation> xforms_;  // transformations[original stmt#]
-  Relation known_; // no need to generate code for constraints satisfied in known
-  std::vector<int> remap_; // map new stmt# to original stmt#
+  //! projected_IS_[level-1][new stmt#]
+  std::vector<std::vector<Relation> > projected_IS_;
+  //! transformations[original stmt#]
+  std::vector<Relation> xforms_;
+  //! no need to generate code for constraints satisfied in known
+  Relation known_;
+  //! map new stmt# to original stmt#
+  std::vector<int> remap_;
 
 public:
   CodeGen(const std::vector<Relation> &xforms, const std::vector<Relation> &IS, const Relation &known = Relation::Null(),

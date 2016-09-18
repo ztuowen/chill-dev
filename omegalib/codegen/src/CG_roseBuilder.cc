@@ -33,22 +33,6 @@ namespace omega {
 //-----------------------------------------------------------------------------
 char *k_ocg_comment;
 
-// void __attribute__ ((constructor)) my_init(void) {
-//   ANNOTE(k_ocg_comment, "omega_comment", TRUE);
-// }
-
-/*
- const char *libcode_gen_ver_string = "";
- const char *libcode_gen_who_string = "";
- const char *libcode_gen_suif_string = "";
-
- void init_code_gen(int&, char* []) {
- ANNOTE(k_ocg_comment, "omega_comment", TRUE);
- }
-
- void exit_code_gen(void) {
- }
- */
 CG_roseBuilder::CG_roseBuilder(int is_fortran, SgGlobal* global, SgGlobal* firstScope,
 		SgSymbolTable* symtab, SgSymbolTable* symtab2, SgNode* root) :
 		isFortran(is_fortran), global_(global), global_scope(firstScope), symtab_(symtab), symtab2_(
@@ -77,8 +61,6 @@ CG_outputRepr* CG_roseBuilder::CreateSubstitutedStmt(int, CG_outputRepr *stmt,
 	SgNode *tnl;
 	SgStatement* statement;
 	if (list != NULL) {
-		//statement  = *((*list).begin());
-		//tnl = isSgNode(statement);
 		delete stmt;
 		for (int i = 0; i < subs.size(); i++) {
                   if (subs[i] == NULL)
@@ -91,8 +73,6 @@ CG_outputRepr* CG_roseBuilder::CreateSubstitutedStmt(int, CG_outputRepr *stmt,
 					it != (*list).end(); it++) {
 				statement = (*it);
 				tnl = isSgNode(statement);
-
-				//    std::string master = tnl->unparseToString();
 
 				int j;
 				int not_in_symtab_;
@@ -109,15 +89,12 @@ CG_outputRepr* CG_roseBuilder::CreateSubstitutedStmt(int, CG_outputRepr *stmt,
 					vs = symtab2_->find_variable(SgName(vars[i].c_str()));
 				}
 				if (vs != NULL) {
-					//std::string x =  vars[i].c_str() ;
-					//std::string y =  isSgNode(op)->unparseToString();
 
 					std::vector<SgVarRefExp *> array = substitute(tnl,
 							(const SgVariableSymbol*) vs, op, root_);
 					for (std::vector<SgVarRefExp *>::iterator it =
 							array.begin(); it != array.end(); it++) {
 
-						// std::string z = isSgNode(array[j])->unparseToString();
 						if (isSgVarRefExp(op)) {
 							if (strcmp(
 									isSgVarRefExp(op)->get_symbol()->get_name().getString().c_str(),
@@ -125,9 +102,6 @@ CG_outputRepr* CG_roseBuilder::CreateSubstitutedStmt(int, CG_outputRepr *stmt,
 
 								(*it)->set_symbol(
 										isSgVarRefExp(op)->get_symbol());
-								//   std::string z = isSgNode(array[j])->unparseToString();
-
-								// isSgBinaryOp(array[j]->get_parent())->replace_expression(array[j], op);
 
 							}
 						} else if (isSgExpression(op)) {
@@ -146,10 +120,6 @@ CG_outputRepr* CG_roseBuilder::CreateSubstitutedStmt(int, CG_outputRepr *stmt,
 						}
 
 					}
-					/* std::vector<SgVarRefExp *> array2 = substitute (tnl,(const SgVariableSymbol*) vs, op, root_);
-					 if(array2.size() != 0)
-					 throw ir_error("variable replacement unsuccessful");
-					 */
 				}
 
 			}
@@ -166,7 +136,6 @@ CG_outputRepr* CG_roseBuilder::CreateSubstitutedStmt(int, CG_outputRepr *stmt,
 
 	} else {
 		tnl = static_cast<CG_roseRepr *>(stmt)->tnl_;
-		//std::string master = tnl->unparseToString();
 
 		if (tnl == NULL)
 			throw ir_error("both list and tnl are null!!");
@@ -195,8 +164,6 @@ CG_outputRepr* CG_roseBuilder::CreateSubstitutedStmt(int, CG_outputRepr *stmt,
 				vs = symtab2_->find_variable(SgName(vars[i].c_str()));
 			}
 			if (vs != NULL) {
-				//std::string x =  vars[i].c_str() ;
-				//std::string y =  isSgNode(op)->unparseToString();
 				std::vector<SgVarRefExp *> array = substitute(tnl, vs, op,
 						root_);
 
@@ -204,27 +171,17 @@ CG_outputRepr* CG_roseBuilder::CreateSubstitutedStmt(int, CG_outputRepr *stmt,
 					if (strcmp(
 							isSgVarRefExp(op)->get_symbol()->get_name().getString().c_str(),
 							vs->get_name().getString().c_str())) {
-						//     symtab2_->remove(vs);
 					}
 				}
-				/*   else if(not_in_symtab_ && isSgVarRefExp(isSgAddOp(op)->get_lhs_operand())){
-				 if(strcmp(isSgVarRefExp(isSgAddOp(op)->get_lhs_operand())->get_symbol()->get_name().getString().c_str(),\
-                     vs->get_name().getString().c_str())){  
-				 symtab2_->remove(vs);
-				 }
-				 }*/
-				//symtab2_->remove(vs);
+				
 				for (std::vector<SgVarRefExp *>::iterator j = array.begin();
 						j != array.end(); j++) {
-					//   std::string z = isSgNode(array[j])->unparseToString();
 
 					if (isSgVarRefExp(op)) {
 						if (strcmp(
 								isSgVarRefExp(op)->get_symbol()->get_name().getString().c_str(),
 								vs->get_name().getString().c_str())) {
 							(*j)->set_symbol(isSgVarRefExp(op)->get_symbol());
-							//isSgBinaryOp(array[j]->get_parent())->replace_expression(array[j], op);
-							//     std::string z = isSgNode(array[j])->unparseToString();
 
 						}
 					} else if (isSgExpression(op)) {
@@ -240,78 +197,11 @@ CG_outputRepr* CG_roseBuilder::CreateSubstitutedStmt(int, CG_outputRepr *stmt,
 						}
 						else
 							throw ir_error("unrecognized expression type");
-						/*   if(strcmp(isSgVarRefExp(isSgAddOp(op)->get_lhs_operand())->get_symbol()->get_name().getString().c_str(),\
-                     vs->get_name().getString().c_str() )){
-						 array[j]->set_symbol(isSgVarRefExp(isSgAddOp(op)->get_lhs_operand())->get_symbol());
-
-						 */
 
 					}
 
 				}
-				/*      std::vector<SgVarRefExp *> array2 = substitute (tnl,(const SgVariableSymbol*) vs, op, root_);
-				 if(array2.size() != 0)
-				 throw ir_error("variable replacement unsuccessful");
-				 */
 			}
-			/*    SgExpression* exp = NULL;
-
-			 if(stmt1 = isSgStatement(tnl)){
-			 if (SgExprStatement* expr_stmt = isSgExprStatement(stmt1))
-			 exp = expr_stmt->get_expression();
-			 else if( block = isSgBasicBlock(tnl)){
-			 SgStatementPtrList& stmts = block->get_statements();
-			 SgExpression* exp2;
-			 for(int i =0; i < stmts.size(); i++){
-			 if(isSgExprStatement(stmts[i])){
-			 exp2 = isSgExprStatement(stmts[i])->get_expression();
-			 if(exp2 != NULL){
-
-			 if(isSgBinaryOp(exp2)) {
-			 substitute(isSgBinaryOp(exp2)->get_lhs_operand(), vs, op, root_, exp2);
-			 substitute(isSgBinaryOp(exp2)->get_rhs_operand(), vs, op, root_, exp2);
-			 }
-			 else if (isSgUnaryOp(exp2))
-			 substitute(isSgUnaryOp(exp2)->get_operand(), vs, op, root_, exp2);
-
-
-			 }//end if
-
-			 }//end   if
-			 }//end for
-
-			 }//end else
-			 else if(SgForStatement* for_stmt = isSgForStatement(tnl)){
-			 SgForStatement* temp = for_stmt;
-			 while(isSgForStatement(temp)){
-
-
-
-			 }
-
-
-
-
-			 }
-
-
-			 }//end if
-			 else
-			 exp = isSgExpression(tnl);
-
-			 if(exp != NULL){
-			 if(isSgBinaryOp(exp)) {
-			 substitute(isSgBinaryOp(exp)->get_lhs_operand(), vs, op, root_, exp);
-			 substitute(isSgBinaryOp(exp)->get_rhs_operand(), vs, op, root_, exp);
-			 }
-			 else if (isSgUnaryOp(exp))
-			 substitute(isSgUnaryOp(exp)->get_operand(), vs, op, root_, exp);
-
-			 }
-			 // if (op.is_instr())
-			 //   delete op.instr();
-			 }
-			 */
 		}
 		return new CG_roseRepr(tnl);
 	}
@@ -352,9 +242,6 @@ CG_outputRepr* CG_roseBuilder::CreateAssignment(int, CG_outputRepr *lhs,
 CG_outputRepr* CG_roseBuilder::CreateInvoke(const std::string &fname,
 		std::vector<CG_outputRepr *> &list) const {
 
-	// Manu:: debug
-//	std::cout << "--------- CreateInvoke --------- \n";
-
 	if (fname == std::string("max") || fname == std::string("min")) {
 		if (list.size() == 0) {
 			return NULL;
@@ -389,7 +276,6 @@ CG_outputRepr* CG_roseBuilder::CreateInvoke(const std::string &fname,
 					SgExpression *cond = static_cast<CG_roseRepr *>(CreateLE(new CG_roseRepr(op2), new CG_roseRepr(op1)))->op_;
 		            appendExpression(arg_list, cond);
 					ins = isSgExpression(buildFunctionCallExp(fName, retType, arg_list, global_));
-//					std::cout << "--------- CreateInvoke:: " << isSgNode(ins)->unparseToString().c_str() << "\n";
 				}
 
 			} else {
@@ -404,7 +290,6 @@ CG_outputRepr* CG_roseBuilder::CreateInvoke(const std::string &fname,
 					SgExpression *cond = static_cast<CG_roseRepr *>(CreateLE(new CG_roseRepr(op1), new CG_roseRepr(op2)))->op_;
 		            appendExpression(arg_list, cond);
 					ins = isSgExpression(buildFunctionCallExp(fName, retType, arg_list, global_));
-//					std::cout << "--------- CreateInvoke:: " << isSgNode(ins)->unparseToString().c_str() << "\n";
 				}
 
 			}
@@ -441,10 +326,6 @@ CG_outputRepr* CG_roseBuilder::CreateComment(int,
 //-----------------------------------------------------------------------------
 CG_outputRepr* CG_roseBuilder::CreateIf(int, CG_outputRepr *guardList,
 		CG_outputRepr *true_stmtList, CG_outputRepr *false_stmtList) const {
-
-	// static int if_counter = 1;
-	// std::string s = std::string("omegaif_")+to_string(if_counter++);
-	//  SgLabelStatement* label =buildLabelStatement(SgName(const_cast<char *>(s.c_str())));
 
 	if (true_stmtList == NULL && false_stmtList == NULL) {
 		delete guardList;
@@ -517,11 +398,6 @@ CG_outputRepr* CG_roseBuilder::CreateIf(int, CG_outputRepr *guardList,
 	SgIfStmt* ti = buildIfStmt(header, isSgStatement(then_part),
 			isSgStatement(else_part));
 
-//  label->set_scope(ti);//may have to be shifted to after symbol table insertion
-//  SgLabelSymbol* if_label = isSgLabelSymbol(label->get_symbol_from_symbol_table());
-
-//  symtab_->insert( SgName(const_cast<char *>(s.c_str()))    ,  isSgSymbol(if_label));
-
 	delete guardList;
 	delete true_stmtList;
 	delete false_stmtList;
@@ -551,10 +427,6 @@ CG_outputRepr* CG_roseBuilder::CreateInductive(CG_outputRepr *index,
 	SgExpression* upper_bound = static_cast<CG_roseRepr*>(upper)->op_;
 	SgExpression* step_size = static_cast<CG_roseRepr*>(step)->op_;
 
-	/*  label_sym *contLabel = new label_sym("");
-	 label_sym *brkLabel = new label_sym("");  may not be required on rose?!
-	 */
-
 	SgStatement* for_init_stmt = buildAssignStatement(index_sym, lower_bound);
 	SgLessOrEqualOp* cond = buildLessOrEqualOp(index_sym, upper_bound);
 	SgExprStatement* test = buildExprStatement(cond);
@@ -570,7 +442,6 @@ CG_outputRepr* CG_roseBuilder::CreateInductive(CG_outputRepr *index,
 
 	// Manu
 	if (isInputFortran()) {
-	//	std::cout << "CG_roseBuilder:: need to construct a fortran do statement\n";
         SgFortranDo * forStmt=new SgFortranDo(Sg_File_Info::generateDefaultFileInfoForTransformationNode());
         forStmt->set_has_end_statement(true);
         forStmt->set_bound(upper_bound);
@@ -578,7 +449,6 @@ CG_outputRepr* CG_roseBuilder::CreateInductive(CG_outputRepr *index,
         forStmt->set_initialization(isSgExprStatement(for_init_stmt)->get_expression());
         return new CG_roseRepr(isSgNode(forStmt));
 	} else {
-//		std::cout << "CG_roseBuilder:: for statement is fine\n";
 
 		return new CG_roseRepr(isSgNode(for_stmt));
 
@@ -647,20 +517,11 @@ CG_outputRepr* CG_roseBuilder::CreateLoop(int, CG_outputRepr *control,
 	if (isInputFortran()) {
 		tfd = isSgFortranDo(tnl);
 	}
-	// Manu:: debug
-/*	if (!tf) {
-		std::cout << "CreateLoop:: Not a for loop\n";
-		if (isSgFortranDo(tnl))
-			std::cout << "CreateLoop:: It is a fortran do loop\n";
-	}
-*/
-
 	SgStatementPtrList * body = static_cast<CG_roseRepr*>(stmtList)->list_;
 
 	if (body != NULL) {
 		if (!((*body).empty())) {
 			if ((*body).size() == 1) {
-				// if(isSgBasicBlock(*((*body).begin()))){
 				if (!isInputFortran()) {  // Manu:: added if-else for fortran support
 				  tf->set_loop_body(*((*body).begin()));
 				  (*((*body).begin()))->set_parent(tf);
@@ -670,14 +531,6 @@ CG_outputRepr* CG_roseBuilder::CreateLoop(int, CG_outputRepr *control,
 					bb1->append_statement(*((*body).begin()));
 					tfd->set_body(bb1);
 				}
-				//  }
-				/*    else{
-				 SgBasicBlock* bb1 = buildBasicBlock();
-				 bb1->set_parent(tf);
-				 bb1->append_statement(*((*body).begin()));
-				 tf->set_loop_body(bb1);
-
-				 }*/
 			} else {
 				// Manu:: support for fortran label (do - continue)
 				SgName *sname = NULL;
@@ -904,9 +757,6 @@ CG_outputRepr* CG_roseBuilder::CreateIntegerMod(CG_outputRepr *lop,
 //-----------------------------------------------------------------------------
 CG_outputRepr* CG_roseBuilder::CreateAnd(CG_outputRepr *lop,
 		CG_outputRepr *rop) const {
-	/*if (rop == NULL || lop == NULL) {
-		return NULL;
-	}*/
 
 	if (rop == NULL)
 		return lop;
@@ -928,11 +778,6 @@ CG_outputRepr* CG_roseBuilder::CreateAnd(CG_outputRepr *lop,
 //-----------------------------------------------------------------------------
 // binary relational operations
 //-----------------------------------------------------------------------------
-/*CG_outputRepr* CG_roseBuilder::CreateGE(CG_outputRepr *lop,
-		CG_outputRepr *rop) const {
-	return CreateLE(rop, lop);
-}*/
-
 CG_outputRepr* CG_roseBuilder::CreateLE(CG_outputRepr *lop,
 		CG_outputRepr *rop) const {
 	if (rop == NULL || lop == NULL) {
@@ -972,44 +817,6 @@ CG_outputRepr* CG_roseBuilder::CreateEQ(CG_outputRepr *lop,
 //-----------------------------------------------------------------------------
 // stmt list gen operations
 //-----------------------------------------------------------------------------
-/*CG_outputRepr* CG_roseBuilder::CreateStmtList(CG_outputRepr *singleton) const {
-
-	if (singleton == NULL) {
-		return new CG_roseRepr(new SgStatementPtrList);
-	}
-
-	SgStatementPtrList *tnl = static_cast<CG_roseRepr *>(singleton)->list_;
-	SgNode* sgn = static_cast<CG_roseRepr *>(singleton)->tnl_;
-
-	if (tnl == NULL)
-		tnl = new SgStatementPtrList;
-
-	if (sgn == NULL) {
-		SgExpression* op = static_cast<CG_roseRepr *>(singleton)->op_;
-
-		if (op != NULL)
-			(*tnl).push_back(
-					buildExprStatement(
-							static_cast<CG_roseRepr *>(singleton)->op_));
-
-	} else
-		(*tnl).push_back(isSgStatement(sgn));
-
-	delete singleton;
-	return new CG_roseRepr(tnl);
-
-//    tnl = isSgNode(buildBasicBlock(buildExprStatement(static_cast<CG_roseRepr *>(singleton)->op_)));
-
-//  delete singleton;
-//  return new CG_roseRepr(tnl);
-
-}
-
-CG_outputRepr* CG_roseBuilder::StmtListInsertLast(CG_outputRepr *list,
-		CG_outputRepr *node) const {
-	return StmtListAppend(list, node);
-}
-*/
 CG_outputRepr* CG_roseBuilder::StmtListAppend(CG_outputRepr *list1,
 		CG_outputRepr *list2) const {
 
@@ -1018,10 +825,6 @@ CG_outputRepr* CG_roseBuilder::StmtListAppend(CG_outputRepr *list1,
 	} else if (list1 == NULL) {
 		return list2;
 	}
-
-	// SgStatement* parent;
-	//   SgStatement* stmt1;
-	//   SgStatement* stmt2;
 
 	SgStatementPtrList* new_list;
 
@@ -1041,20 +844,6 @@ CG_outputRepr* CG_roseBuilder::StmtListAppend(CG_outputRepr *list1,
 
 	if (tnl2 && two)
 		throw ir_error("error in stmtlistappend!!");
-//  SgNode* sg1 = static_cast<CG_roseRepr *>(list1)->tnl_;
-
-//if((*tnl1).empty()){
-
-//  if(SgStatement* stmt = isSgStatement(sg1))
-// (*tnl1).push_back(stmt); 
-//else if(isSgScopeStatement(sg1)){
-//     SgStatementPtrList scopeStmtPtrLst = isSgScopeStatement(sg1)->generateStatementList();
-
-//    for(SgStatementPtrList::iterator it1 = scopeStmtPtrLst.begin();it1 != scopeStmtPtrLst.end(); it1++)          
-//        (*tnl1).push_back(*it1);
-//}
-//}
-
 	if ((tnl1 == NULL) && (tnl2 == NULL)) {
 
 		if ((one != NULL) && (two != NULL)) {
@@ -1079,12 +868,6 @@ CG_outputRepr* CG_roseBuilder::StmtListAppend(CG_outputRepr *list1,
 
 	} else {
 		if ((tnl2 != NULL) && (tnl1 == NULL)) {
-			/*  for(SgStatementPtrList::iterator it = (*tnl2).begin(); it != (*tnl2).end(); it++)
-			 {
-			 (*tnl1).push_back(*it);
-
-			 }
-			 */
 			if (one == NULL)
 				return list2;
 			else {
@@ -1096,7 +879,6 @@ CG_outputRepr* CG_roseBuilder::StmtListAppend(CG_outputRepr *list1,
 					(*new_list).push_back(*it);
 
 				}
-				//delete list2;
 				return static_cast<CG_outputRepr *>(new CG_roseRepr(new_list));
 			}
 		} else if ((tnl1 != NULL) && (tnl2 == NULL)) {
@@ -1105,7 +887,6 @@ CG_outputRepr* CG_roseBuilder::StmtListAppend(CG_outputRepr *list1,
 			else {
 
 				(*tnl1).push_back(isSgStatement(two));
-				//  delete list1;
 				return static_cast<CG_outputRepr *>(new CG_roseRepr(tnl1));
 
 			}
@@ -1118,53 +899,10 @@ CG_outputRepr* CG_roseBuilder::StmtListAppend(CG_outputRepr *list1,
 
 			}
 
-			// delete list2;
-			// delete list1;
 			return static_cast<CG_outputRepr *>(new CG_roseRepr(tnl1));
 		}
-//else{
-//    SgNode* tnll2 =  static_cast<CG_roseRepr *>(list2)->tnl_;
-//   if(tnll2 != NULL){
-//     if(isSgStatement(tnll2)) 
-//      (*tnl1).push_back(isSgStatement(tnll2)); 
-//     else if(isSgScopeStatement(tnll2)){
-//        SgStatementPtrList scopeStmtPtrLst1 = isSgScopeStatement(tnll2)->generateStatementList();
-
-//        for(SgStatementPtrList::iterator it2 = scopeStmtPtrLst1.begin();it2 !=  scopeStmtPtrLst1.end(); it2++)          
-//        (*tnl1).push_back(*it2);
-
-//    }
-//} 
-//    else{ 
-//    SgStatement*    stmt2 = isSgStatement(buildExprStatement(static_cast<CG_roseRepr *>(list2)->op_));
-//   (*tnl1).push_back(stmt2);
-
-//   }
-
-//}
-		//  stmt2 = isSgStatement(tnl2);
-
-//   std::string c = tnl1->unparseToString();    
-
-//   std::string d = isSgNode(stmt2)->unparseToString();    
-
-//  if(isSgForStatement(tnl1) || isSgBasicBlock(tnl1))
-//    isSgScopeStatement(tnl1)->append_statement(stmt2);
-//  else
-//  {
-		//      stmt1  = isSgStatement(tnl1);
-		// parent = isSgStatement(tnl1->get_parent());
-		//  if(isSgForStatement(tnl1->get_parent()) || isSgBasicBlock(tnl1->get_parent()))
-		//    isSgScopeStatement(tnl1->get_parent())->append_statement(stmt2);
-		//  else if (isSgStatement(tnl1->get_parent()))
-		//    isSgStatement(tnl1->get_parent())->insert_statement(stmt1, stmt2, false);
-
-// } 
 
 	}
-//  delete list2;
-
-//  return list1;
 
 }
 
@@ -1172,14 +910,7 @@ CG_outputRepr* CG_roseBuilder::StmtListAppend(CG_outputRepr *list1,
 CG_outputRepr* CG_roseBuilder::CreateDim3(const char* varName, CG_outputRepr* arg1,
 		CG_outputRepr* arg2, CG_outputRepr* arg3) const {
 
-	//SgName type_name("dim3");
-	//SgClassSymbol * type_symbol = global_scope->lookup_class_symbol(type_name);
-	//	SgClassDeclaration * type_decl = isSgClassDeclaration(
-	//		type_symbol->get_declaration());
-
-	//SgVariableDeclaration * var_decl = buildVariableDeclaration(varName, type_symbol->get_type());
-
-	SgFunctionSymbol * ctor_symbol = global_scope->lookup_function_symbol(
+    SgFunctionSymbol * ctor_symbol = global_scope->lookup_function_symbol(
 			SgName("dim3"));
 
 	SgExprListExp * ctor_args;
@@ -1203,102 +934,10 @@ CG_outputRepr* CG_roseBuilder::CreateDim3(const char* varName, CG_outputRepr* ar
 
 	SgStatementPtrList *tnl2 = new SgStatementPtrList;
 
-	//   (*tnl2).push_back(var_decl);
 	(*tnl2).push_back(decl);
 	return new CG_roseRepr(tnl2);
 
 }
-
-/*CG_outputRepr* CG_roseBuilder::CreateDim3(const char* varName, int arg1,
-		int arg2) const {
-
-	SgName type_name("dim3");
-	SgClassSymbol * type_symbol = global_scope->lookup_class_symbol(type_name);
-	SgClassDeclaration * type_decl = isSgClassDeclaration(
-			type_symbol->get_declaration());
-
-	//SgVariableDeclaration * var_decl = buildVariableDeclaration(varName, type_symbol->get_type());
-
-	SgFunctionSymbol * ctor_symbol = global_scope->lookup_function_symbol(
-			SgName("dim3"));
-
-	SgExprListExp * ctor_args = buildExprListExp(buildIntVal(arg1),
-			buildIntVal(arg2));
-
-	SgFunctionCallExp * dim3_func_call = buildFunctionCallExp(
-			buildFunctionRefExp(ctor_symbol->get_declaration()), ctor_args);
-
-	char joined_str[20];
-
-	strcpy(joined_str, "dim3 ");
-	strcat(joined_str, varName);
-
-	SgExprStatement* decl = buildAssignStatement(
-			buildOpaqueVarRefExp(joined_str, isSgScopeStatement(root_)),
-			dim3_func_call);
-
-	SgStatementPtrList *tnl2 = new SgStatementPtrList;
-
-	//   (*tnl2).push_back(var_decl);
-	(*tnl2).push_back(decl);
-	return new CG_roseRepr(tnl2);
-}
-
-CG_outputRepr* CG_roseBuilder::CreateDim3(const char* varName, int arg1,
-		int arg2, int arg3) const {
-
-	SgName type_name("dim3");
-	SgClassSymbol * type_symbol = global_scope->lookup_class_symbol(type_name);
-	SgClassDeclaration * type_decl = isSgClassDeclaration(
-			type_symbol->get_declaration());
-
-	//SgVariableDeclaration * var_decl = buildVariableDeclaration(varName, type_symbol->get_type());
-
-	SgFunctionSymbol * ctor_symbol = global_scope->lookup_function_symbol(
-			SgName("dim3"));
-
-	SgExprListExp * ctor_args = buildExprListExp(buildIntVal(arg1),
-			buildIntVal(arg2), buildIntVal(arg3));
-
-	SgFunctionCallExp * dim3_func_call = buildFunctionCallExp(
-			buildFunctionRefExp(ctor_symbol->get_declaration()), ctor_args);
-
-	char joined_str[20];
-
-	strcpy(joined_str, "dim3 ");
-	strcat(joined_str, varName);
-
-	SgExprStatement* decl = buildAssignStatement(
-			buildOpaqueVarRefExp(joined_str, isSgScopeStatement(root_)),
-			dim3_func_call);
-
-	SgStatementPtrList *tnl2 = new SgStatementPtrList;
-
-	//   (*tnl2).push_back(var_decl);
-	(*tnl2).push_back(decl);
-	return new CG_roseRepr(tnl2);
-
-	
-
-}
-*/
-
-/*CG_outputRepr* CG_suifBuilder::CreateKernel(immed_list* iml) const {
- instruction *ins = new in_rrr(io_mrk);
- ins->append_annote(k_cuda_kernel, iml);
- tree_node_list *tnl = new tree_node_list;
- tnl->append(new tree_instr(ins));
- return new CG_suifRepr(tnl);
- }
-
- type_node* CG_suifBuilder::ModifyType(type_node* base, const char* modifier) const {
- modifier_type* result = new modifier_type(TYPE_NULL, base);
- immed_list *iml = new immed_list;
- iml->append(immed((char*)modifier));
- result->append_annote(k_cuda_modifier, iml);
- return result;
- }
- */
 
 std::vector<SgVarRefExp *> substitute(SgNode *in, const SgVariableSymbol *sym,
 		SgExpression* expr, SgNode* root) {
@@ -1367,13 +1006,6 @@ std::vector<SgVarRefExp *> substitute(SgNode *in, const SgVariableSymbol *sym,
 					std::copy(a.begin(), a.end(), back_inserter(arrays));
 				}
 			}
-			/*else if(isSgFortranDo(stmt)){
-			 SgFortranDo *tfortran =  isSgFortranDo(stmt);
-			 omega::CG_roseRepr *r = new omega::CG_roseRepr(isSgStatement(tfortran->get_body()));
-			 std::vector<IR_ArrayRef *> a = FindArrayRef(r);
-			 delete r;
-			 std::copy(a.begin(), a.end(), back_inserter(arrays));
-			 }*/
 			else if (isSgVariableDeclaration(stmt)) {
 				if (SgExpression *init =
 						isSgVariableDeclaration(stmt)->get_variables().front()->get_initializer()) {
@@ -1386,9 +1018,6 @@ std::vector<SgVarRefExp *> substitute(SgNode *in, const SgVariableSymbol *sym,
 				}
 			} else if (isSgIfStmt(stmt)) {
 				SgIfStmt* tni = isSgIfStmt(stmt);
-				//tni->get_conditional()->set_parent(tni);
-				//tni->get_true_body()->set_parent(tni);
-				//tni->get_false_body()->set_parent(tni);
 				std::vector<SgVarRefExp *> a = substitute(
 						isSgNode(tni->get_conditional()), sym, expr, root);
 				std::copy(a.begin(), a.end(), back_inserter(arrays));
@@ -1405,13 +1034,11 @@ std::vector<SgVarRefExp *> substitute(SgNode *in, const SgVariableSymbol *sym,
 						isSgNode(isSgExprStatement(stmt)->get_expression()),
 						sym, expr, root);
 				std::copy(a.begin(), a.end(), back_inserter(arrays));
-			}    //end else if
-		}    //end if
+			}  
+		} 
 		else {
 			op = isSgExpression(in);
-			// std::string x = isSgNode(op)->unparseToString();
 			std::string y = sym->get_name().getString();
-//			std::cout << "------substitute else:: " <<  in->unparseToString().c_str() << ", " << y.c_str() << "\n";
 
 			if (isSgBinaryOp(op)) {
 
@@ -1425,9 +1052,6 @@ std::vector<SgVarRefExp *> substitute(SgNode *in, const SgVariableSymbol *sym,
 						isSgBinaryOp(op)->get_rhs_operand(), sym, expr, root);
 				std::copy(a1.begin(), a1.end(), back_inserter(arrays));
 			} else if (isSgUnaryOp(op)) {
-				//isSgUnaryOp(op)->get_operand()->set_parent(op);
-				//std::string x = isSgNode(op)->unparseToString();
-				//std::cout<<x<<std::endl;
 				std::vector<SgVarRefExp *> a = substitute(
 						isSgUnaryOp(op)->get_operand(), sym, expr, root);
 				std::copy(a.begin(), a.end(), back_inserter(arrays));
@@ -1435,12 +1059,9 @@ std::vector<SgVarRefExp *> substitute(SgNode *in, const SgVariableSymbol *sym,
 				std::string z =
 						isSgVarRefExp(op)->get_symbol()->get_name().getString();
 				if (!strcmp(z.c_str(), y.c_str())) {
-					//isSgVarRefExp(op)->set_symbol(isSgVarRefExp(expr)->get_symbol());
 					arrays.push_back(isSgVarRefExp(op));
-					//replaceVariableReferences(root, isSgVarRefExp(in)->get_symbol(), temp);
-					//r = true;
-				}        //end if
-			}        //end else if
+				}   
+			}    
 			else if (isSgCallExpression(op)) {
 				SgExprListExp* exprs = isSgCallExpression(op)->get_args();
 				SgExpressionPtrList &expr_list = exprs->get_expressions();
@@ -1463,71 +1084,10 @@ std::vector<SgVarRefExp *> substitute(SgNode *in, const SgVariableSymbol *sym,
 
 			}
 
-			//end else if
-			//else if(!isSgValueExp(op))
-			//	throw ir_error("unrecognized expression type");
-		}        //end else
-	}        //end if
-
-	/*  bool r = false;
-	 if (isSgVarRefExp(in) && (isSgVarRefExp(in)->get_symbol()  == sym)) {
-	 omega::CG_roseRepr *result = new omega::CG_roseRepr(expr);
-	 SgExpression* expr1 =  result->GetExpression();
-	 delete result;
-	 SgVariableSymbol* temp = isSgVarRefExp(expr1)->get_symbol();
-	 parent->replace_expression(in, expr1);
-	 replaceVariableReferences(root, isSgVarRefExp(in)->get_symbol(), temp);
-	 r = true;
-	 }
-	 else if(isSgBinaryOp(in)){
-	 substitute(isSgBinaryOp(in)->get_lhs_operand(), sym, expr, root, in);
-	 substitute(isSgBinaryOp(in)->get_rhs_operand(), sym, expr, root, in);
-	 }
-	 else if(isSgUnaryOp(in))
-	 substitute(isSgUnaryOp(in)->get_operand(), sym, expr, root, in);
-
-	 */
+		}  
+	}       
 
 	return arrays;
 }
-
-/*bool substitute(SgStatement *tn, SgVariableSymbol *sym, SgExpression* expr, SgNode* root, SgSymbolTable* symtab) {
- if (tn == NULL)
- return false;
-
- bool r = false;
- if( tn != NULL){
- if(isSgExpression(tn)){
- r = substitute(isSgExpression(tn), sym, expr, root, isSgExpression(tn)) || r;
-
- }
- else {
- omega::CG_roseRepr *result = new omega::CG_roseRepr(expr);
- SgExpression* expr1 = result->GetExpression();
- tn->replace_expression(buildVarRefExp(sym), expr1);
- for (unsigned i = 0; i < tn->get_numberOfTraversalSuccessors(); i++)
- r = substitute(isSgStatement(tn->get_traversalSuccessorByIndex(i)), sym, expr, root, symtab) || r;
-
- }
- }
- return r;
- }
-
- bool substitute(SgNode *tnl, SgVariableSymbol *sym, SgExpression* expr, SgNode* root, SgSymbolTable* symtab) {
- if (tnl == NULL)
- return false;
-
- bool r = false;
-
- for(int i=0; i < tnl->get_numberOfTraversalSuccessors(); i++){
-
- SgNode* tn = tnl->get_traversalSuccessorByIndex(i);
- r = substitute(isSgStatement(tn), sym, expr, root, symtab) || r;
- }
-
-
- return r;
- }
- */
 
 } // namespace

@@ -16,24 +16,24 @@ namespace omega {
 
 #define foreachSeparated(x,T,S,A,B) do {for (omega::Any_Iterator<T> __P_##x = (S).any_iterator();__P_##x;) {T & x = *__P_##x; A; __P_##x++; if (__P_##x) B;}} while (0)
 
-/*
- * Abstract base class Iterator<type>
+/*!
+ * \brief Abstract base class Iterator<type>
+ * 
  * Supports two styles of iteration:
- *
+ * ~~~
  *    for ( ... initialize i (typically i = collection) ...  ; i ; i++ )
  *        operate_on(*i)
- *
+ * ~~~
  * or
- *
+ * ~~~
  *    for ( ... initialize i ... ; i.live() ; i.next() )
  *        operate_on(i.curr())
- *
- *   >>> IF THE COLLECTION IS CHANGED, THE ITERATOR IS NO LONGER VALID <<<
+ * ~~~
+ * **IF THE COLLECTION IS CHANGED, THE ITERATOR IS NO LONGER VALID**
  *
  * For collections that are not "Sequence"s, the order in
  *  which the elements are returned may not be consistent.
  */
-
 template<class T> class Iterator {
 public:
     virtual const T &  operator*() const = 0;
@@ -54,9 +54,8 @@ public:
 };
 
 
-// A generator is like an iterator but it gives out values,
-// which may or may not exist in some writable collection
-
+//! A generator is like an iterator but it gives out values
+/*! Values may or may not exist in some writable collection */
 template<class T> class Generator {
 public:
     virtual       T    operator*() const = 0;
@@ -74,14 +73,13 @@ public:
 
 
 
-// Delegate to any kind of iterator (on the heap)
-// If created via a reference, become a copy of the iterator
-// If created via a pointer, manipulate that pointer and free *p when this dies
-//
-// Mostly useful for Collection::iterator
-// Iterator::Iterator(Collection)
-
-
+//! Delegate to any kind of iterator (on the heap)
+/*!
+ * * If created via a reference, become a copy of the iterator
+ * * If created via a pointer, manipulate that pointer and free *p when this dies
+ * 
+ * Mostly useful for Collection::iterator `Iterator::Iterator(Collection)`
+ */
 template<class T> class Any_Iterator : public Iterator<T> {
 public:
     Any_Iterator(Collection<T> &c);
@@ -101,13 +99,13 @@ public:
     Iterator<T> *new_copy() const	{ return new Any_Iterator<T>((*me).new_copy()); }
 
 private:
-    Any_Iterator(Iterator<T> *p)  // take over *p, *p MUST BE ON THE HEAP
-    { me = p; }
+    //! take over *p, *p MUST BE ON THE HEAP
+    Any_Iterator(Iterator<T> *p) { me = p; }
     friend class Collection<T>;
-#if 0  
-    // Couldn't make this work with g++258
-    friend Any_Iterator<T> Collection<T>::any_iterator();
-#endif    
+/* 
+ *   // Couldn't make this work with g++258
+ *   friend Any_Iterator<T> Collection<T>::any_iterator();
+ */
     Iterator<T> *me;
 };
 

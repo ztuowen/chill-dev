@@ -4,7 +4,7 @@
 #include <sstream>
 #include <iostream>
 #include <omega_calc/AST.h>
-#include <basic/Dynamic_Array.h>
+#include <basic/DynamicArray.h>
 
 using namespace omega;
 #include "y.tab.h"

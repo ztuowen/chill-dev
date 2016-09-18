@@ -29,7 +29,6 @@ public:
   // Dump operations
   //---------------------------------------------------------------------------
   void Dump() const;
-  //void DumpToFile(FILE *fp = stderr) const;
 private:
   // only one of _tnl and _op would be active at any time, depending on
   // whether it is building a statement list or an expression tree

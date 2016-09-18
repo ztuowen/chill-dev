@@ -10,7 +10,6 @@ namespace omega {
 // global, but if it and its size are static to Const_String,
 // the compiler still doesn't seem to like the definition,
 // or the declaration either for that matter.
-
 class ConstStringRep {
 public:
   const char *name;

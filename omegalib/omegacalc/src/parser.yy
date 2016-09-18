@@ -14,7 +14,7 @@
 
 %{
 //#define YYDEBUG 1
-#include <basic/Dynamic_Array.h>
+#include <basic/DynamicArray.h>
 #include <basic/Iterator.h>
 #include <omega_calc/AST.h>
 #include <omega/hull.h>
@@ -121,7 +121,7 @@ void flushScanBuffer();
   omega::Relation *RELATION;
   tupleDescriptor *TUPLE_DESCRIPTOR;
   std::pair<std::vector<omega::Relation>, std::vector<omega::Relation> > *REL_TUPLE_PAIR;
-  omega::Dynamic_Array1<omega::Relation> * RELATION_ARRAY_1D;
+  omega::DynamicArray1<omega::Relation> * RELATION_ARRAY_1D;
   std::string *STRING_VALUE;
 }
 
@@ -473,7 +473,7 @@ inputItem : ';' /*empty*/
           }
           | reachable ';' {
             flushScanBuffer();
-            Dynamic_Array1<Relation> &final = *$1;
+            DynamicArray1<Relation> &final = *$1;
             bool any_sat = false;
             int i,n_nodes = reachable_info->node_names.size();
             for(i = 1; i <= n_nodes; i++)
@@ -1661,13 +1661,13 @@ exp : COEF {$$ = new Exp($1);}
 
 
 reachable : REACHABLE_FROM nodeNameList nodeSpecificationList {
-            Dynamic_Array1<Relation> *final = Reachable_Nodes(reachable_info);
+            DynamicArray1<Relation> *final = Reachable_Nodes(reachable_info);
             $$ = final;
           }
 ;
 
 reachable_of : REACHABLE_OF VAR IN nodeNameList nodeSpecificationList {
-               Dynamic_Array1<Relation> *final = Reachable_Nodes(reachable_info);
+               DynamicArray1<Relation> *final = Reachable_Nodes(reachable_info);
                int index = reachable_info->node_names.index(std::string($2));
                if (index == 0) {
                  yyerror(std::string("no such node ") + to_string($2));
@@ -1708,7 +1708,7 @@ nodeSpecificationList : OPEN_BRACE realNodeSpecificationList CLOSE_BRACE {
                         int i,j;
                         int n_nodes = reachable_info->node_names.size();
                         Tuple<int> &arity = reachable_info->node_arity;
-                        Dynamic_Array2<Relation> &transitions = reachable_info->transitions;
+                        DynamicArray2<Relation> &transitions = reachable_info->transitions;
 
                         /* fixup unspecified transitions to be false */
                         /* find arity */
@@ -1735,7 +1735,7 @@ nodeSpecificationList : OPEN_BRACE realNodeSpecificationList CLOSE_BRACE {
                               transitions[i][j] = Relation::False(arity[i],arity[j]);
 
                         /* fixup unused start node positions */
-                        Dynamic_Array1<Relation> &nodes = reachable_info->start_nodes;
+                        DynamicArray1<Relation> &nodes = reachable_info->start_nodes;
                         for(i = 1; i <= n_nodes; i++) 
                           if(nodes[i].is_null()) 
                             nodes[i] = Relation::False(arity[i]);
