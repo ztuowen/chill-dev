@@ -19,6 +19,6 @@
 
 ## Additional Doc
 
-* CHiLL.pdf
+* doc/CHiLL.pdf
 * Doxygen: `cmake --build build -- doc`
 
