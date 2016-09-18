@@ -19,6 +19,14 @@
 #ifndef GRAPH_HH
 #define GRAPH_HH
 
+/*!
+ * \file
+ * \brief  Graph<VertexType, EdgeType> template class supports topological sort
+ *
+ * The result of topologically sorting a graph V={1,2,3,4} and E={1->2, 1->3,
+ * 2->3, 3->2, 3->4} is ({1}, {2,3}, {4}).
+ */
+
 #include <set>
 #include <vector>
 #include <map>

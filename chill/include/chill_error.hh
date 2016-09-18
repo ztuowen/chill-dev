@@ -1,6 +1,11 @@
 #ifndef CHILL_ERROR_HH
 #define CHILL_ERROR_HH
 
+/*!
+ * \file
+ * \brief CHiLL runtime exceptions
+ */
+
 //! for loop transformation problem
 struct loop_error: public std::runtime_error {
   loop_error(const std::string &msg): std::runtime_error(msg){}

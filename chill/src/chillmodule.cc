@@ -1,6 +1,3 @@
-
-// chill interface to python
-
 #include "chilldebug.h"
 
 #include "chill_run_util.hh"

@@ -1,5 +1,10 @@
 #ifndef IR_ROSE_UTILS_HH
 #define IR_ROSE_UTILS_HH
+
+/*!
+ * \file
+ * \brief ROSE interface utilities
+ */
 #include <vector>
 #include <rose.h>
 #include <sageBuilder.h>

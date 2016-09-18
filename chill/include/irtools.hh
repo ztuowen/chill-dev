@@ -1,6 +1,11 @@
 #ifndef IRTOOLS_HH
 #define IRTOOLS_HH
 
+/*!
+ * \file
+ * \brief Useful tools to analyze code in compiler IR format.
+ */
+
 #include <vector>
 #include <omega.h>
 #include <code_gen/CG_outputRepr.h>

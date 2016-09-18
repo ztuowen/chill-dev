@@ -1,6 +1,25 @@
 #ifndef LOOP_HH
 #define LOOP_HH
 
+/*!
+ * \file 
+ * \brief Core loop transformation functionality.
+ *
+ * "level" (starting from 1) means loop level and it corresponds to "dim"
+ * (starting from 0) in transformed iteration space [c_1,l_1,c_2,l_2,....,
+ * c_n,l_n,c_(n+1)], e.g., l_2 is loop level 2 in generated code, dim 3
+ * in transformed iteration space, and variable 4 in Omega relation.
+ * All c's are constant numbers only and they will not show up as actual loops.
+ * 
+ * Formula:
+ *
+ * ~~~
+ *   dim = 2*level - 1
+ *   var = dim + 1
+ * ~~~
+ */
+ 
+
 #include <omega.h>
 #include <code_gen/codegen.h>
 #include <code_gen/CG.h>

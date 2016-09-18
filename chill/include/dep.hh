@@ -1,6 +1,19 @@
 #ifndef DEP_HH
 #define DEP_HH
 
+/*!
+ * \file 
+ * \brief Data dependence vector and graph.
+ *
+ * All dependence vectors are normalized, i.e., the first non-zero distance
+ * must be positve. Thus the correct dependence meaning can be given based on
+ * source/destination pair's read/write type. Suppose for a dependence vector
+ * 1, 0~5, -3), we want to permute the first and the second dimension,
+ * the result would be two dependence vectors (0, 1, -3) and (1~5, 1, -3).
+ * All operations on dependence vectors are non-destructive, i.e., new
+ * dependence vectors are returned.
+ */
+
 #include <omega.h>
 #include "graph.hh"
 #include "ir_code.hh"

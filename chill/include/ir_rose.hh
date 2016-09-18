@@ -1,6 +1,11 @@
 #ifndef IR_ROSE_HH
 #define IR_ROSE_HH
 
+/*!
+ * \file
+ * \brief CHiLL's rose interface.
+ */
+
 #include <omega.h>
 #include "ir_code.hh"
 #include "ir_rose_utils.hh"

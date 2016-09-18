@@ -22,6 +22,18 @@
 #ifndef IR_CODE_HH
 #define IR_CODE_HH
 
+/*!
+ * \file
+ * \brief CHiLL's compiler intermediate representation interface that extends Omega's builder interface to accomodate compiler analyses and extra code generation.
+ * 
+ * Unlike CG_outputRepr, IR_Symbol,IR_Ref and IR_Control are place holders 
+ * to the underlying code, thus deleting or duplicating them does not affect
+ * the actual code.  Similar to Omega builder's memory allocation strategy,
+ * all non-const pointer parameters of CG_outputRepr/IR_Symbol/IR_Ref/IR_Control
+ * are destroyed after the call.
+ */
+
+
 #include <code_gen/CG_outputRepr.h>
 #include <code_gen/CG_outputBuilder.h>
 #include <vector>

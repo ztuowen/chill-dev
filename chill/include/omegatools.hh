@@ -1,6 +1,11 @@
 #ifndef OMEGATOOLS_HH
 #define OMEGATOOLS_HH
 
+/*!
+ * \file
+ * \brief Useful tools involving Omega manipulation.
+ */
+
 #include <string>
 #include <omega.h>
 #include "dep.hh"

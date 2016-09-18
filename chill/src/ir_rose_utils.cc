@@ -4,7 +4,7 @@
  All Rights Reserved.
 
  Purpose:
-   SUIF interface utilities.
+   ROSE interface utilities.
 
  Notes:
 
@@ -12,27 +12,13 @@
    01/2006 created by Chun Chen
 *****************************************************************************/
 
-//#include <suif1.h>
-//#include <useful.h>
-//#include <vector>
-//#include <algorithm>
-//#include <code_gen/CG_suifRepr.h>
 #include "ir_rose_utils.hh"
 
 
 
 std::vector<SgForStatement *> find_loops(SgNode *tnl) {
   std::vector<SgForStatement *> result;
-  
-  //tree_node_list_iter iter(tnl);
-  
-  /*while (!iter.is_empty()) {
-    tree_node *tn = iter.step();
-    if (tn->kind() == TREE_FOR)
-    result.push_back(static_cast<tree_for *>(tn));
-    }
-  */
-  
+ 
   SgStatementPtrList& blockStatements = isSgBasicBlock(tnl)->get_statements();
   for(SgStatementPtrList::const_iterator j = blockStatements.begin(); j != blockStatements.end(); j++)
     if(isSgForStatement(*j))
@@ -59,13 +45,6 @@ std::vector<SgForStatement *> find_deepest_loops(SgStatementPtrList& tnl) {
   return loops;
   
 }
-
-
-
-
-
-
-
 
 std::vector<SgForStatement *> find_deepest_loops(SgNode *tn) {
   if (isSgForStatement(tn)) {
