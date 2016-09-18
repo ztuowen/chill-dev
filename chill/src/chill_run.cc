@@ -61,7 +61,7 @@ int main( int argc, char* argv[] )
     //---
     // Run a CHiLL interpreter
     //---
-    printf("CHiLL v0.2.1 (built on %s)\n", CHILL_BUILD_DATE);
+    printf("CHiLL v" CHILL_BUILD_VERSION " (built on " CHILL_BUILD_DATE ")\n");
     printf("Copyright (C) 2008 University of Southern California\n");
     printf("Copyright (C) 2009-2012 University of Utah\n");
     //is_interactive = true; // let the lua interpreter know.

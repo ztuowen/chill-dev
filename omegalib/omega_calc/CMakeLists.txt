@@ -1,3 +1,5 @@
+set(OC_VERSION 2.2.3)
+
 find_package(BISON)
 find_package(FLEX)
 
@@ -14,7 +16,7 @@ include_directories(
 
 string(TIMESTAMP build_date "\\\"%m/%d/%Y\\\"")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_CODEGEN -DOMEGA_BUILD_DATE=\"${build_date}\"")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_CODEGEN -DOC_VERSION=\"\\\"OC_VERSION\\\"\" -DOC_BUILD_DATE=\"${build_date}\"")
 
 add_executable(omega_calc
     EXCLUDE_FROM_ALL

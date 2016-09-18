@@ -39,9 +39,9 @@ set(PYTHON_SRC
     ${BISON_ExprParser_OUTPUTS}
     )
 
-set(COMMON_FLAGS "-DBUILD_ROSE -DCHILL_BUILD_DATE=\"${build_date}\" -DCHILL_BUILD_VERSION=\"\\\"0.2.1\\\"\"")
+set(COMMON_FLAGS "-DCHILL_BUILD_DATE=\"${build_date}\" -DCHILL_BUILD_VERSION=\"\\\"${CHILL_VERSION}\\\"\"")
 
-set(CMAKE_CXX_FLAGS "-DPYTHON ${COMMON_FLAGS}")
+set(CMAKE_CXX_FLAGS "${COMMON_FLAGS} ${CMAKE_CXX_FLAGS}")
 
 if (DEFINED OMEGAHOME)
     link_directories(${OMEGAHOME}/lib)
