@@ -7,15 +7,18 @@
 #include "ir_code.hh"
 #include "dep.hh"
 
-// IR tree is used to initialize a loop. For a loop node, payload is
-// its mapped iteration space dimension. For a simple block node,
-// payload is its mapped statement number. Normal if-else is splitted
-// into two nodes where the one with odd payload represents then-part and
-// the one with even payload represents else-part.
+//! It is used to initialize a loop.
 struct ir_tree_node {
   IR_Control *content;
   ir_tree_node *parent;
   std::vector<ir_tree_node *> children;
+/*! 
+ * * For a loop node, payload is its mapped iteration space dimension. 
+ * * For a simple block node, payload is its mapped statement number. 
+ * * Normal if-else is splitted into two nodes
+ *   * the one with odd payload represents then-part and
+ *   * the one with even payload represents else-part.
+ */
   int payload;
   
   ~ir_tree_node() {

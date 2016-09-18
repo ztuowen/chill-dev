@@ -236,28 +236,6 @@ public:
                        std::map<SgVarRefExp*, IR_ScalarRef*> &read_scalars_1,
                        std::map<SgVarRefExp*, IR_ScalarRef*> &write_scalars_1,
                        std::set<std::string> &indices, std::vector<std::string> &index);
-  //        std::set<std::string> &def_vars);
-  /*void findDefinitions(SgStatementPtrList &list_1,
-    std::set<VirtualCFG::CFGNode> &reaching_defs_1,
-    std::map<SgVarRefExp*, IR_ScalarRef*> &write_scalars_1,
-    std::set<std::string> &def_vars);
-  */
-  /*    void checkDependency(SgStatementPtrList &output_list_1,
-        std::vector<DependenceVector> &dvs1,
-        std::map<SgVarRefExp*, IR_ScalarRef*> &read_scalars_1,
-        std::map<SgVarRefExp*, IR_ScalarRef*> &write_scalars_1,
-        std::vector<std::string> &index, int i, int j);
-        void checkSelfDependency(SgStatementPtrList &output_list_1,
-        std::vector<DependenceVector> &dvs1,
-        std::map<SgVarRefExp*, IR_ScalarRef*> &read_scalars_1,
-        std::map<SgVarRefExp*, IR_ScalarRef*> &write_scalars_1,
-        std::vector<std::string> &index, int i, int j);
-        void checkWriteDependency(SgStatementPtrList &output_list_1,
-        std::vector<DependenceVector> &dvs1,
-        std::map<SgVarRefExp*, IR_ScalarRef*> &read_scalars_1,
-        std::map<SgVarRefExp*, IR_ScalarRef*> &write_scalars_1,
-        std::vector<std::string> &index, int i, int j);
-  */
   std::vector<IR_ArrayRef *> FindArrayRef(
     const omega::CG_outputRepr *repr) const;
   std::vector<IR_ScalarRef *> FindScalarRef(
@@ -276,11 +254,6 @@ public:
   std::vector<omega::CG_outputRepr *> QueryExpOperand(
     const omega::CG_outputRepr *repr) const;
   IR_Ref *Repr2Ref(const omega::CG_outputRepr *) const;
-  /*    std::pair<std::vector<DependenceVector>, std::vector<DependenceVector> >
-        FindScalarDeps(const omega::CG_outputRepr *repr1,
-        const omega::CG_outputRepr *repr2, std::vector<std::string> index,
-        int i, int j);
-  */
   void finalizeRose();
   friend class IR_roseArraySymbol;
   friend class IR_roseArrayRef;

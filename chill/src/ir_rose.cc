@@ -232,12 +232,6 @@ IR_Ref *IR_roseConstantRef::clone() const {
 // ----------------------------------------------------------------------------
 
 bool IR_roseScalarRef::is_write() const {
-  /*    if (ins_pos_ != NULL && op_pos_ == -1)
-        return true;
-        else
-        return false;
-  */
-  
   if (is_write_ == 1)
     return true;
   
@@ -270,11 +264,7 @@ omega::CG_outputRepr *IR_roseScalarRef::convert() {
 }
 
 IR_Ref * IR_roseScalarRef::clone() const {
-  //if (ins_pos_ == NULL)
   return new IR_roseScalarRef(ir_, vs_, this->is_write_);
-  //else
-  //        return new IR_roseScalarRef(ir_, , op_pos_);
-  
 }
 
 // ----------------------------------------------------------------------------
@@ -684,12 +674,11 @@ omega::CG_outputRepr *IR_roseBlock::original() const {
       }
     }
     tnl = new omega::CG_roseRepr(bb);
-    //block = tnl->clone();
-    
+
   } else {
+
     tnl = new omega::CG_roseRepr(tnl_);
-    
-    //block = tnl->clone();
+
   }
   
   return tnl;
@@ -744,19 +733,6 @@ omega::CG_outputRepr *IR_roseIf::condition() const {
   SgExpression* exp = NULL;
   if (SgExprStatement* stmt = isSgExprStatement(tnl))
     exp = stmt->get_expression();
-  /*
-    SgExpression *op = iter(tnl);
-    if (iter.is_empty())
-    throw ir_error("unrecognized if structure");
-    tree_node *tn = iter.step();
-    if (!iter.is_empty())
-    throw ir_error("unrecognized if structure");
-    if (!tn->is_instr())
-    throw ir_error("unrecognized if structure");
-    instruction *ins = static_cast<tree_instr *>(tn)->instr();
-    if (!ins->opcode() == io_bfalse)
-    throw ir_error("unrecognized if structure");
-    operand op = ins->src_op(0);*/
   if (exp == NULL)
     return new omega::CG_roseRepr(tnl);
   else
@@ -766,13 +742,8 @@ omega::CG_outputRepr *IR_roseIf::condition() const {
 IR_Block *IR_roseIf::then_body() const {
   SgNode *tnl = isSgNode(isSgIfStmt(ti_)->get_true_body());
   
-  //tree_node_list *tnl = ti_->then_part();
   if (tnl == NULL)
     return NULL;
-  /*
-    tree_node_list_iter iter(tnl);
-    if (iter.is_empty())
-    return NULL; */
   
   return new IR_roseBlock(ir_, tnl);
 }
@@ -780,28 +751,14 @@ IR_Block *IR_roseIf::then_body() const {
 IR_Block *IR_roseIf::else_body() const {
   SgNode *tnl = isSgNode(isSgIfStmt(ti_)->get_false_body());
   
-  //tree_node_list *tnl = ti_->else_part();
-  
   if (tnl == NULL)
     return NULL;
-  /*
-    tree_node_list_iter iter(tnl);
-    if (iter.is_empty())
-    return NULL;*/
   
   return new IR_roseBlock(ir_, tnl);
 }
 
 IR_Block *IR_roseIf::convert() {
   const IR_Code *ir = ir_;
-  /* SgNode *tnl = ti_->get_parent();
-     SgNode *start, *end;
-     start = end = ti_;
-     
-     //tree_node_list *tnl = ti_->parent();
-     //tree_node_list_e *start, *end;
-     //start = end = ti_->list_e();
-     */
   delete this;
   return new IR_roseBlock(ir, ti_);
 }
@@ -842,8 +799,6 @@ IR_roseCode::IR_roseCode(const char *filename, const char* proc_name) :
   strcpy(argv[1], filename);
   
   project = (IR_roseCode_Global_Init::Instance(argv))->project;
-  //main_ssa = new ssa_unfiltered_cfg::SSA_UnfilteredCfg(project);
-  //main_ssa->run();
   firstScope = getFirstGlobalScope(project);
   SgFilePtrList& file_list = project->get_fileList();
   
@@ -855,12 +810,6 @@ IR_roseCode::IR_roseCode(const char *filename, const char* proc_name) :
     else
       is_fortran_ = false;
 
-    // Manu:: debug
-    // if (is_fortran_)
-    //   std::cout << "Input is a fortran file\n";
-    // else
-    //     std::cout << "Input is a C file\n";
-    
     root = file->get_globalScope();
 
     if (!is_fortran_) { // Manu:: this macro should not be created if the input code is in fortran
@@ -894,7 +843,6 @@ IR_roseCode::IR_roseCode(const char *filename, const char* proc_name) :
   
   symtab2_ = func->get_definition()->get_symbol_table();
   symtab3_ = func->get_definition()->get_body()->get_symbol_table();
-  // ocg_ = new omega::CG_roseBuilder(func->get_definition()->get_body()->get_symbol_table() , isSgNode(func->get_definition()->get_body())); 
   // Manu:: added is_fortran_ parameter
   ocg_ = new omega::CG_roseBuilder(is_fortran_, root, firstScope,
                                    func->get_definition()->get_symbol_table(),
@@ -912,14 +860,8 @@ IR_roseCode::~IR_roseCode() {
 }
 
 void IR_roseCode::finalizeRose() {
-  // Moved this out of the deconstructor
-  // ????
   SgProject* project = (IR_roseCode_Global_Init::Instance(NULL))->project;
-  // -- Causes coredump. commented out for now -- //
-  // processes attributes left in Rose Ast
-  //postProcessRoseCodeInsertion(project);
   project->unparse();
-  //backend((IR_roseCode_Global_Init::Instance(NULL))->project);
 }
 
 IR_ScalarSymbol *IR_roseCode::CreateScalarSymbol(const IR_Symbol *sym, int) {
@@ -1088,16 +1030,7 @@ IR_ArrayRef *IR_roseCode::CreateArrayRef(const IR_ArraySymbol *sym,
 	  ia1 = buildPntrArrRefExp(ia1,exprLstExp);
   } else {
      for (int i = 0; i < index.size(); i++) {
-/*
-	  if (is_fortran_)
-       t = index.size() - i - 1;
- 	  else
-       t = i;
-*/
 
-     //  std::string y =
-    //          isSgNode(
-    //                  static_cast<omega::CG_roseRepr *>(index[i])->GetExpression())->unparseToString();
         ia1 = buildPntrArrRefExp(ia1,
                              static_cast<omega::CG_roseRepr *>(index[i])->GetExpression());
     
@@ -1105,7 +1038,6 @@ IR_ArrayRef *IR_roseCode::CreateArrayRef(const IR_ArraySymbol *sym,
   }
   
   SgPntrArrRefExp *ia = isSgPntrArrRefExp(ia1);
-  //std::string z = isSgNode(ia)->unparseToString();
   
   return new IR_roseArrayRef(this, ia, -1);
   
@@ -1188,14 +1120,6 @@ std::vector<IR_ScalarRef *> IR_roseCode::FindScalarRef(
       static_cast<const omega::CG_roseRepr *>(repr)->GetExpression();
     if (isSgVarRefExp(op)
         && (!isSgArrayType(isSgVarRefExp(op)->get_type()))) {
-      /*    if ((isSgAssignOp(isSgNode(op)->get_parent()))
-            && ((isSgAssignOp(isSgNode(op)->get_parent())->get_lhs_operand())
-            == op))
-            scalars.push_back(
-            new IR_roseScalarRef(this,
-            isSgAssignOp(isSgNode(op)->get_parent()), -1));
-            else
-      */
       if (SgBinaryOp* op_ = isSgBinaryOp(
             isSgVarRefExp(op)->get_parent())) {
         if (SgCompoundAssignOp *op__ = isSgCompoundAssignOp(op_)) {
@@ -1359,30 +1283,6 @@ std::vector<IR_ArrayRef *> IR_roseCode::FindArrayRef(
           
         }
       }
-      /* base = isSgVarRefExp(op);
-         SgVariableSymbol *arrSymbol = (SgVariableSymbol*)(base->get_symbol());
-         SgArrayType *arrType = isSgArrayType(arrSymbol->get_type()); 
-         
-         SgExprListExp* dimList = arrType->get_dim_info();
-         
-         if(dimList != NULL){  
-         SgExpressionPtrList::iterator it = dimList->get_expressions().begin();             
-         SgExpression *expr;
-         
-         
-         for (int i = 0; it != dimList->get_expressions().end(); it++, i++)
-         {
-         expr = *it;         
-         
-         omega::CG_roseRepr *r = new omega::CG_roseRepr(expr);
-         std::vector<IR_ArrayRef *> a = FindArrayRef(r);
-         delete r;
-         std::copy(a.begin(), a.end(), back_inserter(arrays));
-         }
-         
-         }
-         arrays.push_back(ref);
-      */
     } else if (isSgAssignOp(op)) {
       omega::CG_roseRepr *r1 = new omega::CG_roseRepr(
         isSgAssignOp(op)->get_lhs_operand());
@@ -1416,54 +1316,6 @@ std::vector<IR_ArrayRef *> IR_roseCode::FindArrayRef(
     
   }
   return arrays;
-  
-  /* std::string x;
-     SgStatement* stmt = isSgStatement(tnl);
-     SGExprStatement* expr_statement = isSgExprStatement(stmt);  
-     SgExpression* exp= NULL;
-     if(expr_statement == NULL){
-     if(! (SgExpression* exp = isSgExpression(tnl))
-     throw ir_error("FindArrayRef: Not a stmt nor an expression!!");
-     
-     if( expr_statement != NULL){  
-     for(int i=0; i < tnl->get_numberOfTraversalSuccessors(); i++){   
-     
-     SgNode* tn = isSgStatement(tnl);
-     SgStatement* stmt = isSgStatement(tn);
-     if(stmt != NULL){
-     SgExprStatement* expr_statement = isSgExprStatement(tn);           
-     if(expr_statement != NULL)
-     x = isSgNode(expr_statement)->unparseToString();   
-     exp = expr_statement->get_expression();
-     
-     }     
-     else{
-     
-     exp = isSgExpression(tn);
-     } 
-     if(exp != NULL){
-     x = isSgNode(exp)->unparseToString();
-     
-     if(SgPntrArrRefExp* arrRef = isSgPntrArrRefExp(exp) ){
-     if(arrRef == NULL)
-     throw ir_error("something wrong");   
-     IR_roseArrayRef *ref = new IR_roseArrayRef(this, arrRef);
-     arrays.push_back(ref);
-     }
-     
-     omega::CG_outputRepr *r = new omega::CG_roseRepr(isSgNode(exp->get_rhs_operand()));
-     std::vector<IR_ArrayRef *> a = FindArrayRef(r);
-     delete r;
-     std::copy(a.begin(), a.end(), back_inserter(arrays));
-     
-     omega::CG_outputRepr *r1 = new omega::CG_roseRepr(isSgNode(exp->get_lhs_operand()));
-     std::vector<IR_ArrayRef *> a1 = FindArrayRef(r1);
-     delete r1;
-     std::copy(a1.begin(), a1.end(), back_inserter(arrays));
-     
-     }
-     }*/
-  
 }
 
 std::vector<IR_Control *> IR_roseCode::FindOneLevelControlStructure(
@@ -1536,52 +1388,6 @@ std::vector<IR_Control *> IR_roseCode::FindOneLevelControlStructure(
   
 }
 
-/*std::vector<IR_Control *> IR_roseCode::FindOneLevelControlStructure(const IR_Block *block) const {
-  
-  std::vector<IR_Control *> controls;
-  int i;
-  int j;
-  SgNode* tnl_ = ((static_cast<IR_roseBlock *>(const_cast<IR_Block *>(block)))->tnl_);   
-  
-  
-  if(isSgForStatement(tnl_))
-  controls.push_back(new IR_roseLoop(this,tnl_));
-  
-  else if(isSgBasicBlock(tnl_)){
-  
-  SgStatementPtrList& stmts = isSgBasicBlock(tnl_)->get_statements();
-  
-  for(i =0; i < stmts.size(); i++){
-  if(isSgNode(stmts[i]) == ((static_cast<IR_roseBlock *>(const_cast<IR_Block *>(block)))->start_))          
-  break; 
-  }
-  
-  
-  SgNode* start= NULL;
-  SgNode* prev= NULL;  
-  for(; i < stmts.size(); i++){
-  if ( isSgForStatement(stmts[i]) || isSgFortranDo(stmts[i])){
-  if(start != NULL){   
-  controls.push_back(new IR_roseBlock(this, (static_cast<IR_roseBlock *>(const_cast<IR_Block *>(block)))->tnl_ , start, prev)); 
-  start = NULL;
-  }   
-  controls.push_back(new IR_roseLoop(this, isSgNode(stmts[i])));
-  } 
-  else if( start == NULL )   
-  start = isSgNode(stmts[i]);
-  
-  prev = isSgNode(stmts[i]);
-  }   
-  
-  if((start != NULL) && (start != isSgNode(stmts[0])))
-  controls.push_back(new IR_roseBlock(this, (static_cast<IR_roseBlock *>(const_cast<IR_Block *>(block)))->tnl_, start, prev));
-  }   
-  
-  return controls;
-  
-  }
-  
-*/
 IR_Block *IR_roseCode::MergeNeighboringControlStructures(
   const std::vector<IR_Control *> &controls) const {
   if (controls.size() == 0)
@@ -1781,61 +1587,6 @@ void IR_roseCode::ReplaceExpression(IR_Ref *old, omega::CG_outputRepr *repr) {
   delete old;
 }
 
-/*std::pair<std::vector<DependenceVector>, std::vector<DependenceVector> > IR_roseCode::FindScalarDeps(
-  const omega::CG_outputRepr *repr1, const omega::CG_outputRepr *repr2,
-  std::vector<std::string> index, int i, int j) {
-  
-  std::vector<DependenceVector> dvs1;
-  std::vector<DependenceVector> dvs2;
-  SgNode *tnl_1 = static_cast<const omega::CG_roseRepr *>(repr1)->GetCode();
-  SgNode *tnl_2 = static_cast<const omega::CG_roseRepr *>(repr2)->GetCode();
-  SgStatementPtrList* list_1 =
-  static_cast<const omega::CG_roseRepr *>(repr1)->GetList();
-  SgStatementPtrList output_list_1;
-  
-  std::map<SgVarRefExp*, IR_ScalarRef*> read_scalars_1;
-  std::map<SgVarRefExp*, IR_ScalarRef*> write_scalars_1;
-  std::set<std::string> indices;
-  //std::set<VirtualCFG::CFGNode> reaching_defs_1;
-  std::set<std::string> def_vars_1;
-  
-  populateLists(tnl_1, list_1, output_list_1);
-  populateScalars(repr1, read_scalars_1, write_scalars_1, indices, index);
-  //def_vars_1);
-  //findDefinitions(output_list_1, reaching_defs_1, write_scalars_1);
-  //def_vars_1);
-  if (repr1 == repr2)
-  checkSelfDependency(output_list_1, dvs1, read_scalars_1,
-  write_scalars_1, index, i, j);
-  else {
-  SgStatementPtrList* list_2 =
-  static_cast<const omega::CG_roseRepr *>(repr2)->GetList();
-  SgStatementPtrList output_list_2;
-  
-  std::map<SgVarRefExp*, IR_ScalarRef*> read_scalars_2;
-  std::map<SgVarRefExp*, IR_ScalarRef*> write_scalars_2;
-  //std::set<VirtualCFG::CFGNode> reaching_defs_2;
-  std::set<std::string> def_vars_2;
-  
-  populateLists(tnl_2, list_2, output_list_2);
-  populateScalars(repr2, read_scalars_2, write_scalars_2, indices, index);
-  //def_vars_2);
-  
-  checkDependency(output_list_2, dvs1, read_scalars_2, write_scalars_1,
-  index, i, j);
-  checkDependency(output_list_1, dvs1, read_scalars_1, write_scalars_2,
-  index, i, j);
-  checkWriteDependency(output_list_2, dvs1, write_scalars_2,
-  write_scalars_1, index, i, j);
-  checkWriteDependency(output_list_1, dvs1, write_scalars_1,
-  write_scalars_2, index, i, j);
-  }
-  
-  return std::make_pair(dvs1, dvs2);
-  //populateLists(tnl_2, list_2, list2);
-  
-  }
-*/
 IR_OPERATION_TYPE IR_roseCode::QueryExpOperation(
   const omega::CG_outputRepr *repr) const {
   SgExpression* op =
@@ -1870,299 +1621,7 @@ IR_OPERATION_TYPE IR_roseCode::QueryExpOperation(
   else
     return IR_OP_UNKNOWN;
 }
-/*void IR_roseCode::populateLists(SgNode* tnl_1, SgStatementPtrList* list_1,
-  SgStatementPtrList& output_list_1) {
-  if ((tnl_1 == NULL) && (list_1 != NULL)) {
-  output_list_1 = *list_1;
-  } else if (tnl_1 != NULL) {
-  
-  if (isSgForStatement(tnl_1)) {
-  SgStatement* check = isSgForStatement(tnl_1)->get_loop_body();
-  if (isSgBasicBlock(check)) {
-  output_list_1 = isSgBasicBlock(check)->get_statements();
-  
-  } else
-  output_list_1.push_back(check);
-  
-  } else if (isSgBasicBlock(tnl_1))
-  output_list_1 = isSgBasicBlock(tnl_1)->get_statements();
-  else if (isSgExprStatement(tnl_1))
-  output_list_1.push_back(isSgExprStatement(tnl_1));
-  else
-  //if (isSgIfStmt(tnl_1)) {
-  
-  throw ir_error(
-  "Statement type not handled, (probably IF statement)!!");
-  
-  }
-  
-  }
-  
-  void IR_roseCode::populateScalars(const omega::CG_outputRepr *repr1,
-  std::map<SgVarRefExp*, IR_ScalarRef*> &read_scalars_1,
-  std::map<SgVarRefExp*, IR_ScalarRef*> &write_scalars_1,
-  std::set<std::string> &indices, std::vector<std::string> &index) {
-  
-  //std::set<std::string> &def_vars) {
-  std::vector<IR_ScalarRef *> scalars = FindScalarRef(repr1);
-  
-  for (int k = 0; k < index.size(); k++)
-  indices.insert(index[k]);
-  
-  for (int k = 0; k < scalars.size(); k++)
-  if (indices.find(scalars[k]->name()) == indices.end()) {
-  if (scalars[k]->is_write()) {
-  write_scalars_1.insert(
-  std::pair<SgVarRefExp*, IR_ScalarRef*>(
-  (isSgVarRefExp(
-  static_cast<const omega::CG_roseRepr *>(scalars[k]->convert())->GetExpression())),
-  scalars[k]));
-  
-  } else
-  
-  read_scalars_1.insert(
-  std::pair<SgVarRefExp*, IR_ScalarRef*>(
-  (isSgVarRefExp(
-  static_cast<const omega::CG_roseRepr *>(scalars[k]->convert())->GetExpression())),
-  scalars[k]));
-  }
-  
-  }
-  
-  
-  void IR_roseCode::checkWriteDependency(SgStatementPtrList &output_list_1,
-  std::vector<DependenceVector> &dvs1,
-  std::map<SgVarRefExp*, IR_ScalarRef*> &read_scalars_1,
-  std::map<SgVarRefExp*, IR_ScalarRef*> &write_scalars_1,
-  std::vector<std::string> &index, int i, int j) {
-  
-  for (std::map<SgVarRefExp*, IR_ScalarRef*>::iterator it =
-  read_scalars_1.begin(); it != read_scalars_1.end(); it++) {
-  SgVarRefExp* var__ = it->first;
-  
-  ssa_unfiltered_cfg::SSA_UnfilteredCfg::NodeReachingDefTable to_compare =
-  main_ssa->getReachingDefsBefore(isSgNode(var__));
-  
-  for (ssa_unfiltered_cfg::SSA_UnfilteredCfg::NodeReachingDefTable::iterator it4 =
-  to_compare.begin(); it4 != to_compare.end(); it4++) {
-  ssa_unfiltered_cfg::SSA_UnfilteredCfg::VarName var_ = it4->first;
-  for (int j = 0; j < var_.size(); j++) {
-  int found = 0;
-  if (var_[j] == var__->get_symbol()->get_declaration()) {
-  
-  ssa_unfiltered_cfg::ReachingDef::ReachingDefPtr to_compare_2 =
-  it4->second;
-  
-  if (to_compare_2->isPhiFunction()) {
-  std::set<VirtualCFG::CFGNode> to_compare_set =
-  to_compare_2->getActualDefinitions();
-  for (std::set<VirtualCFG::CFGNode>::iterator cfg_it =
-  to_compare_set.begin();
-  cfg_it != to_compare_set.end(); cfg_it++) {
-  
-  if (isSgAssignOp(cfg_it->getNode())
-  || isSgCompoundAssignOp(cfg_it->getNode()))
-  if (SgVarRefExp* variable =
-  isSgVarRefExp(
-  isSgBinaryOp(cfg_it->getNode())->get_lhs_operand())) {
-  
-  if (write_scalars_1.find(variable)
-  != write_scalars_1.end()) {
-  
-  
-  //end debug
-  found = 1;
-  DependenceVector dv1;
-  dv1.sym = it->second->symbol();
-  dv1.is_scalar_dependence = true;
-  
-  int max = (j > i) ? j : i;
-  int start = index.size() - max;
-  
-  //1.lbounds.push_back(0);
-  //1.ubounds.push_back(0);
-  //dv2.sym =
-  //        read_scalars_2.find(*di)->second->symbol();
-  for (int k = 0; k < index.size(); k++) {
-  if (k >= max) {
-  dv1.lbounds.push_back(
-  negInfinity);
-  dv1.ubounds.push_back(-1);
-  } else {
-  dv1.lbounds.push_back(0);
-  dv1.ubounds.push_back(0);
-  
-  }
-  
-  }
-  dvs1.push_back(dv1);
-  break;
-  }
-  }
-  }
-  
-  }
-  
-  }
-  if (found == 1)
-  break;
-  }
-  }
-  }
-  }
-  void IR_roseCode::checkDependency(SgStatementPtrList &output_list_1,
-  std::vector<DependenceVector> &dvs1,
-  std::map<SgVarRefExp*, IR_ScalarRef*> &read_scalars_1,
-  std::map<SgVarRefExp*, IR_ScalarRef*> &write_scalars_1,
-  std::vector<std::string> &index, int i, int j) {
-  
-  for (SgStatementPtrList::iterator it2 = output_list_1.begin();
-  it2 != output_list_1.end(); it2++) {
-  
-  std::set<SgVarRefExp*> vars_1 = main_ssa->getUsesAtNode(
-  isSgNode(isSgExprStatement(*it2)->get_expression()));
-  
-  std::set<SgVarRefExp*>::iterator di;
-  
-  for (di = vars_1.begin(); di != vars_1.end(); di++) {
-  int found = 0;
-  if (read_scalars_1.find(*di) != read_scalars_1.end()) {
-  
-  ssa_unfiltered_cfg::ReachingDef::ReachingDefPtr to_compare =
-  main_ssa->getDefinitionForUse(*di);
-  if (to_compare->isPhiFunction()) {
-  
-  std::set<VirtualCFG::CFGNode> to_compare_set =
-  to_compare->getActualDefinitions();
-  
-  for (std::set<VirtualCFG::CFGNode>::iterator cfg_it =
-  to_compare_set.begin();
-  cfg_it != to_compare_set.end(); cfg_it++) {
-  
-  
-  if (SgAssignOp* definition = isSgAssignOp(
-  cfg_it->getNode()))
-  if (SgVarRefExp* variable = isSgVarRefExp(
-  definition->get_lhs_operand())) {
-  
-  if (write_scalars_1.find(variable)
-  != write_scalars_1.end()) {
-  
-  found = 1;
-  DependenceVector dv1;
-  //DependenceVector dv2;
-  dv1.sym =
-  read_scalars_1.find(*di)->second->symbol();
-  dv1.is_scalar_dependence = true;
-  
-  int max = (j > i) ? j : i;
-  int start = index.size() - max;
-  
-  //1.lbounds.push_back(0);
-  //1.ubounds.push_back(0);
-  //dv2.sym =
-  //        read_scalars_2.find(*di)->second->symbol();
-  for (int k = 0; k < index.size(); k++) {
-  if (k >= max) {
-  dv1.lbounds.push_back(negInfinity);
-  dv1.ubounds.push_back(-1);
-  } else {
-  dv1.lbounds.push_back(0);
-  dv1.ubounds.push_back(0);
-  
-  }
-  
-  }
-  dvs1.push_back(dv1);
-  break;
-  }
-  }
-  }
-  }
-  if (found == 1)
-  break;
-  }
-  }
-  }
-  
-  }
-  
-  void IR_roseCode::checkSelfDependency(SgStatementPtrList &output_list_1,
-  std::vector<DependenceVector> &dvs1,
-  std::map<SgVarRefExp*, IR_ScalarRef*> &read_scalars_1,
-  std::map<SgVarRefExp*, IR_ScalarRef*> &write_scalars_1,
-  std::vector<std::string> &index, int i, int j) {
-  
-  for (SgStatementPtrList::iterator it2 = output_list_1.begin();
-  it2 != output_list_1.end(); it2++) {
-  
-  std::set<SgVarRefExp*> vars_1 = main_ssa->getUsesAtNode(
-  isSgNode(isSgExprStatement(*it2)->get_expression()));
-  
-  std::set<SgVarRefExp*>::iterator di;
-  
-  for (di = vars_1.begin(); di != vars_1.end(); di++) {
-  
-  if (read_scalars_1.find(*di) != read_scalars_1.end()) {
-  
-  ssa_unfiltered_cfg::ReachingDef::ReachingDefPtr to_compare =
-  main_ssa->getDefinitionForUse(*di);
-  if (to_compare->isPhiFunction()) {
-  
-  std::set<VirtualCFG::CFGNode> to_compare_set =
-  to_compare->getActualDefinitions();
-  int found = 0;
-  for (std::set<VirtualCFG::CFGNode>::iterator cfg_it =
-  to_compare_set.begin();
-  cfg_it != to_compare_set.end(); cfg_it++) {
-  
-  if (isSgAssignOp(cfg_it->getNode())
-  || isSgCompoundAssignOp(cfg_it->getNode()))
-  if (SgVarRefExp* variable =
-  isSgVarRefExp(
-  isSgBinaryOp(cfg_it->getNode())->get_lhs_operand())) {
-  
-  if (write_scalars_1.find(variable)
-  == write_scalars_1.end()) {
-  
-  
-  found = 1;
-  DependenceVector dv1;
-  dv1.sym =
-  read_scalars_1.find(*di)->second->symbol();
-  dv1.is_scalar_dependence = true;
-  
-  int max = (j > i) ? j : i;
-  int start = index.size() - max;
-  
-  //1.lbounds.push_back(0);
-  //1.ubounds.push_back(0);
-  //dv2.sym =
-  //        read_scalars_2.find(*di)->second->symbol();
-  for (int k = 0; k < index.size(); k++) {
-  if (k >= max) {
-  dv1.lbounds.push_back(negInfinity);
-  dv1.ubounds.push_back(-1);
-  } else {
-  dv1.lbounds.push_back(0);
-  dv1.ubounds.push_back(0);
-  
-  }
-  
-  }
-  dvs1.push_back(dv1);
-  break;
-  }
-  }
-  }
-  }
-  
-  }
-  }
-  }
-  
-  }
-*/
+
 IR_CONDITION_TYPE IR_roseCode::QueryBooleanExpOperation(
   const omega::CG_outputRepr *repr) const {
   SgExpression* op2 =

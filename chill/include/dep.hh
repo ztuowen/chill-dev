@@ -14,9 +14,9 @@ typedef std::vector<DependenceVector> DependenceList;
 struct DependenceVector {
   DependenceType type;
   IR_Symbol *sym;
-  
-  bool is_reduction; // used to identify a class of flow dependence
-                     // that can be broken
+ 
+  bool is_reduction; //!< used to identify a class of flow dependence
+                     //!< that can be broken
   std::vector<omega::coef_t> lbounds;
   std::vector<omega::coef_t> ubounds;
   
@@ -29,7 +29,6 @@ struct DependenceVector {
     quasi = false;
     is_scalar_dependence = false;
   }
-  // DependenceVector(int size);
   DependenceVector(const DependenceVector &that);
   ~DependenceVector() {delete sym;}
   DependenceVector &operator=(const DependenceVector &that);
@@ -40,7 +39,7 @@ struct DependenceVector {
   bool has_been_carried_at(int dim) const;
   bool has_been_carried_before(int dim) const;
   
-  // the following functions will be cleaned up or removed later
+  // TODO the following functions will be cleaned up or removed later
   bool isZero() const;
   bool isPositive() const;
   bool isNegative() const;
@@ -55,7 +54,6 @@ struct DependenceVector {
   std::vector<DependenceVector> normalize() const;
   std::vector<DependenceVector> permute(const std::vector<int> &pi) const;
   DependenceVector reverse() const;
-  // std::vector<DependenceVector> matrix(const std::vector<std::vector<int> > &M) const;
   DependenceType getType() const;
   friend std::ostream& operator<<(std::ostream &os, const DependenceVector &d);
 };
@@ -72,10 +70,8 @@ public:
   DependenceGraph() { num_dim_ = 0; }
   ~DependenceGraph() {}
   int num_dim() const { return num_dim_; }
-//   DependenceGraph permute(const std::vector<int> &pi) const;
   DependenceGraph permute(const std::vector<int> &pi,
                           const std::set<int> &active = std::set<int>()) const;
-  // DependenceGraph matrix(const std::vector<std::vector<int> > &M) const;
   DependenceGraph subspace(int dim) const;
   bool isPositive() const;
   bool hasPositive(int dim) const;

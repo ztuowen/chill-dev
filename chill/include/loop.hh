@@ -17,17 +17,21 @@ enum TilingMethodType { StridedTile, CountedTile };
 enum LoopLevelType { LoopLevelOriginal, LoopLevelTile, LoopLevelUnknown };
 
 
-// Describes properties of each loop level of a statement. "payload"
-// for LoopLevelOriginal means iteration space dimension, for
-// LoopLevelTile means tiled loop level.  Special value -1 for
-// LoopLevelTile means purely derived loop. For dependence dimension
-// payloads, the values must be in an increasing order.
-// "parallel_level" will be used by code generation to support
-// multi-level parallelization (default 0 means sequential loop under
-// the current parallelization level).
+//! Describes properties of each loop level of a statement. 
 struct LoopLevel {
   LoopLevelType type;
+/*! 
+ * For LoopLevelOriginal means iteration space dimension 
+ * For LoopLevelTile means tiled loop level. Special value -1 for
+ * LoopLevelTile means purely derived loop. For dependence dimension
+ * payloads, the values must be in an increasing order.
+ */
   int payload;  
+/*!
+ * Used by code generation to support
+ * multi-level parallelization (default 0 means sequential loop under
+ * the current parallelization level).
+ */
   int parallel_level;
 };
 
@@ -107,14 +111,16 @@ public:
   
   std::vector<std::set <int > > sort_by_same_loops(std::set<int > active, int level);
   //
-  // legacy unimodular transformations for perfectly nested loops
-  // e.g. M*(i,j)^T = (i',j')^T or M*(i,j,1)^T = (i',j')^T
-  //
+  //! legacy unimodular transformations for perfectly nested loops
+  /*!
+   * e.g. \f$M*(i,j)^T = (i',j')^T or M*(i,j,1)^T = (i',j')^T\f$
+   */
   bool nonsingular(const std::vector<std::vector<int> > &M);
   
-  //
-  // high-level loop transformations
-  //
+  /*!
+   * \defgroup hltrans High-level loop transformations
+   * @{
+   */
   void permute(const std::set<int> &active, const std::vector<int> &pi);
   void permute(int stmt_num, int level, const std::vector<int> &pi);
   void permute(const std::vector<int> &pi);
@@ -129,8 +135,6 @@ public:
   bool datacopy_privatized(int stmt_num, int level, const std::string &array_name, const std::vector<int> &privatized_levels, bool allow_extra_read = false, int fastest_changing_dimension = -1, int padding_stride = 1, int padding_alignment = 1, int memory_type = 0);
   bool datacopy_privatized(const std::vector<std::pair<int, std::vector<int> > > &array_ref_nums, int level, const std::vector<int> &privatized_levels, bool allow_extra_read = false, int fastest_changing_dimension = -1, int padding_stride = 1, int padding_alignment = 1, int memory_type = 0);
   bool datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_ArrayRef *> > > &stmt_refs, int level, const std::vector<int> &privatized_levels, bool allow_extra_read, int fastest_changing_dimension, int padding_stride, int padding_alignment, int memory_type = 0);
-  //std::set<int> scalar_replacement_inner(int stmt_num);
-  
   
   
   Graph<std::set<int>, bool> construct_induced_graph_at_level(std::vector<std::set<int> > s, DependenceGraph dep, int dep_dim);
@@ -142,26 +146,35 @@ public:
   void scale(const std::set<int> &stmt_nums, int level, int scale_amount);
   void reverse(const std::set<int> &stmt_nums, int level);
   void peel(int stmt_num, int level, int peel_amount = 1);
-  //
-  // more fancy loop transformations
-  //
+  /*!
+   * \defgroup hlfancy fancy loop transformations
+   * @{
+   */
   void modular_shift(int stmt_num, int level, int shift_amount) {}
   void diagonal_map(int stmt_num, const std::pair<int, int> &levels, int offset) {}
   void modular_partition(int stmt_num, int level, int stride) {}
+  /*! @} */
   
-  //
-  // derived loop transformations
-  //
+  /*! 
+   * \defgroup hlderived derived loop transformations
+   * @{
+   */
+
   void shift_to(int stmt_num, int level, int absolute_position);
   std::set<int> unroll_extra(int stmt_num, int level, int unroll_amount, int cleanup_split_level = 0);
   bool is_dependence_valid_based_on_lex_order(int i, int j,
 			const DependenceVector &dv, bool before);
-  //
-  // other public operations
-  //
+  /*! @} */
+
+  /*! 
+   * \defgroup hlother other public operations
+   * @{
+   */
   void pragma(int stmt_num, int level, const std::string &pragmaText);
   void prefetch(int stmt_num, int level, const std::string &arrName, int hint);
-  //void prefetch(int stmt_num, int level, const std::string &arrName, const std::string &indexName, int offset, int hint);
+  /*! @} */
+
+  /*! @} */
 };
 
 

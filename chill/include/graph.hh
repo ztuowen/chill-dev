@@ -62,7 +62,11 @@ struct Graph {
   bool hasEdge(int v1, int v2) const;
   std::vector<EdgeType> getEdge(int v1, int v2) const;
   
+  //! Topological sort
+  /*! This topological sort does handle SCC in graph. */
   std::vector<std::set<int> > topoSort() const;
+  //! Topological sort
+  /*! This topological sort does not handle SCC in graph. */
   std::vector<std::set<int> > packed_topoSort() const;
 
   void dump() {
@@ -76,7 +80,6 @@ template<typename VertexType, typename EdgeType>
 std::ostream& operator<<(std::ostream &os, const Graph<VertexType, EdgeType> &g) {
   for (int i = 0; i < g.vertex.size(); i++)
     for (typename Graph<VertexType,EdgeType>::EdgeList::const_iterator j = g.vertex[i].second.begin(); j != g.vertex[i].second.end(); j++) {
-	//      os << i+1 << "->" << j->first+1 << ":";
 	os << "s" << i << "->" << "s" << j->first << ":";
       for (typename std::vector<EdgeType>::const_iterator k = j->second.begin(); k != j->second.end(); k++)
         os << " " << *k;
@@ -175,7 +178,6 @@ std::vector<EdgeType> Graph<VertexType,EdgeType>::getEdge(int v1, int v2) const 
   return vertex[v1].second.find(v2)->second;
 }
 
-// This topological sort does handle SCC in graph.
 template<typename VertexType, typename EdgeType>
 std::vector<std::set<int> > Graph<VertexType, EdgeType>::topoSort() const {
   const int n = vertex.size();
@@ -250,7 +252,6 @@ std::vector<std::set<int> > Graph<VertexType, EdgeType>::topoSort() const {
   return result;
 }
 
-// This topological sort does not handle SCC in graph.
 template<typename VertexType, typename EdgeType>
 std::vector<std::set<int> > Graph<VertexType, EdgeType>::packed_topoSort() const {
   const int n = vertex.size();

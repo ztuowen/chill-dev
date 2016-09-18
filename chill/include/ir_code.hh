@@ -46,8 +46,8 @@ enum IR_ARRAY_LAYOUT_TYPE {IR_ARRAY_LAYOUT_ROW_MAJOR,
 class IR_Code;
 
 
-// Base abstract class for scalar and array symbols.  This is a place
-// holder for related declaration in IR code.
+//! Base abstract class for scalar and array symbols.
+/*! This is a place holder for related declaration in IR code.*/
 struct IR_Symbol {
   const IR_Code *ir_;
   
@@ -75,8 +75,8 @@ struct IR_ArraySymbol: public IR_Symbol {
 };
 
 
-// Base abstract class for scalar and array references.  This is a
-// place holder for related code in IR code.
+//! Base abstract class for scalar and array references.  
+/*! This is a place holder for related code in IR code. */
 struct IR_Ref {
   const IR_Code *ir_;
   
@@ -87,7 +87,8 @@ struct IR_Ref {
   virtual bool operator==(const IR_Ref &that) const = 0;
   virtual bool operator!=(const IR_Ref &that) const {return !(*this == that);}
   virtual omega::CG_outputRepr *convert() = 0;
-  virtual IR_Ref *clone() const = 0;  /* shallow copy */
+  //! shallow copy
+  virtual IR_Ref *clone() const = 0;
 };
 
 
@@ -155,20 +156,23 @@ struct IR_ArrayRef: public IR_Ref {
 
 struct IR_Block;
 
-// Base abstract class for code structures.  This is a place holder
-// for the actual structure in the IR code.  However, in cases that
-// original source code may be transformed during loop initialization
-// such as converting a while loop to a for loop or reconstructing the
-// loop from low level IR code, the helper loop class (NOT
-// IMPLEMENTED) must contain the transformed code that needs to be
-// freed when out of service.
+//! Base abstract class for code structures.  
+/*!  
+ * This is a place holder for the actual structure in the IR code.  
+ * However, in cases that original source code may be transformed during 
+ * loop initialization such as converting a while loop to a for loop or 
+ * reconstructing the loop from low level IR code, the helper loop class (NOT
+ * IMPLEMENTED) must contain the transformed code that needs to be 
+ * freed when out of service. 
+ */
 struct IR_Control {
   const IR_Code *ir_;
 
   virtual ~IR_Control() {/* ir_ is not the responsibility of this object */}
   virtual IR_CONTROL_TYPE type() const = 0;
   virtual IR_Block *convert() = 0;
-  virtual IR_Control *clone() const = 0;  /* shallow copy */
+  //! shallow copy
+  virtual IR_Control *clone() const = 0;
 };
 
 
@@ -208,7 +212,7 @@ struct IR_While: public IR_Control {
 };
 
 
-// Abstract class for compiler IR.
+//! Abstract class for compiler IR.
 class IR_Code {
 protected:
   omega::CG_outputBuilder *ocg_;
@@ -217,10 +221,14 @@ protected:
 
 public:
   IR_Code() {ocg_ = NULL; init_code_ = cleanup_code_ = NULL;}
-  virtual ~IR_Code() { delete ocg_; delete init_code_; delete cleanup_code_; } /* the content of init and cleanup code have already been released in derived classes */
+  virtual ~IR_Code() { delete ocg_; delete init_code_; delete cleanup_code_; } 
+  /* the content of init and cleanup code have already been released in derived classes */
   
-  // memory_type is for differentiating the location of where the new memory is allocated.
-  // this is useful for processors with heterogeneous memory hierarchy.
+  /*! 
+   * \param memory_type is for differentiating the location of 
+   *    where the new memory is allocated. this is useful for 
+   *    processors with heterogeneous memory hierarchy.
+   */
   virtual IR_ScalarSymbol *CreateScalarSymbol(const IR_Symbol *sym, int memory_type) = 0;
   virtual IR_ArraySymbol *CreateArraySymbol(const IR_Symbol *sym, std::vector<omega::CG_outputRepr *> &size, int memory_type) = 0;
   
@@ -228,19 +236,28 @@ public:
   virtual IR_ArrayRef *CreateArrayRef(const IR_ArraySymbol *sym, std::vector<omega::CG_outputRepr *> &index) = 0;
   virtual int ArrayIndexStartAt() {return 0;}
 
-  // Array references should be returned in their accessing order.
-  // e.g. s1: A[i] = A[i-1]
-  //      s2: B[C[i]] = D[i] + E[i]
-  // return A[i-1], A[i], D[i], E[i], C[i], B[C[i]] in this order.
+  /*! 
+   * Array references should be returned in their accessing order.
+   *
+   * ~~~
+   * e.g. s1: A[i] = A[i-1]
+   *      s2: B[C[i]] = D[i] + E[i]
+   * return A[i-1], A[i], D[i], E[i], C[i], B[C[i]] in this order.
+   * ~~~
+   */
   virtual std::vector<IR_ArrayRef *> FindArrayRef(const omega::CG_outputRepr *repr) const = 0;
   virtual std::vector<IR_ScalarRef *> FindScalarRef(const omega::CG_outputRepr *repr) const = 0;
 
-  // If there is no sub structure interesting inside the block, return empty,
-  // so we know when to stop looking inside.
+  /*!
+   * If there is no sub structure interesting inside the block, return empty,
+   * so we know when to stop looking inside.
+   */
   virtual std::vector<IR_Control *> FindOneLevelControlStructure(const IR_Block *block) const = 0;
 
-  // All controls must be in the same block, at the same level and in
-  // contiguous lexical order as appeared in parameter vector.
+  /*! 
+   * All controls must be in the same block, at the same level and in
+   * contiguous lexical order as appeared in parameter vector.
+   */
   virtual IR_Block *MergeNeighboringControlStructures(const std::vector<IR_Control *> &controls) const = 0;
   
   virtual IR_Block *GetCode() const = 0;
@@ -252,12 +269,9 @@ public:
   virtual std::vector<omega::CG_outputRepr *> QueryExpOperand(const omega::CG_outputRepr *repr) const = 0;
   virtual IR_Ref *Repr2Ref(const omega::CG_outputRepr *repr) const = 0;
   
-  //---------------------------------------------------------------------------
-  // CC Omega code builder interface here
-  //---------------------------------------------------------------------------
+  //! Codegen Omega code builder interface
   omega::CG_outputBuilder *builder() const {return ocg_;}
 
 };
 
 #endif  
-  

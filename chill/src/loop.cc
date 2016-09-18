@@ -748,17 +748,6 @@ void Loop::pragma(int stmt_num, int level, const std::string &pragmaText) {
 	CG_outputRepr *code = stmt[stmt_num].code;
 	ocg->CreatePragmaAttribute(code, level, pragmaText);
 }
-/*
-void Loop::prefetch(int stmt_num, int level, const std::string &arrName, const std::string &indexName, int offset, int hint) {
-	// check sanity of parameters
-	if(stmt_num < 0)
-		throw std::invalid_argument("invalid statement " + to_string(stmt_num));
-
-	CG_outputBuilder *ocg = ir->builder();
-	CG_outputRepr *code = stmt[stmt_num].code;
-	ocg->CreatePrefetchAttribute(code, level, arrName, indexName, int offset, hint);
-}
-*/
 
 void Loop::prefetch(int stmt_num, int level, const std::string &arrName, int hint) {
 	// check sanity of parameters
