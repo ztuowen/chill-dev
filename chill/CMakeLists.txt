@@ -44,7 +44,7 @@ set(COMMON_FLAGS "-DBUILD_ROSE -DCHILL_BUILD_DATE=\"${build_date}\" -DCHILL_BUIL
 set(CMAKE_CXX_FLAGS "-DPYTHON ${COMMON_FLAGS}")
 
 if (DEFINED OMEGAHOME)
-    link_directories(${OMEGAHOME}/lib/static)
+    link_directories(${OMEGAHOME}/lib)
     set(OMEGA_INC ${OMEGAHOME}/include)
 else()
     set(OMEGA_INC ${PROJECT_SOURCE_DIR}/omegalib/include)

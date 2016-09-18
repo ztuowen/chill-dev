@@ -64,7 +64,7 @@ add_library(omega
     )
 
 install(TARGETS omega
-    ARCHIVE DESTINATION lib/static)
+    ARCHIVE DESTINATION lib)
 
 install(DIRECTORY include
     DESTINATION .)
