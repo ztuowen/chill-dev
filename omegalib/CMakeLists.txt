@@ -10,6 +10,6 @@ endif()
 
 set(OMEGAROOT ${PROJECT_SOURCE_DIR})
 
-add_subdirectory(omega_lib)
-add_subdirectory(code_gen)
-add_subdirectory(omega_calc)
+add_subdirectory(omega)
+add_subdirectory(codegen)
+add_subdirectory(omegacalc)

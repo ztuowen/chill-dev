@@ -10,15 +10,15 @@ ADD_FLEX_BISON_DEPENDENCY(OCScanner OCParser)
 include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}
     include
-    ${OMEGAROOT}/omega_lib/include
-    ${OMEGAROOT}/code_gen/include
+    ${OMEGAROOT}/omega/include
+    ${OMEGAROOT}/codegen/include
     )
 
 string(TIMESTAMP build_date "\\\"%m/%d/%Y\\\"")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_CODEGEN -DOC_VERSION=\"\\\"OC_VERSION\\\"\" -DOC_BUILD_DATE=\"${build_date}\"")
 
-add_executable(omega_calc
+add_executable(omegacalc
     EXCLUDE_FROM_ALL
     src/AST.cc
     src/myflex.cc
@@ -26,9 +26,9 @@ add_executable(omega_calc
     ${BISON_OCParser_OUTPUTS}
     )
 
-add_dependencies(omega_calc omega codegen)
-target_link_libraries(omega_calc omega codegen)
+add_dependencies(omegacalc omega codegen)
+target_link_libraries(omegacalc omega codegen)
 
-install(TARGETS omega_calc
+install(TARGETS omegacalc
         DESTINATION bin
-        COMPONENT omega_calc OPTIONAL)
+        COMPONENT omegacalc OPTIONAL)

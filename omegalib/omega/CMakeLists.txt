@@ -51,7 +51,6 @@ set(FANCY_SRC
     )
 
 include_directories(
-    ${OMEGAROOT}/basic/include
     include
     )
 

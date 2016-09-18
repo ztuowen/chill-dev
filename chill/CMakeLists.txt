@@ -47,7 +47,9 @@ if (DEFINED OMEGAHOME)
     link_directories(${OMEGAHOME}/lib)
     set(OMEGA_INC ${OMEGAHOME}/include)
 else()
-    set(OMEGA_INC ${PROJECT_SOURCE_DIR}/omegalib/include)
+    set(OMEGA_INC 
+        ${PROJECT_SOURCE_DIR}/omegalib/omega/include
+        ${PROJECT_SOURCE_DIR}/omegalib/codegen/include)
 endif()
 
 link_directories(${ROSEHOME}/lib ${BOOSTOME}/lib)
