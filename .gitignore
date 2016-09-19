@@ -1,5 +1,8 @@
 # Cmake build directory
 /build
 
+# CLion config directory
+/.idea
+
 # Vim swap file
 *.swap

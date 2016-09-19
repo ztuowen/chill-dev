@@ -844,6 +844,7 @@ IR_roseCode::IR_roseCode(const char *filename, const char* proc_name) :
   symtab2_ = func->get_definition()->get_symbol_table();
   symtab3_ = func->get_definition()->get_body()->get_symbol_table();
   // Manu:: added is_fortran_ parameter
+  // TODO Substitute it with a better builder
   ocg_ = new omega::CG_roseBuilder(is_fortran_, root, firstScope,
                                    func->get_definition()->get_symbol_table(),
                                    func->get_definition()->get_body()->get_symbol_table(),

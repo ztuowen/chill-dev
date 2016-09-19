@@ -149,7 +149,7 @@ template<class T> void Tuple<T>::join(Tuple<T>& t) {
     assert(alloc_sz >= sz);
     for(int i=0; i<t.sz; i++)
 	data[i+old_sz] = t.data[i];
-    t.clear();
+    t.clear();ation will not fail, it would generate the object file but it won't generate any code for the template class in the object file.
 }
 
 template<class T> void Tuple<T>::clear() { if (sz) delete [] data; data = 0; alloc_sz = 0; sz = 0; }
