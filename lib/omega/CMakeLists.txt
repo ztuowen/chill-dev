@@ -1,3 +1,5 @@
+set(OMEGAROOT ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
+
 set(BASIC_SRC
     src/basic/ConstString.cc
     src/basic/Link.cc

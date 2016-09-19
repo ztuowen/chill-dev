@@ -13,7 +13,7 @@
  *****************************************************************************/
 
 #include <stack>
-#include <code_gen/CG_roseBuilder.h>
+#include "CG_roseBuilder.h"
 #include <string>
 
 struct ir_error: public std::runtime_error {

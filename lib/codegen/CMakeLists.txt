@@ -3,19 +3,13 @@ set(CG_SRC
     src/CG.cc
     src/CG_stringBuilder.cc
     src/CG_utils.cc
-
-    src/rose_attributes.cc
-    src/CG_roseBuilder.cc
-    src/CG_roseRepr.cc
     )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-write-strings")
 
 include_directories(
     include
-    ${OMEGAROOT}/omega/include
-    ${ROSEHOME}/include/rose
-    ${BOOSTHOME}/include
+    ${OMEGAROOT}/include
     )
 
 add_library(codegen

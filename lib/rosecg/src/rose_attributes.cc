@@ -1,4 +1,4 @@
-#include <code_gen/rose_attributes.h>
+#include "rose_attributes.h"
 
 namespace omega {
 
