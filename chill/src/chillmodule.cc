@@ -341,6 +341,7 @@ static PyObject* chill_exit(PyObject* self, PyObject* args) {
 static void add_known(std::string cond_expr) {
   int num_dim = myloop->known.n_set();
   std::vector<std::map<std::string, int> >* cond;
+  // TODO since we are using python, change this!
   cond = parse_relation_vector(cond_expr.c_str());
   
   Relation rel(num_dim);

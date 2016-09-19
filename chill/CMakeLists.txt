@@ -1,4 +1,4 @@
-find_package(PythonLibs REQUIRED)
+find_package(PythonLibs 2.7 REQUIRED)
 find_package(BISON)
 find_package(FLEX)
 
