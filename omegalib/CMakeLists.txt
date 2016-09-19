@@ -12,4 +12,3 @@ set(OMEGAROOT ${PROJECT_SOURCE_DIR})
 
 add_subdirectory(omega)
 add_subdirectory(codegen)
-add_subdirectory(omegacalc)
