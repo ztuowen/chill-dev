@@ -10,13 +10,6 @@ if (NOT DEFINED BOOSTHOME)
 endif()
 
 find_package(PythonLibs 2.7 REQUIRED)
-find_package(BISON)
-find_package(FLEX)
-
-FLEX_TARGET(ExprScanner src/parse_expr.ll ${CMAKE_CURRENT_BINARY_DIR}/parse_expr.yy.cc COMPILE_FLAGS
-    "--header-file=${CMAKE_CURRENT_BINARY_DIR}/parse_expr.ll.hh") # Hack to avoid generating header in root
-BISON_TARGET(ExprParser src/parse_expr.yy ${CMAKE_CURRENT_BINARY_DIR}/parse_expr.tab.cc COMPILE_FLAGS "-t -d")
-ADD_FLEX_BISON_DEPENDENCY(ExprScanner ExprParser)
 
 string(TIMESTAMP build_date "\\\"%m/%d/%Y\\\"")
 
@@ -71,7 +64,6 @@ include_directories(
     ${ROSEHOME}/include
     ${ROSEHOME}/include/rose
     ${BOOSTHOME}/include
-    ${CMAKE_CURRENT_BINARY_DIR}
     ${PYTHON_INCLUDE_DIRS})
 
 add_executable(chill ${CORE_SRC} ${PYTHON_SRC} ${IR_CHILL_SRC})

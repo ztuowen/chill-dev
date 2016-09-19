@@ -16,8 +16,6 @@ add_library(codegen
     ${CG_SRC}
     )
 
-add_dependencies(codegen omega)
-
 install(TARGETS codegen
     ARCHIVE DESTINATION lib)
 install(DIRECTORY include
