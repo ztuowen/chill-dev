@@ -1,7 +1,7 @@
 %{
 // some C++ code
-#include "chill_run_util.hh"
-#include "parse_expr.tab.hh"
+#include "parseRel.hh"
+#include "parseRel.tab.hh"
 %}
 
 %option noyywrap

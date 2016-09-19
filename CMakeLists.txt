@@ -21,7 +21,7 @@ ADD_FLEX_BISON_DEPENDENCY(ExprScanner ExprParser)
 string(TIMESTAMP build_date "\\\"%m/%d/%Y\\\"")
 
 set(CORE_LIBS 
-    m rose rt util omega codegen rosecg dl 
+    m rose rt util omega codegen rosecg dl parseRel
     boost_date_time boost_filesystem boost_program_options
     boost_regex boost_system boost_wave boost_iostreams)
 
@@ -44,10 +44,7 @@ set(IR_CHILL_SRC
 
 set(PYTHON_SRC
     src/chill_run.cc
-    src/chill_run_util.cc
     src/chillmodule.cc
-    ${FLEX_ExprScanner_OUTPUTS}
-    ${BISON_ExprParser_OUTPUTS}
     )
 
 set(COMMON_FLAGS "-DCHILL_BUILD_DATE=\"${build_date}\" -DCHILL_BUILD_VERSION=\"\\\"${CHILL_VERSION}\\\"\"")
@@ -58,8 +55,9 @@ if (DEFINED OMEGAHOME)
     link_directories(${OMEGAHOME}/lib)
     set(OMEGA_INC ${OMEGAHOME}/include)
 else()
-    set(OMEGA_INC 
+    set(OMEGA_INC
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/omega/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/parserel/include
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/codegen/include
         )
 endif()
@@ -78,7 +76,7 @@ include_directories(
 
 add_executable(chill ${CORE_SRC} ${PYTHON_SRC} ${IR_CHILL_SRC})
 target_link_libraries(chill ${CORE_LIBS} ${PYTHON_LIBRARY})
-add_dependencies(chill omega codegen rosecg)
+add_dependencies(chill omega codegen rosecg parseRel)
 
 install(TARGETS chill
         RUNTIME DESTINATION bin)
@@ -86,5 +84,6 @@ install(TARGETS chill
 add_subdirectory(lib/omega)
 add_subdirectory(lib/codegen)
 add_subdirectory(lib/rosecg)
+add_subdirectory(lib/parserel)
 
 add_subdirectory(doc)
