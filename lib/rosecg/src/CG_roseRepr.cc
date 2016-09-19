@@ -11,8 +11,8 @@
    02/01/06 - Chun Chen - created
 *****************************************************************************/
 
-#include "CG_roseRepr.h"
-#include "rose_attributes.h"
+#include "code_gen/CG_roseRepr.h"
+#include "code_gen/rose_attributes.h"
 #include <stdio.h>
 #include <string.h>
 #include <cstring>

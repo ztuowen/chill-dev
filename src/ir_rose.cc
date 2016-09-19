@@ -14,9 +14,9 @@
 #include <string>
 #include "ir_rose.hh"
 #include "ir_rose_utils.hh"
-#include "rose_attributes.h"
-#include "CG_roseRepr.h"
-#include "CG_roseBuilder.h"
+#include "code_gen/rose_attributes.h"
+#include "code_gen/CG_roseRepr.h"
+#include "code_gen/CG_roseBuilder.h"
 
 using namespace SageBuilder;
 using namespace SageInterface;

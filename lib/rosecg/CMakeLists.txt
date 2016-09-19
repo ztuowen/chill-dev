@@ -16,3 +16,9 @@ add_library(rosecg ${CODEGEN_ROSE_SRC})
 
 install(TARGETS rosecg
         DESTINATION lib)
+
+install(TARGETS omega
+    ARCHIVE DESTINATION lib)
+
+install(DIRECTORY include/code_gen
+    DESTINATION include)

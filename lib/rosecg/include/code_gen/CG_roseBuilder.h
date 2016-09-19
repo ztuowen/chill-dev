@@ -2,9 +2,9 @@
 #define CG_roseBuilder_h
 
 #include <basic/Tuple.h>
-#include "rose_attributes.h"
+#include "code_gen/rose_attributes.h"
 #include <code_gen/CG_outputBuilder.h>
-#include "CG_roseRepr.h"
+#include "code_gen/CG_roseRepr.h"
 #include <string>
 
 namespace omega {
