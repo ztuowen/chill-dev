@@ -794,46 +794,7 @@ std::set<int> Loop::split(int stmt_num, int level, const Relation &cond) {
         new_stmt.loop_level = stmt[*i].loop_level;
         
         stmt_nesting_level_.push_back(stmt_nesting_level_[*i]);
-        
-        /*std::pair<std::vector<DependenceVector>,
-          std::vector<DependenceVector> > dv =
-          test_data_dependences(ir, stmt[*i].code, part1,
-          stmt[*i].code, part2, freevar, index,
-          stmt_nesting_level_[*i],
-          stmt_nesting_level_[stmt.size() - 1]);
-          
-          
-          
-          
-          for (int k = 0; k < dv.first.size(); k++)
-          part1_to_part2++;
-          if (part1_to_part2 > 0 && part2_to_part1 > 0)
-          throw loop_error(
-          "loop error: Aborting, split resulted in impossible dependence cycle!");
-          
-          for (int k = 0; k < dv.second.size(); k++)
-          part2_to_part1++;
-          
-          
-          
-          if (part1_to_part2 > 0 && part2_to_part1 > 0)
-          throw loop_error(
-          "loop error: Aborting, split resulted in impossible dependence cycle!");
-          
-          
-          
-          if (part2_to_part1 > 0){
-          temp_place_after = false;
-          assigned = true;
-          
-          }else if (part1_to_part2 > 0){
-          temp_place_after = true;
-          
-          assigned = true;
-          }
-          
-        */
-        
+
         if (place_after)
           assign_const(new_stmt.xform, dim - 1, cur_lex + 1);
         else
@@ -1321,9 +1282,7 @@ void Loop::fuse(const std::set<int> &stmt_nums, int level) {
     s5.push_back(s4);
     
     //Dependence Check for Ordering Constraint
-    //Graph<std::set<int>, bool> dummy = construct_induced_graph_at_level(s5,
-    //      dep, dep_dim);
-    
+
     Graph<std::set<int>, bool> g = construct_induced_graph_at_level(s3, dep,
                                                                     dep_dim);
     
@@ -1532,7 +1491,6 @@ void Loop::distribute(const std::set<int> &stmt_nums, int level) {
     order++;
   }
   // no need to update dependence graph
-  ;
   return;
 }
 

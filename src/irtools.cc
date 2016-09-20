@@ -19,8 +19,6 @@
 
 using namespace omega;
 
-// Build IR tree from the source code.  Block type node can only be
-// leaf, i.e., there is no further structures inside a block allowed.
 std::vector<ir_tree_node *> build_ir_tree(IR_Control *control, ir_tree_node *parent) {
   std::vector<ir_tree_node *> result;
   
@@ -111,9 +109,6 @@ std::vector<ir_tree_node *> build_ir_tree(IR_Control *control, ir_tree_node *par
   return result;
 }
 
-
-// Extract statements from IR tree. Statements returned are ordered in
-// lexical order in the source code.
 std::vector<ir_tree_node *> extract_ir_stmts(const std::vector<ir_tree_node *> &ir_tree) {
   std::vector<ir_tree_node *> result;
   for (int i = 0; i < ir_tree.size(); i++)
@@ -184,14 +179,6 @@ bool is_dependence_valid(ir_tree_node *src_node, ir_tree_node *dst_node,
   
 }
 
-
-
-// Test data dependences between two statements. The first statement
-// in parameter must be lexically before the second statement in
-// parameter.  Returned dependences are all lexicographically
-// positive. The first vector in returned pair is dependences from the
-// first statement to the second statement and the second vector in
-// returned pair is in reverse order.
 std::pair<std::vector<DependenceVector>, std::vector<DependenceVector> > test_data_dependences(
   IR_Code *ir, const CG_outputRepr *repr1, const Relation &IS1,
   const CG_outputRepr *repr2, const Relation &IS2,
@@ -259,21 +246,6 @@ std::pair<std::vector<DependenceVector>, std::vector<DependenceVector> > test_da
     for (int i = 0; i < access2.size(); i++)
       delete access2[i];
   }
-  /*std::pair<std::vector<DependenceVector>,
-    std::vector<DependenceVector> > dv =
-    ir->FindScalarDeps(repr1, repr2, index, i, j);
-    
-    
-    result.first.insert(result.first.end(), dv.first.begin(),
-    dv.first.end());
-    result.second.insert(result.second.end(), dv.second.begin(),
-    dv.second.end());*/
-  /*result.first.insert(result.first.end(), dv.first.begin(),
-    dv.first.end());
-    result.second.insert(result.second.end(), dv.second.begin(),
-    dv.second.end());
-  */
-  
   return result;
 }
 

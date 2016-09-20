@@ -31,8 +31,6 @@ std::vector<SgForStatement *> find_deepest_loops(SgStatementPtrList& tnl) {
   
   std::vector<SgForStatement *> loops;
   
-  
-  
   for(SgStatementPtrList::const_iterator j = tnl.begin(); j != tnl.end(); j++)
   {
     std::vector<SgForStatement *> t = find_deepest_loops(isSgNode(*j));
@@ -40,10 +38,7 @@ std::vector<SgForStatement *> find_deepest_loops(SgStatementPtrList& tnl) {
       loops = t;
   }       
   
-  
-  
   return loops;
-  
 }
 
 std::vector<SgForStatement *> find_deepest_loops(SgNode *tn) {

@@ -94,13 +94,6 @@ std::ostream& operator<<(std::ostream &os, const DependenceVector &d) {
   return os;
 }
 
-// DependenceVector::DependenceVector(int size):
-//   lbounds(std::vector<coef_t>(size, 0)),
-//   ubounds(std::vector<coef_t>(size, 0)) {
-//   src = NULL;
-//   dst = NULL;
-// }
-
 DependenceVector::DependenceVector(const DependenceVector &that) {
   if (that.sym != NULL)
     this->sym = that.sym->clone();
@@ -135,18 +128,12 @@ DependenceType DependenceVector::getType() const {
 }
 
 bool DependenceVector::is_data_dependence() const {
-  if (type == DEP_W2R || type == DEP_R2W || type == DEP_W2W
-      || type == DEP_R2R)
-    return true;
-  else
-    return false;
+  return (type == DEP_W2R || type == DEP_R2W || type == DEP_W2W
+      || type == DEP_R2R);
 }
 
 bool DependenceVector::is_control_dependence() const {
-  if (type == DEP_CONTROL)
-    return true;
-  else
-    return false;
+  return type == DEP_CONTROL;
 }
 
 bool DependenceVector::has_negative_been_carried_at(int dim) const {
@@ -160,10 +147,7 @@ bool DependenceVector::has_negative_been_carried_at(int dim) const {
     if (lbounds[i] > 0 || ubounds[i] < 0)
       return false;
   
-  if (lbounds[dim] < 0)
-    return true;
-  else
-    return false;
+  return lbounds[dim] < 0;
 }
 
 
@@ -178,10 +162,7 @@ bool DependenceVector::has_been_carried_at(int dim) const {
     if (lbounds[i] > 0 || ubounds[i] < 0)
       return false;
   
-  if ((lbounds[dim] != 0)  || (ubounds[dim] !=0))
-    return true;
-  
-  return false;
+  return (lbounds[dim] != 0)  || (ubounds[dim] !=0);
 }
 
 bool DependenceVector::has_been_carried_before(int dim) const {
@@ -262,22 +243,14 @@ bool DependenceVector::hasPositive(int dim) const {
   if (dim >= lbounds.size())
     throw std::invalid_argument("invalid dependence dimension");
   
-  if (lbounds[dim] > 0)
-    //av: changed from ubounds to lbounds may have side effects
-    return true;
-  else
-    return false;
+  return lbounds[dim] > 0;
 }
 
 bool DependenceVector::hasNegative(int dim) const {
   if (dim >= lbounds.size())
     throw std::invalid_argument("invalid dependence dimension");
   
-  if (ubounds[dim] < 0)
-    //av: changed from lbounds to ubounds may have side effects
-    return true;
-  else
-    return false;
+  return ubounds[dim] < 0;
 }
 
 bool DependenceVector::isCarried(int dim, omega::coef_t distance) const {
@@ -296,12 +269,7 @@ bool DependenceVector::isCarried(int dim, omega::coef_t distance) const {
   if (dim >= lbounds.size())
     return true;
   
-  if (lbounds[dim] > distance)
-    return false;
-  else if (ubounds[dim] < -distance)
-    return false;
-  
-  return true;
+  return lbounds[dim] >= -distance && ubounds[dim] <= distance;
 }
 
 bool DependenceVector::canPermute(const std::vector<int> &pi) const {
@@ -402,60 +370,6 @@ DependenceVector DependenceVector::reverse() const {
   return dv;
 }
 
-// std::vector<DependenceVector> DependenceVector::matrix(const std::vector<std::vector<int> > &M) const {
-//   if (M.size() != lbounds.size())
-//     throw std::invalid_argument("(non)unimodular transformation dimensionality does not match dependence space");
-
-//   const int n = lbounds.size();
-//   DependenceVector dv;
-//   if (sym != NULL)
-//     dv.sym = sym->clone();
-//   else
-//     dv.sym = NULL;
-//   dv.type = type;
-
-//   for (int i = 0; i < n; i++) {
-//     assert(M[i].size() == n+1 || M[i].size() == n);
-
-//     omega::coef_t lb, ub;
-//     if (M[i].size() == n+1)
-//       lb = ub = M[i][n];
-//     else
-//       lb = ub = 0;
-
-//     for (int j = 0; j < n; j++) {
-//       int c = M[i][j];
-//       if (c == 0)
-//         continue;
-
-//       if (c > 0) {
-//         if (lbounds[j] == -posInfinity)
-//           lb = -posInfinity;
-//         else if (lb != -posInfinity)
-//           lb += c * lbounds[j];
-//         if (ubounds[j] == posInfinity)
-//           ub = posInfinity;
-//         else if (ub != posInfinity)
-//           ub += c * ubounds[j];
-//       }
-//       else {
-//         if (ubounds[j] == posInfinity)
-//           lb = -posInfinity;
-//         else if (lb != -posInfinity)
-//           lb += c * ubounds[j];
-//         if (lbounds[j] == -posInfinity)
-//           ub = posInfinity;
-//         else if (ub != posInfinity)
-//           ub += c * lbounds[j];
-//       }
-//     }
-//     dv.lbounds.push_back(lb);
-//     dv.ubounds.push_back(ub);
-//   }
-//   dv.is_reduction = is_reduction;
-
-//   return dv.normalize();
-// }
 
 //-----------------------------------------------------------------------------
 // Class: DependenceGraph
@@ -496,20 +410,6 @@ DependenceGraph DependenceGraph::permute(const std::vector<int> &pi,
   
   return g;
 }
-
-// DependenceGraph DependenceGraph::matrix(const std::vector<std::vector<int> > &M) const {
-//   DependenceGraph g;
-
-//   for (int i = 0; i < vertex.size(); i++)
-//     g.insert(vertex[i].first);
-
-//   for (int i = 0; i < vertex.size(); i++)
-//     for (EdgeList::const_iterator j = vertex[i].second.begin(); j != vertex[i].second.end(); j++)
-//       for (int k = 0; k < j->second.size(); k++)
-//         g.connect(i, j->first, j->second[k].matrix(M));
-
-//   return g;
-// }
 
 DependenceGraph DependenceGraph::subspace(int dim) const {
   DependenceGraph g;

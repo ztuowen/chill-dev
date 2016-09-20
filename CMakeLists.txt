@@ -36,7 +36,6 @@ set(IR_CHILL_SRC
     )
 
 set(PYTHON_SRC
-    src/chill_run.cc
     src/chillmodule.cc
     )
 
@@ -66,8 +65,15 @@ include_directories(
     ${BOOSTHOME}/include
     ${PYTHON_INCLUDE_DIRS})
 
-add_executable(chill ${CORE_SRC} ${PYTHON_SRC} ${IR_CHILL_SRC})
-target_link_libraries(chill ${CORE_LIBS} ${PYTHON_LIBRARY})
+add_executable(chill
+        src/chill.cc
+        ${CORE_SRC}
+        ${PYTHON_SRC}
+        ${IR_CHILL_SRC})
+
+target_link_libraries(chill
+        ${CORE_LIBS}
+        ${PYTHON_LIBRARY})
 add_dependencies(chill omega codegen rosecg parseRel)
 
 install(TARGETS chill

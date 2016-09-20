@@ -20,7 +20,6 @@ std::set<int> Loop::unroll(int stmt_num, int level, int unroll_amount,
                            std::vector<std::vector<std::string> > idxNames,
                            int cleanup_split_level) {
   // check for sanity of parameters
-  // check for sanity of parameters
   if (unroll_amount < 0)
     throw std::invalid_argument(
       "invalid unroll amount " + to_string(unroll_amount));
@@ -71,16 +70,6 @@ std::set<int> Loop::unroll(int stmt_num, int level, int unroll_amount,
             }
             dim2 = stmt[*i].loop_level[dim2].payload;
             
-            /*if (dv.isCarried(dim2)
-              && (dv.hasNegative(dim2) && !dv.quasi))
-              throw loop_error(
-              "loop error: Unrolling is illegal, dependence violation!");
-              
-              if (dv.isCarried(dim2)
-              && (dv.hasPositive(dim2) && dv.quasi))
-              throw loop_error(
-              "loop error: Unrolling is illegal, dependence violation!");
-            */
             bool safe = false;
             
             if (dv.isCarried(dim2) && dv.hasPositive(dim2)) {
@@ -89,20 +78,11 @@ std::set<int> Loop::unroll(int stmt_num, int level, int unroll_amount,
                   "loop error: a quasi dependence with a positive carried distance");
               if (!dv.quasi) {
                 if (dv.lbounds[dim2] != posInfinity) {
-                  //if (dv.lbounds[dim2] != negInfinity)
                   if (dv.lbounds[dim2] > unroll_amount)
                     safe = true;
                 } else
                   safe = true;
-              }/* else {
-                  if (dv.ubounds[dim2] != negInfinity) {
-                  if (dv.ubounds[dim2] != posInfinity)
-                  if ((-(dv.ubounds[dim2])) > unroll_amount)
-                  safe = true;
-                  } else
-                  safe = true;
-                  }*/
-              
+              }
               if (!safe) {
                 for (int l = level + 1; l <= (n - 1) / 2; l++) {
                   int dim3 = l - 1;

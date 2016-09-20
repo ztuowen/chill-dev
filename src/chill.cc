@@ -1,9 +1,9 @@
 #include "chilldebug.h"
 
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <csignal>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 
 #include "loop.hh"
@@ -18,7 +18,6 @@
 //---
 Loop *myloop = NULL;
 IR_Code *ir_code = NULL;
-bool repl_stop = false;
 bool is_interactive = false;
 
 std::vector<IR_Control *> ir_controls;
@@ -35,8 +34,6 @@ int main( int argc, char* argv[] )
     fprintf(stderr, "Usage: %s [script_file]\n", argv[0]);
     exit(-1);
   }
-  
-  int fail = 0;
   
   // Create PYTHON interpreter
   /* Pass argv[0] to the Python interpreter */
@@ -64,17 +61,16 @@ int main( int argc, char* argv[] )
     printf("CHiLL v" CHILL_BUILD_VERSION " (built on " CHILL_BUILD_DATE ")\n");
     printf("Copyright (C) 2008 University of Southern California\n");
     printf("Copyright (C) 2009-2012 University of Utah\n");
-    //is_interactive = true; // let the lua interpreter know.
     fflush(stdout);
-    // TODO: read lines of python code.
-    //Not sure if we should set fail from interactive mode
+    is_interactive=true;
+    PyRun_InteractiveLoop(stdin,"-");
     printf("CHiLL ending...\n");
     fflush(stdout);
   }
 
-  //printf("DONE with PyRun_SimpleString()\n");
-  
-  if (!fail && ir_code != NULL && myloop != NULL && myloop->stmt.size() != 0 && !myloop->stmt[0].xform.is_null()) {
+  // TODO Codegen is the major part that prevent CHiLL to be a pure Python library
+  //    Other than exporting a class of course
+  if (ir_code != NULL && myloop != NULL && myloop->stmt.size() != 0 && !myloop->stmt[0].xform.is_null()) {
     int lnum_start;
     int lnum_end;
     lnum_start = get_loop_num_start();

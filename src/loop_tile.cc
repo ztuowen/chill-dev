@@ -126,11 +126,7 @@ void Loop::tile(int stmt_num, int level, int tile_size, int outer_level,
     std::set<int> private_stmt;
     for (std::set<int>::iterator i = same_tile_controlling_loop.begin();
          i != same_tile_controlling_loop.end(); i++) {
-//     if (same_tiled_loop.find(*i) == same_tiled_loop.end() && !is_single_iteration(getNewIS(*i), dim))
-//       same_tiled_loop.insert(*i);
-      
       // should test dim's value directly but it is ok for now
-//    if (same_tiled_loop.find(*i) == same_tiled_loop.end() && get_const(stmt[*i].xform, dim+1, Output_Var) == posInfinity)
       if (same_tiled_loop.find(*i) == same_tiled_loop.end()
           && overflow.find(*i) != overflow.end())
         private_stmt.insert(*i);
@@ -138,26 +134,6 @@ void Loop::tile(int stmt_num, int level, int tile_size, int outer_level,
     
     // extract the union of the iteration space to be considered
     Relation hull;
-    /*{
-      Tuple < Relation > r_list;
-      Tuple<int> r_mask;
-      
-      for (std::set<int>::iterator i = same_tile_controlling_loop.begin();
-      i != same_tile_controlling_loop.end(); i++)
-      if (private_stmt.find(*i) == private_stmt.end()) {
-      Relation r = project_onto_levels(getNewIS(*i), dim + 1,
-      true);
-      for (int j = outer_dim; j < dim; j++)
-      r = Project(r, j + 1, Set_Var);
-      for (int j = 0; j < outer_dim; j += 2)
-      r = Project(r, j + 1, Set_Var);
-      r_list.append(r);
-      r_mask.append(1);
-      }
-      
-      hull = Hull(r_list, r_mask, 1, true);
-      }*/
-    
     {
       std::vector<Relation> r_list;
       
@@ -176,7 +152,6 @@ void Loop::tile(int stmt_num, int level, int tile_size, int outer_level,
         }
       
       hull = SimpleHull(r_list);
-      // hull = Hull(r_list, std::vector<bool>(r_list.size(), true), 1, true);
     }
     
     // extract the bound of the dimension to be tiled
@@ -553,25 +528,7 @@ void Loop::tile(int stmt_num, int level, int tile_size, int outer_level,
         h.update_coef(stmt[*i].xform.output_var(outer_dim + 1), -1);
         h.update_coef(ub, 1);
       }
-      // if (private_stmt.find(*i) != private_stmt.end()) {
-      //   if (stmt[*i].xform.n_out() > dim+3) { // e.g. ii <= UB && i = ii
-      //     GEQ_Handle h = f_root->add_GEQ();
-      //     h.update_coef(stmt[*i].xform.output_var(outer_dim+1), -1);
-      //     h.update_coef(ub, 1);
-      
-      //     stmt[*i].xform = Project(stmt[*i].xform, dim+3, Output_Var);
-      //     f_root = stmt[*i].xform.and_with_and();
-      //     EQ_Handle h1 = f_root->add_EQ();
-      //     h1.update_coef(stmt[*i].xform.output_var(dim+3), 1);
-      //     h1.update_coef(stmt[*i].xform.output_var(outer_dim+1), -1);
-      //   }
-      //   else if (method == StridedTile) { // e.g. ii <= UB since i does not exist
-      //     GEQ_Handle h = f_root->add_GEQ();
-      //     h.update_coef(stmt[*i].xform.output_var(outer_dim+1), -1);
-      //     h.update_coef(ub, 1);
-      //   }
-      // }
-      
+
       // restrict original loop index inside the tile
       else {
         if (method == StridedTile) { // e.g. ii <= i < ii + tile_size

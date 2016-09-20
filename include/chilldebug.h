@@ -1,8 +1,6 @@
 
 // a central place to turn on debugging messages
 
-// enable the next line to get lots of output 
-//#define DEBUGCHILL
 #ifndef DEBUGCHILL_H
 #define DEBUGCHILL_H
 

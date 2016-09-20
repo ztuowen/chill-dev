@@ -19,7 +19,6 @@ using namespace omega;
 extern Loop *myloop;
 extern IR_Code *ir_code;
 extern bool is_interactive;
-extern bool repl_stop;
 
 std::string procedure_name;
 std::string source_filename;
@@ -50,9 +49,6 @@ static void set_loop_num_start(int start_num) {
 static void set_loop_num_end(int end_num) {
   loop_end_num = end_num;
 }
-
-// TODO: finalize_loop(int,int) and init_loop(int,int) are identical to thier Lua counterparts.
-// consider integrating them
 
 void finalize_loop(int loop_num_start, int loop_num_end) {
   if (loop_num_start == loop_num_end) {
@@ -126,7 +122,6 @@ static void init_loop(int loop_num_start, int loop_num_end) {
   IR_Block *block = ir_code->MergeNeighboringControlStructures(parm);
   myloop = new Loop(block);
   delete block;  
-  //if (is_interactive) printf("%s ", PROMPT_STRING);
 }
 
 // ----------------------- //
@@ -332,16 +327,9 @@ static PyObject* chill_print_space(PyObject* self, PyObject* args) {
   Py_RETURN_NONE;
 }
 
-static PyObject* chill_exit(PyObject* self, PyObject* args) {
-  strict_arg_num(args, 0, "exit");
-  repl_stop = true;
-  Py_RETURN_NONE;
-}
-
 static void add_known(std::string cond_expr) {
   int num_dim = myloop->known.n_set();
   std::vector<std::map<std::string, int> >* cond;
-  // TODO since we are using python, change this!
   cond = parse_relation_vector(cond_expr.c_str());
   
   Relation rel(num_dim);
@@ -744,7 +732,6 @@ static PyMethodDef ChillMethods[] = {
   {"print_code",          chill_print_code,                METH_VARARGS,     "print generated code"},
   {"print_dep",           chill_print_dep,                 METH_VARARGS,     "print the dependencies graph"},
   {"print_space",         chill_print_space,               METH_VARARGS,     "print space"},
-  {"exit",                chill_exit,                      METH_VARARGS,     "exit the interactive consule"},
   {"known",               chill_known,                     METH_VARARGS,     "knwon"},
   {"remove_dep",          chill_remove_dep,                METH_VARARGS,     "remove dependency i suppose"},
   {"original",            chill_original,                  METH_VARARGS,     "original"},

@@ -102,7 +102,6 @@ int IR_roseArraySymbol::n_dim() const {
 		    dim++;
 		  }
 	  } else if (ptrType != NULL) {
-		  //std::cout << "pntrType \n";
 		  ; // not sure if this case will happen
 	  }
   }
@@ -113,7 +112,6 @@ int IR_roseArraySymbol::n_dim() const {
 omega::CG_outputRepr *IR_roseArraySymbol::size(int dim) const {
   
   SgArrayType* arrType = isSgArrayType(vs_->get_type());
-  // SgExprListExp* dimList = arrType->get_dim_info();
   int count = 0;
   SgExpression* expr;
   SgType* pntrType = isSgPointerType(vs_->get_type());
@@ -1446,16 +1444,12 @@ IR_Block *IR_roseCode::GetCode() const {
 }
 
 void IR_roseCode::ReplaceCode(IR_Control *old, omega::CG_outputRepr *repr) {
-  /*    SgStatementPtrList *tnl =
-        static_cast<omega::CG_roseRepr *>(repr)->GetList();
-        SgNode *tf_old;
-  */
   SgStatementPtrList *tnl =
     static_cast<omega::CG_roseRepr *>(repr)->GetList();
   SgNode* node_ = static_cast<omega::CG_roseRepr *>(repr)->GetCode();
   SgNode * tf_old;
   
-  /* May need future revision it tnl has more than one statement */
+  /* May need future revision if tnl has more than one statement */
   
   switch (old->type()) {
     
@@ -1507,44 +1501,6 @@ void IR_roseCode::ReplaceCode(IR_Control *old, omega::CG_outputRepr *repr) {
   
   delete old;
   delete repr;
-  /* May need future revision it tnl has more than one statement */
-  /*
-    switch (old->type()) {
-    
-    case IR_CONTROL_LOOP:
-    tf_old = static_cast<IR_roseLoop *>(old)->tf_;
-    break;
-    case IR_CONTROL_BLOCK:
-    tf_old = static_cast<IR_roseBlock *>(old)->start_;
-    break;
-    
-    default:
-    throw ir_error("control structure to be replaced not supported");
-    break;
-    }
-    
-    // std::string y = tf_old->unparseToString();
-    SgStatement *s = isSgStatement(tf_old);
-    if (s != 0) {
-    SgStatement *p = isSgStatement(tf_old->get_parent());
-    
-    if (p != 0) {
-    //      SgStatement* it2 = isSgStatement(tnl);
-    
-    //   if(it2 != NULL){
-    p->replace_statement(s, *tnl);
-    //   }
-    //   else {
-    //          throw ir_error("Replacing Code not a statement!");
-    //      }
-    } else
-    throw ir_error("Replacing Code not a statement!");
-    } else
-    throw ir_error("Replacing Code not a statement!");
-    //  y = tnl->unparseToString();
-    delete old;
-    delete repr;
-  */
 }
 
 void IR_roseCode::ReplaceExpression(IR_Ref *old, omega::CG_outputRepr *repr) {
@@ -1560,19 +1516,6 @@ void IR_roseCode::ReplaceExpression(IR_Ref *old, omega::CG_outputRepr *repr) {
       std::string z = isSgNode(parent)->unparseToString();
       parent->replace_expression(ia_orig, op);
       isSgNode(op)->set_parent(isSgNode(parent));
-      
-      /* if(isSgBinaryOp(parent))
-         {
-         if(isSgBinaryOp(parent)->get_lhs_operand() == ia_orig){
-         isSgBinaryOp(parent)->set_lhs_operand(op);   
-         }else if(isSgBinaryOp(parent)->get_rhs_operand() == ia_orig){
-         isSgBinaryOp(parent)->set_rhs_operand(op); 
-         
-         
-         } 
-         else
-         parent->replace_expression(ia_orig, op);
-      */
     } else {
       SgStatement* parent_stmt = isSgStatement(
         isSgNode(ia_orig)->get_parent());

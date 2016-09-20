@@ -148,8 +148,38 @@ public:
   void tile(int stmt_num, int level, int tile_size, int outer_level = 1, TilingMethodType method = StridedTile, int alignment_offset = 0, int alignment_multiple = 1);
   std::set<int> split(int stmt_num, int level, const omega::Relation &cond);
   std::set<int> unroll(int stmt_num, int level, int unroll_amount, std::vector< std::vector<std::string> >idxNames= std::vector< std::vector<std::string> >(), int cleanup_split_level = 0);
-  
+
+  //! Datacopy function by reffering arrays by numbers
+  /*!
+   * for example
+   * ~~~
+   * A[i] = A[i-1] + B[i];
+   * ~~~
+   * parameter array_ref_num=[0,2] means to copy data touched by A[i-1] and A[i]
+   *
+   * @param array_ref_nums
+   * @param level
+   * @param allow_extra_read
+   * @param fastest_changing_dimension
+   * @param padding_stride
+   * @param padding_alignment
+   * @param memory_type
+   * @return
+   */
   bool datacopy(const std::vector<std::pair<int, std::vector<int> > > &array_ref_nums, int level, bool allow_extra_read = false, int fastest_changing_dimension = -1, int padding_stride = 1, int padding_alignment = 4, int memory_type = 0);
+  //! Datacopy function by reffering arrays by name
+  /*!
+   * parameter array_name=A means to copy data touched by A[i-1] and A[i]
+   * @param stmt_num
+   * @param level
+   * @param array_name
+   * @param allow_extra_read
+   * @param fastest_changing_dimension
+   * @param padding_stride
+   * @param padding_alignment
+   * @param memory_type
+   * @return
+   */
   bool datacopy(int stmt_num, int level, const std::string &array_name, bool allow_extra_read = false, int fastest_changing_dimension = -1, int padding_stride = 1, int padding_alignment = 4, int memory_type = 0);
   bool datacopy_privatized(int stmt_num, int level, const std::string &array_name, const std::vector<int> &privatized_levels, bool allow_extra_read = false, int fastest_changing_dimension = -1, int padding_stride = 1, int padding_alignment = 1, int memory_type = 0);
   bool datacopy_privatized(const std::vector<std::pair<int, std::vector<int> > > &array_ref_nums, int level, const std::vector<int> &privatized_levels, bool allow_extra_read = false, int fastest_changing_dimension = -1, int padding_stride = 1, int padding_alignment = 1, int memory_type = 0);

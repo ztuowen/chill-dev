@@ -33,3 +33,7 @@
     * `parserel` - parse Relation vectors, for adding knowns
 * `example` - CHiLL example scripts
 * `doc` - manual & doxygen
+
+## Debug
+
+* pass `-DDEBUGCHILL` will enable debug output
