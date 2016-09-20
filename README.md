@@ -22,3 +22,14 @@
 * doc/CHiLL.pdf
 * Doxygen: `cmake --build build -- doc`
 
+## Folder structure
+
+* `src` - CHiLL's "core" source files
+* `include` - CHiLL's include files
+* `lib` - Included modules, each as its own `src` and `include`
+    * `omega` - omega, LICENSE.omega
+    * `codegen` - codegen+, without rose dependence, LICENSE.omega
+    * `rosecg` - codegen with rose, LICENSE.omega
+    * `parserel` - parse Relation vectors, for adding knowns
+* `example` - CHiLL example scripts
+* `doc` - manual & doxygen
