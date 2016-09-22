@@ -80,6 +80,7 @@ static void init_loop(int loop_num_start, int loop_num_end) {
   }
   else {
     if (ir_code == NULL) {
+        ir_code = new IR_clangCode(source_filename.c_str(),procedure_name.c_str());
       IR_Block *block = ir_code->GetCode();
       ir_controls = ir_code->FindOneLevelControlStructure(block);
       for (int i = 0; i < ir_controls.size(); i++) {

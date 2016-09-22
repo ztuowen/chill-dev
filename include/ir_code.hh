@@ -280,54 +280,92 @@ public:
   // memory_type is for differentiating the location of where the new memory is allocated.
   // this is useful for processors with heterogeneous memory hierarchy.
   virtual IR_ScalarSymbol *CreateScalarSymbol(const IR_Symbol *sym, int memory_type) = 0;
-  virtual IR_ScalarSymbol *CreateScalarSymbol(IR_CONSTANT_TYPE type, int memory_type, std::string name="" ) =0;
+  virtual IR_ScalarSymbol *CreateScalarSymbol(IR_CONSTANT_TYPE type, int memory_type, std::string name="" ) {
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
 
   virtual IR_ArraySymbol *CreateArraySymbol(const IR_Symbol *sym, 
                                             std::vector<omega::CG_outputRepr *> &size, 
                                             int memory_type) = 0;
   virtual IR_ArraySymbol *CreateArraySymbol(omega::CG_outputRepr *type,
-                                            std::vector<omega::CG_outputRepr *> &size_repr) =0;
+                                            std::vector<omega::CG_outputRepr *> &size_repr) {
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
 
   virtual IR_PointerSymbol *CreatePointerSymbol(const IR_Symbol *sym,
-                                                std::vector<omega::CG_outputRepr *> &size_repr) =0;
+                                                std::vector<omega::CG_outputRepr *> &size_repr) {
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
   virtual IR_PointerSymbol *CreatePointerSymbol(const IR_CONSTANT_TYPE type,
                                                 std::vector<omega::CG_outputRepr *> &size_repr, 
-                                                std::string name="") =0;
+                                                std::string name="") {
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
 
   virtual IR_PointerSymbol *CreatePointerSymbol(omega::CG_outputRepr *type,
-                                                std::vector<omega::CG_outputRepr *> &size_repr) =0;
+                                                std::vector<omega::CG_outputRepr *> &size_repr) {
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
 
   virtual IR_ScalarRef *CreateScalarRef(const IR_ScalarSymbol *sym) = 0;
   virtual IR_ArrayRef *CreateArrayRef(const IR_ArraySymbol *sym, std::vector<omega::CG_outputRepr *> &index) = 0;
 
   virtual omega::CG_outputRepr* CreateArrayRefRepr(const IR_ArraySymbol *sym,
                                             std::vector<omega::CG_outputRepr *> &index) {
-    //IR_ArrayRef *AR = CreateArrayRef(sym, index);
-    //return new omega::CG_outputRepr(AR);
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n"); 
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
     return NULL; 
   }
 
   virtual IR_PointerArrayRef *CreatePointerArrayRef( IR_PointerSymbol *sym,
-      std::vector<omega::CG_outputRepr *> &index) =0;
+      std::vector<omega::CG_outputRepr *> &index) {
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
   virtual int ArrayIndexStartAt() {return 0;}
 
-  virtual void CreateDefineMacro(std::string s,std::string args,  omega::CG_outputRepr *repr) = 0;
-  virtual void CreateDefineMacro(std::string s,std::string args, std::string repr) = 0;
+  virtual void CreateDefineMacro(std::string s,std::string args,  omega::CG_outputRepr *repr) {
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+  }
+  virtual void CreateDefineMacro(std::string s,std::string args, std::string repr) {
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+  }
   virtual void CreateDefineMacro(std::string s, std::vector<std::string> args,omega::CG_outputRepr *repr) {};  // TODO make pure virtual  
 
-  virtual omega::CG_outputRepr *CreateArrayType(IR_CONSTANT_TYPE type, omega::CG_outputRepr* size)=0;
-  virtual omega::CG_outputRepr *CreatePointerType(IR_CONSTANT_TYPE type)=0;
-  virtual omega::CG_outputRepr *CreatePointerType(omega::CG_outputRepr *type)=0;
-  virtual omega::CG_outputRepr *CreateScalarType(IR_CONSTANT_TYPE type)=0;
+  virtual omega::CG_outputRepr *CreateArrayType(IR_CONSTANT_TYPE type, omega::CG_outputRepr* size){
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
+  virtual omega::CG_outputRepr *CreatePointerType(IR_CONSTANT_TYPE type){
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
+  virtual omega::CG_outputRepr *CreatePointerType(omega::CG_outputRepr *type){
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
+  virtual omega::CG_outputRepr *CreateScalarType(IR_CONSTANT_TYPE type){
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
   // Array references should be returned in their accessing order.
   // e.g. s1: A[i] = A[i-1]
   //      s2: B[C[i]] = D[i] + E[i]
   // return A[i-1], A[i], D[i], E[i], C[i], B[C[i]] in this order.
   virtual std::vector<IR_ArrayRef *> FindArrayRef(const omega::CG_outputRepr *repr) const = 0;
-  virtual std::vector<IR_PointerArrayRef *> FindPointerArrayRef(const omega::CG_outputRepr *repr) const = 0 ;
+  virtual std::vector<IR_PointerArrayRef *> FindPointerArrayRef(const omega::CG_outputRepr *repr) const{
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return std::vector<IR_PointerArrayRef *>();
+  }
   virtual std::vector<IR_ScalarRef *> FindScalarRef(const omega::CG_outputRepr *repr) const = 0;
-  virtual bool parent_is_array(IR_ArrayRef *a)=0;
+  virtual bool parent_is_array(IR_ArrayRef *a){
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return false;
+  }
 
   // If there is no sub structure interesting inside the block, return empty,
   // so we know when to stop looking inside.
@@ -338,7 +376,10 @@ public:
   virtual IR_Block *MergeNeighboringControlStructures(const std::vector<IR_Control *> &controls) const = 0;
   
   virtual IR_Block *GetCode() const = 0;
-  virtual IR_Control *GetCode(omega::CG_outputRepr *code) const = 0;
+  virtual IR_Control *GetCode(omega::CG_outputRepr *code) const {
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
   virtual void ReplaceCode(IR_Control *old, omega::CG_outputRepr *repr) = 0;
   virtual void ReplaceExpression(IR_Ref *old, omega::CG_outputRepr *repr) = 0;
   
@@ -349,22 +390,57 @@ public:
 
   // Manu:: Added functions required for reduction operation
  // virtual omega::CG_outputRepr * FromSameStmt(IR_ArrayRef *A, IR_ArrayRef *B) = 0;
-  virtual bool FromSameStmt(IR_ArrayRef *A, IR_ArrayRef *B) = 0;
-  virtual void printStmt(const omega::CG_outputRepr *repr) = 0;
-  virtual int getStmtType(const omega::CG_outputRepr *repr) = 0;
-  virtual IR_OPERATION_TYPE getReductionOp(const omega::CG_outputRepr *repr) = 0;
-  virtual IR_Control *  FromForStmt(const omega::CG_outputRepr *repr) = 0;
+  virtual bool FromSameStmt(IR_ArrayRef *A, IR_ArrayRef *B){
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
+  virtual void printStmt(const omega::CG_outputRepr *repr){
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+  }
+  virtual int getStmtType(const omega::CG_outputRepr *repr){
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return 0;
+  }
+  virtual IR_OPERATION_TYPE getReductionOp(const omega::CG_outputRepr *repr){
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return IR_OP_MINUS;
+  }
+  virtual IR_Control *  FromForStmt(const omega::CG_outputRepr *repr){
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
 
   // Manu:: Added functions for scalar expansion
-  virtual IR_ArraySymbol *CreateArraySymbol(omega::CG_outputRepr *size, const IR_Symbol *sym) = 0;
-  virtual bool ReplaceRHSExpression(omega::CG_outputRepr *code, IR_Ref *ref) = 0;
-  virtual omega::CG_outputRepr * GetRHSExpression(omega::CG_outputRepr *code) = 0;
-  virtual omega::CG_outputRepr * GetLHSExpression(omega::CG_outputRepr *code) = 0;
+  virtual IR_ArraySymbol *CreateArraySymbol(omega::CG_outputRepr *size, const IR_Symbol *sym){
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
+  virtual bool ReplaceRHSExpression(omega::CG_outputRepr *code, IR_Ref *ref){
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
+  virtual omega::CG_outputRepr * GetRHSExpression(omega::CG_outputRepr *code){
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
+  virtual omega::CG_outputRepr * GetLHSExpression(omega::CG_outputRepr *code){
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
   virtual omega::CG_outputRepr *CreateMalloc(const IR_CONSTANT_TYPE type, std::string lhs,
-      omega::CG_outputRepr * size_repr)=0;
+      omega::CG_outputRepr * size_repr){
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
   virtual omega::CG_outputRepr *CreateMalloc(omega::CG_outputRepr *type, std::string variable,
-      omega::CG_outputRepr * size_repr)=0;
-  virtual omega::CG_outputRepr *CreateFree(omega::CG_outputRepr * exp)=0;
+      omega::CG_outputRepr * size_repr){
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
+  virtual omega::CG_outputRepr *CreateFree(omega::CG_outputRepr * exp){
+    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    return NULL;
+  }
 
   //void Dump() { ocg_->Dump(); }; 
   //---------------------------------------------------------------------------

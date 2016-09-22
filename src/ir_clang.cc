@@ -1973,8 +1973,7 @@ aClangCompiler::aClangCompiler( char *filename ) {
   pTextDiagnosticPrinter = new clang::TextDiagnosticPrinter(llvm::errs(), diagnosticOptions); // private member of aClangCompiler
   
   //llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagID(new clang::DiagnosticIDs());
-  diagID =  new clang::DiagnosticIDs(); // private member of IR_clangCode_Global_Init
-  
+
   //clang::DiagnosticsEngine Diags(DiagID, &*DiagOpts, DiagClient);
   diagnosticsEngine = new clang::DiagnosticsEngine(diagID, diagnosticOptions, pTextDiagnosticPrinter);
   
@@ -2004,10 +2003,10 @@ aClangCompiler::aClangCompiler( char *filename ) {
   //TargetInfo *TI = TargetInfo::CreateTargetInfo( Clang->getDiagnostics(), TO);
 
   // the above causes core dumps, because clang is stupid and frees the target multiple times, corrupting memory
-  const std::shared_ptr<clang::TargetOptions> to = std::make_shared<clang::TargetOptions>();
+  targetOptions = std::make_shared<clang::TargetOptions>();
   targetOptions->Triple = llvm::sys::getDefaultTargetTriple();
 
-  TargetInfo *pti = TargetInfo::CreateTargetInfo(Clang->getDiagnostics(),to);
+  TargetInfo *pti = TargetInfo::CreateTargetInfo(Clang->getDiagnostics(),targetOptions);
 
   Clang->setTarget(pti);
   
@@ -2225,7 +2224,7 @@ IR_clangCode_Global_Init::~IR_clangCode_Global_Init()
 // Class: IR_clangCode
 // ----------------------------------------------------------------------------
 
-IR_clangCode::IR_clangCode(const char *fname, char *proc_name): IR_Code() {
+IR_clangCode::IR_clangCode(const char *fname, const char *proc_name): IR_Code() {
   fprintf(stderr, "\nIR_xxxxCode::IR_xxxxCode()\n\n"); 
   //fprintf(stderr, "IR_clangCode::IR_clangCode( filename %s, procedure %s )\n", filename, proc_name);
   
@@ -2234,7 +2233,7 @@ IR_clangCode::IR_clangCode(const char *fname, char *proc_name): IR_Code() {
 
   int argc = 2;
   char *argv[2];
-  argv[0] = "chill";
+  argv[0] = strdup("chill");
   argv[1] = strdup(filename);
   
   // use clang to parse the input file  ?   (or is that already done?) 
@@ -2253,7 +2252,7 @@ IR_clangCode::IR_clangCode(const char *fname, char *proc_name): IR_Code() {
     pInstance->setCurrentFunction( NULL );  // we have no function AST yet
 
     entire_file_AST = Clang->entire_file_AST;  // ugly that same name, different classes
-    chillAST_FunctionDecl *localFD = Clang->findprocedurebyname( proc_name );   // stored locally
+    chillAST_FunctionDecl *localFD = Clang->findprocedurebyname( strdup(proc_name) );   // stored locally
     //fprintf(stderr, "back from findprocedurebyname( %s )\n", proc_name ); 
     //localFD->print();
 

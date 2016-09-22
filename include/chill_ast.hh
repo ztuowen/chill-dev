@@ -726,8 +726,8 @@ public:
 
   //TODO hide data, set/get type and alias
   chillAST_TypedefDecl();
-  chillAST_TypedefDecl(char *t, char *nt, chillAST_node *p);
-  chillAST_TypedefDecl(char *t, char *nt, char *a, chillAST_node *par); 
+  chillAST_TypedefDecl(char *t, const char *nt, chillAST_node *p);
+  chillAST_TypedefDecl(char *t, const char *nt, char *a, chillAST_node *par);
   
   const char* getUnderlyingType() { fprintf(stderr, "TypedefDecl getUnderLyingType()\n"); return underlyingtype; }; 
   //virtual chillAST_VarDecl* getUnderlyingVarDecl() { return this; }; // ?? 

@@ -31,10 +31,7 @@
 
 #include "chill_ast.hh"
 
-// using namespace clang;          // NEVER EVER do this in a header file 
-// using namespace clang::driver;  // NEVER EVER do this in a header file 
-
-extern std::vector<chillAST_VarDecl *> VariableDeclarations;  // a global.   TODO 
+extern std::vector<chillAST_VarDecl *> VariableDeclarations;  // a global.   TODO
 
 typedef llvm::SmallVector<clang::Stmt *, 16> StmtList;  // TODO delete 
 
@@ -350,7 +347,7 @@ private:
   
   clang::DiagnosticOptions *diagnosticOptions;
   clang::TextDiagnosticPrinter *pTextDiagnosticPrinter;
-  clang::DiagnosticIDs *diagID ;
+  llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> diagID ;
   clang::DiagnosticsEngine *diagnosticsEngine;
   clang::CompilerInstance *Clang;
   clang::Preprocessor *preprocessor;
@@ -365,7 +362,7 @@ private:
   clang::LangOptions *languageOptions;
   clang::HeaderSearchOptions *headerSearchOptions;
   //clang::HeaderSearch *headerSearch;
-  clang::TargetOptions *targetOptions;
+  std::shared_ptr<clang::TargetOptions> targetOptions;
   clang::TargetInfo *pTargetInfo;
   clang::PreprocessorOptions *preprocessorOptions;
   clang::FrontendOptions *frontendOptions;
@@ -449,7 +446,7 @@ public:
   clang::ASTContext    *getASTContext() { return astContext_; } ;
   clang::SourceManager *getASTSourceManager() { return sourceManager; } ; 
 
-  IR_clangCode(const char *filename, char *proc_name);
+  IR_clangCode(const char *filename, const char *proc_name);
   ~IR_clangCode();
 
   IR_ScalarSymbol *CreateScalarSymbol(const IR_Symbol *sym, int i);

@@ -603,7 +603,7 @@ chillAST_TypedefDecl::chillAST_TypedefDecl() {
 };
 
 
-chillAST_TypedefDecl::chillAST_TypedefDecl(char *t, char *nt, chillAST_node *par) { 
+chillAST_TypedefDecl::chillAST_TypedefDecl(char *t, const char *nt, chillAST_node *par) {
   //fprintf(stderr, "chillAST_TypedefDecl::chillAST_TypedefDecl( underlying type %s, newtype %s )\n", t, nt); 
   underlyingtype = strdup(t); 
   newtype = strdup(nt);
@@ -619,7 +619,7 @@ chillAST_TypedefDecl::chillAST_TypedefDecl(char *t, char *nt, chillAST_node *par
 };
 
 
-chillAST_TypedefDecl::chillAST_TypedefDecl(char *t, char *a, char *p, chillAST_node *par) { 
+chillAST_TypedefDecl::chillAST_TypedefDecl(char *t, const char *a, char *p, chillAST_node *par) {
   underlyingtype = strdup(t); 
   //fprintf(stderr, "chillAST_TypedefDecl::chillAST_TypedefDecl( underlying type %s )\n", underlyingtype); 
   newtype = strdup(a);  // the new named type ??
