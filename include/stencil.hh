@@ -2,7 +2,7 @@
 #pragma once
 
 #include "ir_clang.hh"
-#include "chill_ast.hh"
+#include "chillAST/chillASTs.hh"
 
 //#include <omega.h>
 #include <omegatools.hh>

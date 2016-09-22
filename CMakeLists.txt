@@ -15,18 +15,18 @@ set(CORE_LIBS
 set(CORE_SRC
     src/dep.cc
     src/irtools.cc
-    src/loop.cc
-    src/loop_basic.cc
-    src/loop_datacopy.cc
-    src/loop_extra.cc
-    src/loop_tile.cc
-    src/loop_unroll.cc
+        src/transformations/loop.cc
+        src/transformations/loop_basic.cc
+        src/transformations/loop_datacopy.cc
+        src/transformations/loop_extra.cc
+        src/transformations/loop_tile.cc
+        src/transformations/loop_unroll.cc
     src/omegatools.cc
     )
 
 set(IR_CHILL_SRC
     src/ir_clang.cc
-    src/chill_ast.cc
+        src/chillASTs.cc
     )
 
 set(PYTHON_SRC

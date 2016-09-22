@@ -24,7 +24,7 @@
 
 #include <ir_enums.hh>
 
-#include <chill_ast.hh>
+#include <chillAST/chillASTs.hh>
 
 #include <vector>
 

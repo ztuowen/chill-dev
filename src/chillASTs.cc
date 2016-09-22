@@ -1,7 +1,8 @@
 
 
 
-#include "chill_ast.hh"
+#include <chilldebug.h>
+#include "chillAST.h"
 
 using namespace std;
 
@@ -882,7 +883,7 @@ chillAST_FunctionDecl::chillAST_FunctionDecl(const char *rt, const char *fname, 
 
 
 chillAST_FunctionDecl::chillAST_FunctionDecl(const char *rt, const char *fname, chillAST_node *par, void *unique) {
-  fprintf(stderr, "chillAST_FunctionDecl::chillAST_FunctionDecl with unique %p\n", unique); 
+  CHILL_DEBUG_PRINT("chillAST_FunctionDecl::chillAST_FunctionDecl with unique %p\n", unique);
   returnType = strdup(rt);
   functionName = strdup(fname);
   this->setFunctionCPU(); 
@@ -903,17 +904,17 @@ chillAST_FunctionDecl::chillAST_FunctionDecl(const char *rt, const char *fname, 
 
 
 void chillAST_FunctionDecl::addParameter( chillAST_VarDecl *p) {
-  fprintf(stderr, "%s chillAST_FunctionDecl::addParameter( 0x%x  param %s)   total of %d parameters\n", functionName, p, p->varname, 1+parameters.size()); 
+  CHILL_DEBUG_PRINT("%s chillAST_FunctionDecl::addParameter( 0x%x  param %s)   total of %d parameters\n", functionName, p, p->varname, 1+parameters.size());
 
   if (symbolTableHasVariableNamed( &parameters, p->varname)) { // NOT recursive. just in FunctionDecl
-    fprintf(stderr, "chillAST_FunctionDecl::addParameter( %s ), parameter already exists?\n", p->varname);
+    CHILL_DEBUG_PRINT("chillAST_FunctionDecl::addParameter( %s ), parameter already exists?\n", p->varname);
     // exit(-1); // ?? 
     return; // error? 
   }
 
   parameters.push_back(p);
   //addSymbolToTable( parameters, p );
-  fprintf(stderr, "setting %s isAParameter\n", p->varname); 
+  CHILL_DEBUG_PRINT("setting %s isAParameter\n", p->varname);
   p->isAParameter = true;  
   
   p->setParent( this ); // ??  unclear TODO 
@@ -923,7 +924,7 @@ void chillAST_FunctionDecl::addParameter( chillAST_VarDecl *p) {
 
 
 void chillAST_FunctionDecl::addDecl( chillAST_VarDecl *vd) { // to symbol table ONLY 
-  fprintf(stderr, "chillAST_FunctionDecl::addDecl( %s )\n", vd->varname);
+  CHILL_DEBUG_PRINT("chillAST_FunctionDecl::addDecl( %s )\n", vd->varname);
   if (!body) {  
     //fprintf(stderr, "had no body\n"); 
     body = new chillAST_CompoundStmt();
@@ -977,11 +978,11 @@ chillAST_VarDecl *chillAST_FunctionDecl::funcHasVariableNamed( const char *name 
     //fprintf(stderr, "comparing '%s' to '%s'\n", name, vd->varname); 
     if (!strcmp(name, vd->varname)) {
       //fprintf(stderr, "yep, it's variable %d\n", i); 
-      fprintf(stderr, "%s was already defined in the function body\n", vd->varname); 
+      CHILL_DEBUG_PRINT("%s was already defined in the function body\n", vd->varname);
       return vd;  // need to check type? 
     }
   }
-  fprintf(stderr, "not a parameter or variable named %s\n", name); 
+  CHILL_DEBUG_PRINT("not a parameter or variable named %s\n", name);
   return NULL; 
 }
 
@@ -1021,10 +1022,12 @@ void chillAST_FunctionDecl::insertChild(int i, chillAST_node* node) {
 }
 
 void chillAST_FunctionDecl::addChild(chillAST_node* node) { 
-  fprintf(stderr, "chillAST_FunctionDecl::addChild( )  "); node->print(0,stderr); fprintf(stderr, "\n\n"); 
+  CHILL_DEBUG_BEGIN
+    node->print(0,stderr); fprintf(stderr, "\n\n");
+  CHILL_DEBUG_END
   if (node->isVarDecl()) { 
     chillAST_VarDecl *vd = ((chillAST_VarDecl *) node);
-    fprintf(stderr, "functiondecl %s adding a VarDecl named %s\n", functionName, vd->varname);
+    CHILL_DEBUG_PRINT("functiondecl %s adding a VarDecl named %s\n", functionName, vd->varname);
   }
 
   body->addChild( node ); 
@@ -2138,7 +2141,7 @@ void chillAST_ForStmt::loseLoopWithLoopVar( char *var ) {
 
 chillAST_BinaryOperator::chillAST_BinaryOperator() {
   //fprintf(stderr, "chillAST_BinaryOperator::chillAST_BinaryOperator()  %p   no parent\n", this);
-  fprintf(stderr, "chillAST_BinaryOperator::chillAST_BinaryOperator()  no parent\n");
+  CHILL_DEBUG_PRINT("chillAST_BinaryOperator::chillAST_BinaryOperator()  no parent\n");
   lhs = rhs = NULL;
   op = NULL;
   asttype = CHILLAST_NODETYPE_BINARYOPERATOR; 
@@ -2149,7 +2152,7 @@ chillAST_BinaryOperator::chillAST_BinaryOperator() {
 
 chillAST_BinaryOperator::chillAST_BinaryOperator(chillAST_node *l, const char *oper, chillAST_node *r, chillAST_node *par) { 
   //fprintf(stderr, "chillAST_BinaryOperator::chillAST_BinaryOperator( l %p  %s  r %p,   parent %p)  this %p\n", l, oper, r, par, this); 
-  fprintf(stderr, "chillAST_BinaryOperator::chillAST_BinaryOperator( l  %s  r )\n", oper); 
+  CHILL_DEBUG_PRINT("chillAST_BinaryOperator::chillAST_BinaryOperator( l  %s  r )\n", oper);
 
   //if (l && r ) { 
   //  fprintf(stderr, "("); l->print(0,stderr); fprintf(stderr, ") %s (", oper); r->print(0,stderr); fprintf(stderr, ")\n\n"); 
@@ -3872,10 +3875,7 @@ chillAST_node* chillAST_VarDecl::clone() {
 
 
 void chillAST_VarDecl::splitarraypart() { 
-  fprintf(stderr, "chillAST_VarDecl::splitarraypart()  ");
-  //fprintf(stderr, "%p  ", arraypart);
-  if (arraypart) fprintf(stderr, "%s", arraypart); 
-  fprintf(stderr, "\n");
+  if (arraypart) CHILL_DEBUG_PRINT("%s\n", arraypart);
 
   // split arraypart into  (leading??) asterisks and known sizes [1][2][3]
   if (!arraypart ||  // NULL 
@@ -3895,7 +3895,7 @@ void chillAST_VarDecl::splitarraypart() {
   for ( int i=0; i<strlen(arraypart); i++) {
     if (arraypart[i] == '*') { 
       if (fixedcount) {
-        fprintf(stderr, "illegal vardecl arraypart: '%s'\n", arraypart);
+        CHILL_ERROR("illegal vardecl arraypart: '%s'\n", arraypart);
         segfault(); 
         exit(-1);
       }
@@ -5311,8 +5311,7 @@ chillAST_VarDecl::chillAST_VarDecl( chillAST_TypedefDecl *tdd,  const char *n, c
 
 
 chillAST_VarDecl::chillAST_VarDecl( const char *t,  const char *n, const char *a, void *ptr, chillAST_node *par) { 
-  fprintf(stderr, "2chillAST_VarDecl::chillAST_VarDecl( type %s, name %s, arraypart '%s' ) %p\n", t, n, a, this); 
-  //fprintf(stderr, "2chillAST_VarDecl::chillAST_VarDecl( type %s, name %s, arraypart %s, ptr 0x%x, parent 0x%x )\n", t, n, a, ptr, par); 
+  CHILL_DEBUG_PRINT("chillAST_VarDecl::chillAST_VarDecl( type %s, name %s, arraypart '%s' ) %p\n", t, n, a, this);
 
 
   vartype   = strdup(t); 
@@ -5453,7 +5452,7 @@ chillAST_VarDecl::chillAST_VarDecl( const char *t,  const char *n, const char *a
   isFromSourceFile = true; // default 
   filename = NULL;
 
-  fprintf(stderr, "2chillAST_VarDecl::chillAST_VarDecl LEAVING\n");
+  CHILL_DEBUG_PRINT("LEAVING\n");
   //parent->print(); fprintf(stderr, "\n\n");
 
 

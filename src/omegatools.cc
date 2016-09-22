@@ -19,7 +19,7 @@
 #include "ir_code.hh"
 #include "chill_error.hh"
 
-#include "chill_ast.hh"
+#include "chillAST/chillASTs.hh"
 #include "code_gen/CG_chillRepr.h"
 #include <code_gen/CG_utils.h>
 

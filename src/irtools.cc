@@ -13,6 +13,7 @@
 
 #include <iostream>
 #include <code_gen/CG_outputBuilder.h>
+#include <chilldebug.h>
 #include "irtools.hh"
 #include "omegatools.hh"
 #include "chill_error.hh"
@@ -26,18 +27,18 @@ std::vector<ir_tree_node *> build_ir_tree(IR_Control *control,
                                           ir_tree_node *parent) {
   std::vector<ir_tree_node *> result;
   
-  fprintf(stderr, "irtools.cc, build_ir_tree( control, parent)   building a CHILL IR tree \n");
+  CHILL_DEBUG_PRINT("building a CHILL IR tree \n");
 
   switch (control->type()) {
   case IR_CONTROL_BLOCK: {
-    fprintf(stderr, "irtools.cc L31   case IR_CONTROL_BLOCK\n"); 
+    CHILL_DEBUG_PRINT("case IR_CONTROL_BLOCK\n");
     IR_Block *IRCB = static_cast<IR_Block *>(control); 
     std::vector<IR_Control *> controls = control->ir_->FindOneLevelControlStructure(IRCB);
 
-    fprintf(stderr, "irtools.cc BACK FROM FindOneLevelControlStructure()  %d controls\n", controls.size()); 
+    CHILL_DEBUG_PRINT( "BACK FROM FindOneLevelControlStructure()  %d controls\n", controls.size());
 
     if (controls.size() == 0) {
-      fprintf(stderr, "controls.size() == 0\n"); 
+      CHILL_DEBUG_PRINT("controls.size() == 0\n");
 
       ir_tree_node *node = new ir_tree_node;
       node->content = control; 
@@ -46,19 +47,19 @@ std::vector<ir_tree_node *> build_ir_tree(IR_Control *control,
       result.push_back(node);
     }
     else {
-      fprintf(stderr, "controls.size() == %d  (NONZERO)\n", controls.size()); 
+      CHILL_DEBUG_PRINT("controls.size() == %d  (NONZERO)\n", controls.size());
       delete control;
 
       for (int i = 0; i < controls.size(); i++)
         switch (controls[i]->type()) {
         case IR_CONTROL_BLOCK: {
-          fprintf(stderr, "controls[%d] is IR_CONTROL_BLOCK\n", i); 
+          CHILL_DEBUG_PRINT("controls[%d] is IR_CONTROL_BLOCK\n", i);
           std::vector<ir_tree_node *> t = build_ir_tree(controls[i], parent);
           result.insert(result.end(), t.begin(), t.end());
           break;
         }
         case IR_CONTROL_LOOP: {
-          fprintf(stderr, "controls[%d] is IR_CONTROL_LOOP\n", i); 
+          CHILL_DEBUG_PRINT("controls[%d] is IR_CONTROL_LOOP\n", i);
           ir_tree_node *node = new ir_tree_node;
           node->content = controls[i];
           node->parent = parent;
@@ -68,7 +69,7 @@ std::vector<ir_tree_node *> build_ir_tree(IR_Control *control,
           break;
         }
         case IR_CONTROL_IF: {
-          fprintf(stderr, "controls[%d] is IR_CONTROL_IF\n", i); 
+          CHILL_DEBUG_PRINT("controls[%d] is IR_CONTROL_IF\n", i);
           static int unique_if_identifier = 0;
           
           IR_If* theif = static_cast<IR_If *>(controls[i]); 
@@ -85,7 +86,7 @@ std::vector<ir_tree_node *> build_ir_tree(IR_Control *control,
           
           block = theif->else_body();
           if (block != NULL) { 
-            fprintf(stderr, "IF_CONTROL has an else\n"); 
+            CHILL_DEBUG_PRINT("IF_CONTROL has an else\n");
             ir_tree_node *node = new ir_tree_node;
             node->content = controls[i]->clone();
             node->parent = parent;
@@ -108,16 +109,16 @@ std::vector<ir_tree_node *> build_ir_tree(IR_Control *control,
     break;
   }
   case IR_CONTROL_LOOP: {
-    fprintf(stderr, "case IR_CONTROL_LOOP\n"); 
+    CHILL_DEBUG_PRINT("case IR_CONTROL_LOOP\n");
     ir_tree_node *node = new ir_tree_node;
     node->content = control;
     node->parent  = parent;
-    fprintf(stderr, "recursing. build_ir_tree() of CONTROL_LOOP creating children  L122\n");
+    CHILL_DEBUG_PRINT("recursing. build_ir_tree() of CONTROL_LOOP creating children  L122\n");
     node->children = build_ir_tree(
       static_cast<const IR_Loop *>(control)->body(), node);
     node->payload = -1;
     result.push_back(node);
-    fprintf(stderr, "recursing. build_ir_tree() of CONTROL_LOOP creating children DONE\n");
+    CHILL_DEBUG_PRINT("recursing. build_ir_tree() of CONTROL_LOOP creating children DONE\n");
     break;
   }
   default:
@@ -129,7 +130,7 @@ std::vector<ir_tree_node *> build_ir_tree(IR_Control *control,
     break;
   }
   
-  fprintf(stderr, "build_ir_tree()  vector result has %ld parts\n", result.size());  
+  CHILL_DEBUG_PRINT("build_ir_tree()  vector result has %ld parts\n", result.size());
   return result;
 }
 
@@ -138,18 +139,18 @@ std::vector<ir_tree_node *> build_ir_tree(IR_Control *control,
 // lexical order in the source code.
 std::vector<ir_tree_node *> extract_ir_stmts(const std::vector<ir_tree_node *> &ir_tree) {
 
-  fprintf(stderr, "extract_ir_stmts()   ir_tree.size() %d\n", ir_tree.size()); 
+  CHILL_DEBUG_PRINT("extract_ir_stmts()   ir_tree.size() %d\n", ir_tree.size());
   std::vector<ir_tree_node *> result;
   for (int i = 0; i < ir_tree.size(); i++)
     switch (ir_tree[i]->content->type()) {
 
     case IR_CONTROL_BLOCK:
-      fprintf(stderr, "IR_CONTROL_BLOCK\n"); 
+      CHILL_DEBUG_PRINT("IR_CONTROL_BLOCK\n");
       result.push_back(ir_tree[i]);
       break;
 
     case IR_CONTROL_LOOP: {
-      fprintf(stderr, "IR_CONTROL_LOOP( recursing )\n"); 
+      CHILL_DEBUG_PRINT("IR_CONTROL_LOOP( recursing )\n");
       // clear loop payload from previous unsuccessful initialization process
       ir_tree[i]->payload = -1;
       
@@ -159,7 +160,7 @@ std::vector<ir_tree_node *> extract_ir_stmts(const std::vector<ir_tree_node *> &
       break;
     }      
     case IR_CONTROL_IF: {
-      fprintf(stderr, "IR_CONTROL_IF( recursing )\n"); 
+      CHILL_DEBUG_PRINT("IR_CONTROL_IF( recursing )\n");
       std::vector<ir_tree_node *> t = extract_ir_stmts(ir_tree[i]->children);
       result.insert(result.end(), t.begin(), t.end());
       break;
@@ -176,7 +177,7 @@ std::string chill_ir_control_type_string( IR_CONTROL_TYPE type ) {
   case IR_CONTROL_BLOCK:  return std::string( "IR_CONTROL_BLOCK");
   case IR_CONTROL_LOOP:   return std::string( "IR_CONTROL_LOOP" );
   case IR_CONTROL_IF:     return std::string( "IR_CONTROL_IF" );
-  case IR_CONTROL_WHILE:  return std::string( "IR_CONTROL_WHLIE"); break;
+  case IR_CONTROL_WHILE:  return std::string( "IR_CONTROL_WHLIE");
   default: return std::string( "UNKNOWN_IR_NODE_TYPE" ); 
   }
 }
@@ -282,15 +283,15 @@ test_data_dependences(IR_Code *ir,
                       int nestLevelj, 
                       std::map<std::string, std::vector<omega::CG_outputRepr * > > &uninterpreted_symbols,
                       std::map<std::string, std::vector<omega::CG_outputRepr * > > &uninterpreted_symbols_stringrepr) {
+  CHILL_DEBUG_BEGIN
+    fprintf(stderr, "\nirtools.cc test_data_dependences()  %d freevars\n", freevar.size());
+    fprintf(stderr, "\nrepr1  %p    ", repr1); repr1->dump(); fflush(stdout);
+    fprintf(stderr, "\nrepr2  %p    ", repr2); repr2->dump(); fflush(stdout);
 
-  fprintf(stderr, "\nirtools.cc test_data_dependences()  %d freevars\n", freevar.size()); 
-  fprintf(stderr, "\nrepr1  %p    ", repr1); repr1->dump(); fflush(stdout); 
-  fprintf(stderr, "\nrepr2  %p    ", repr2); repr2->dump(); fflush(stdout); 
-
-  for (int i=0; i<index.size(); i++) fprintf(stderr, "index %d %s\n", i, index[i].c_str()); 
-  Relation *helper = new Relation(IS1); fprintf(stderr, "IS1  "); helper->print(); fflush(stdout); 
-  helper = new Relation(IS2); fprintf(stderr, "IS2  "); helper->print(); fflush(stdout); 
-
+    for (int i=0; i<index.size(); i++) fprintf(stderr, "index %d %s\n", i, index[i].c_str());
+    Relation *helper = new Relation(IS1); fprintf(stderr, "IS1  "); helper->print(); fflush(stdout);
+    helper = new Relation(IS2); fprintf(stderr, "IS2  "); helper->print(); fflush(stdout);
+  CHILL_DEBUG_END
 
   //for (int i=0; i<freevar.size(); i++) {
   //  std::string shit = (const std::string)(freevar[i]->base_name()); 
@@ -301,23 +302,25 @@ test_data_dependences(IR_Code *ir,
   std::pair<std::vector<DependenceVector>, std::vector<DependenceVector> > result;
   
   if (repr1 == repr2) {
-    fprintf(stderr, "repr1 == repr2\nrepr1->dump()\n"); 
-    repr1->dump(); 
+    CHILL_DEBUG_BEGIN
+      fprintf(stderr, "repr1 == repr2\nrepr1->dump()\n");
+      repr1->dump();
+    CHILL_DEBUG_END
     fflush(stdout);
 
     std::vector<IR_ArrayRef *> access = ir->FindArrayRef(repr1);
-    fprintf(stderr, "access of size %d\n", access.size()); 
+    CHILL_DEBUG_PRINT("access of size %d\n", access.size());
     for (int i = 0; i < access.size(); i++) {
       IR_ArrayRef *a = access[i];
       
       if (a->is_write()) { 
-        fprintf(stderr, "WRITE  array access %d = %s\n", i, a->name().c_str()); 
+        CHILL_DEBUG_PRINT("WRITE  array access %d = %s\n", i, a->name().c_str());
       } 
       else { 
-        fprintf(stderr, "       array access %d = %s\n", i, a->name().c_str()); 
+        CHILL_DEBUG_PRINT("       array access %d = %s\n", i, a->name().c_str());
       } 
     } 
-    fprintf(stderr, "that was the list\n\n"); 
+    CHILL_DEBUG_PRINT("that was the list\n\n");
 
     // Manu:: variables/structures added to identify dependence vectors related to reduction operation
     tempResultMap trMap;
@@ -335,9 +338,9 @@ test_data_dependences(IR_Code *ir,
     
     // Manu -- changes for identifying possible reduction operation
     // The below loop nest is used to classify array references into different statements
-    fprintf(stderr, "\nbefore mapRefstoStatements()\n"); 
+    CHILL_DEBUG_PRINT("\nbefore mapRefstoStatements()\n");
     mapRefstoStatements(ir,access,ref2Stmt,rMap,tnrStmts,nrStmts);
-    fprintf(stderr, "after mapRefstoStatements()\n\n"); 
+    CHILL_DEBUG_PRINT("after mapRefstoStatements()\n\n");
 
     //-------------------------------------------------------------
     omega::coef_t lbound[3], ubound[3];   // for each  kind of dependence. We can potentially have reduction only if all
@@ -368,10 +371,11 @@ test_data_dependences(IR_Code *ir,
         else fprintf(stderr, "%d b->is_NOT_write()\n", j); 
 
         if (*sym_a == *sym_b && (a->is_write() || b->is_write())) {
-          fprintf(stderr, "\nirtools.cc ij %d %d   SYMBOL A == SYMBOL B and one is a write\n", i, j); 
           Relation r = arrays2relation(ir, freevar, a, IS1, b, IS2,uninterpreted_symbols,uninterpreted_symbols_stringrepr);
-          helper = new Relation(r); fprintf(stderr, "r    "); helper->print(); fflush(stdout); 
-
+          CHILL_DEBUG_BEGIN
+          fprintf(stderr, "\nirtools.cc ij %d %d   SYMBOL A == SYMBOL B and one is a write\n", i, j);
+          Relation *helper = new Relation(r); fprintf(stderr, "r    "); helper->print(); fflush(stdout);
+          CHILL_DEBUG_END
 
           fprintf(stderr, "1\n"); 
           std::pair<std::vector<DependenceVector>,

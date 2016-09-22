@@ -47,7 +47,6 @@ typedef std::map<int, std::pair<std::vector<DependenceVector>, std::vector<Depen
 typedef std::pair<std::vector<DependenceVector>, std::vector<DependenceVector> > DVPair;
 
 // Manu:: this function is required for reduction operation
-//omega::CG_outputRepr * from_same_statement(IR_Code *ir, IR_ArrayRef *a, IR_ArrayRef *b);
 bool from_same_statement(IR_Code *ir, IR_ArrayRef *a, IR_ArrayRef *b);
 int stmtType(IR_Code *ir, const omega::CG_outputRepr *repr);
 IR_OPERATION_TYPE getReductionOperator(IR_Code *ir, const omega::CG_outputRepr *repr);

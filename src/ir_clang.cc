@@ -43,7 +43,7 @@ History:
 #include <vector>
 #include <chilldebug.h>
 
-#include "chill_ast.hh"
+#include "chillAST.h"
 
 // TODO move to ir_clang.hh
 // fwd declarations 
@@ -833,7 +833,7 @@ chillAST_node * ConvertDeclStmt( DeclStmt *clangDS, chillAST_node *p ) {
 
       // TODO 
       if (V->hasInit()) { 
-        fprintf(stderr, " ConvertDeclStmt()  UNHANDLED initialization\n");
+        CHILL_ERROR(" ConvertDeclStmt()  UNHANDLED initialization\n");
         exit(-1); 
       }
     }
@@ -886,13 +886,12 @@ chillAST_node * ConvertFunctionDecl( FunctionDecl *D, chillAST_node *p ) {
 
   int numparams = D->getNumParams();
 
-  //fprintf(stderr, "\nand %d parameters\n", numparams);
+  CHILL_DEBUG_PRINT( " %d parameters\n", numparams);
   for (int i=0; i<numparams; i++) {
-    if (i) fprintf(stderr, ", ");
     VarDecl *clangvardecl = D->getParamDecl(i);  // the ith parameter  (CLANG)
     ParmVarDecl *pvd = D->getParamDecl(i); 
     QualType T = pvd->getOriginalType();
-    fprintf(stderr, "OTYPE %s\n", T.getAsString().c_str()); 
+    CHILL_DEBUG_PRINT("OTYPE %s\n", T.getAsString().c_str());
 
     chillAST_VarDecl *chillPVD = (chillAST_VarDecl *)ConvertVarDecl( clangvardecl, chillFD ) ; 
     //chillPVD->print();  fflush(stdout); 
@@ -901,14 +900,14 @@ chillAST_node * ConvertFunctionDecl( FunctionDecl *D, chillAST_node *p ) {
     VariableDeclarations.push_back(chillPVD); 
     
     chillFD->addParameter(chillPVD); 
-    fprintf(stderr, "chillAST ParmVarDecl for %s from chill location 0x%x\n",chillPVD->varname, clangvardecl); 
+    CHILL_DEBUG_PRINT("chillAST ParmVarDecl for %s from chill location 0x%x\n",chillPVD->varname, clangvardecl);
   } // for each parameter 
 
 
 
   //fprintf(stderr, ")\n{\n"); // beginning of function body 
   //if (D->isExternC())    { chillFD->setExtern();  fprintf(stderr, "%s is extern\n", FuncName.c_str()); }; 
-  if (D->getBuiltinID()) { chillFD->setExtern();  fprintf(stderr, "%s is builtin (extern)\n", FuncName.c_str()); }; 
+  if (D->getBuiltinID()) { chillFD->setExtern();  CHILL_DEBUG_PRINT("%s is builtin (extern)\n", FuncName.c_str()); };
 
   Stmt *clangbody = D->getBody();
   if (clangbody) { // may just be fwd decl or external, without an actual body 
@@ -1670,12 +1669,14 @@ IR_Ref *IR_chillArrayRef::clone() const {
 // ----------------------------------------------------------------------------
 // Class: IR_chillLoop
 // ----------------------------------------------------------------------------
-IR_chillLoop::IR_chillLoop(const IR_Code *ir, clang::ForStmt *tf) { fprintf(stderr, "IR_chillLoop::IR_chillLoop() you lose\n"); exit(-1); }; 
+IR_chillLoop::IR_chillLoop(const IR_Code *ir, clang::ForStmt *tf) { CHILL_ERROR("IR_chillLoop::IR_chillLoop() you lose\n"); exit(-1); };
 
-IR_chillLoop::IR_chillLoop(const IR_Code *ir, chillAST_ForStmt *achillforstmt) { 
-  fprintf(stderr, "IR_xxxxLoop::IR_xxxxLoop()\n"); 
-  fprintf(stderr, "loop is:\n"); 
-  achillforstmt->print(); 
+IR_chillLoop::IR_chillLoop(const IR_Code *ir, chillAST_ForStmt *achillforstmt) {
+  CHILL_DEBUG_BEGIN
+    fprintf(stderr, "IR_xxxxLoop::IR_xxxxLoop()\n");
+    fprintf(stderr, "loop is:\n");
+    achillforstmt->print();
+  CHILL_DEBUG_END
 
   ir_ = ir; 
   chillforstmt = achillforstmt;
@@ -1684,7 +1685,7 @@ IR_chillLoop::IR_chillLoop(const IR_Code *ir, chillAST_ForStmt *achillforstmt) {
   chillAST_BinaryOperator *cond = (chillAST_BinaryOperator *)chillforstmt->getCond();
   // check to be sure  (assert) 
   if (!init->isAssignmentOp() || !cond->isComparisonOp() ) {
-    fprintf(stderr, "ir_clang.cc, malformed loop init or cond:\n");
+    CHILL_ERROR("malformed loop init or cond:\n");
     achillforstmt->print(); 
     exit(-1); 
   }
@@ -1738,21 +1739,21 @@ IR_chillLoop::IR_chillLoop(const IR_Code *ir, chillAST_ForStmt *achillforstmt) {
     else beets = true;
 
     if (beets) {
-      fprintf(stderr, "malformed loop increment (or more likely unhandled case)\n");
-      inc->print(); 
-      exit(-1); 
+      CHILL_ERROR("malformed loop increment (or more likely unhandled case)\n");
+      inc->print();
+      exit(-1);
     }
   } // binary operator 
-  else { 
-    fprintf(stderr, "IR_chillLoop constructor, unhandled loop increment\n");
-      inc->print(); 
-      exit(-1); 
+  else {
+    CHILL_ERROR("IR_chillLoop constructor, unhandled loop increment\n");
+    inc->print();
+    exit(-1);
   }
   //inc->print(0, stderr);fprintf(stderr, "\n"); 
 
   chillAST_DeclRefExpr *dre = (chillAST_DeclRefExpr *)init->getLHS();
   if (!dre->isDeclRefExpr()) { 
-    fprintf(stderr, "malformed loop init.\n"); 
+    CHILL_DEBUG_PRINT("malformed loop init.\n");
     init->print(); 
   }
 
@@ -1767,22 +1768,22 @@ IR_chillLoop::IR_chillLoop(const IR_Code *ir, chillAST_ForStmt *achillforstmt) {
 
   chillbody = achillforstmt->getBody(); 
 
-  fprintf(stderr, "IR_xxxxLoop::IR_xxxxLoop() DONE\n"); 
+  CHILL_DEBUG_PRINT("IR_xxxxLoop::IR_xxxxLoop() DONE\n");
 }
 
 
 omega::CG_outputRepr *IR_chillLoop::lower_bound() const {
-  fprintf(stderr, "IR_xxxxLoop::lower_bound()\n"); 
+  CHILL_DEBUG_PRINT("IR_xxxxLoop::lower_bound()\n");
   return new omega::CG_chillRepr(chilllowerbound);
 }
 
 omega::CG_outputRepr *IR_chillLoop::upper_bound() const {
-  fprintf(stderr, "IR_xxxxLoop::upper_bound()\n"); 
+  CHILL_DEBUG_PRINT("IR_xxxxLoop::upper_bound()\n");
   return new omega::CG_chillRepr(chillupperbound);
 }
 
 IR_Block *IR_chillLoop::body() const {
-  fprintf(stderr, "IR_xxxxLoop::body()\n");
+  CHILL_DEBUG_PRINT("IR_xxxxLoop::body()\n");
   //assert(isa<CompoundStmt>(tf_->getBody()));
   //fprintf(stderr, "returning a clangBLOCK corresponding to the body of the loop\n"); 
   //fprintf(stderr, "body type %s\n", chillbody->getTypeString()); 
@@ -1790,25 +1791,26 @@ IR_Block *IR_chillLoop::body() const {
 }
 
 IR_Control *IR_chillLoop::clone() const {
-  fprintf(stderr, "IR_xxxxLoop::clone()\n"); 
+  CHILL_DEBUG_PRINT("IR_xxxxLoop::clone()\n");
   //chillforstmt->print(); fflush(stdout); 
   return new IR_chillLoop(ir_, chillforstmt);
 }
 
 IR_CONDITION_TYPE IR_chillLoop::stop_cond() const {
   chillAST_BinaryOperator *loopcondition = (chillAST_BinaryOperator*) chillupperbound;
-  fprintf(stderr, "IR_xxxxLoop::stop_cond()\n"); 
+  CHILL_DEBUG_PRINT("IR_xxxxLoop::stop_cond()\n");
   return conditionoperator; 
 }
 
 IR_Block *IR_chillLoop::convert() { // convert the loop to a block 
-  fprintf(stderr, "IR_xxxxLoop::convert()   maybe \n"); 
+  CHILL_DEBUG_PRINT("IR_xxxxLoop::convert()   maybe \n");
   return new IR_chillBlock( ir_, chillbody ); // ?? 
   return NULL;
 }
 
 void IR_chillLoop::dump() const { 
-  fprintf(stderr, "TODO:  IR_chillLoop::dump()\n"); exit(-1); 
+  CHILL_ERROR("TODO:  IR_chillLoop::dump()\n");
+  exit(-1);
 }
 
 
@@ -1816,8 +1818,8 @@ void IR_chillLoop::dump() const {
 // Class: IR_chillBlock
 // ----------------------------------------------------------------------------
 omega::CG_outputRepr *IR_chillBlock::original() const {
-  fprintf(stderr, "IR_xxxxBlock::original()  TODO \n"); 
-  exit(-1); 
+  CHILL_ERROR("IR_xxxxBlock::original()  TODO \n");
+  exit(-1);
   return NULL;
 }
 
@@ -1851,7 +1853,7 @@ omega::CG_outputRepr *IR_chillBlock::extract() const {
 }
 
 IR_Control *IR_chillBlock::clone() const {
-  fprintf(stderr, "IR_xxxxBlock::clone()\n"); 
+  CHILL_DEBUG_PRINT("IR_xxxxBlock::clone()\n");
   //fprintf(stderr, "IR_xxxxBlock::clone()  %d statements\n", statements.size());
   return new IR_chillBlock( this );  // shallow copy ? 
 }
@@ -1945,15 +1947,12 @@ IR_clangCode_Global_Init *IR_clangCode_Global_Init::pinstance = 0;
 
 
 IR_clangCode_Global_Init *IR_clangCode_Global_Init::Instance(char **argv) {
-  fprintf(stderr, "in IR_clangCode_Global_Init::Instance(), "); 
-  if (pinstance == 0) {  
-    //fprintf(stderr, "\n\n***  making the one and only instance ***\n\n\n"); 
+  if (pinstance == 0) {
     // this is the only way to create an IR_clangCode_Global_Init
     pinstance = new IR_clangCode_Global_Init; 
     pinstance->ClangCompiler = new aClangCompiler( argv[1] );
 
   }
-  //fprintf(stderr, "leaving  IR_clangCode_Global_Init::Instance()\n"); 
   return pinstance;
 }
 
@@ -2053,7 +2052,7 @@ aClangCompiler::aClangCompiler( char *filename ) {
   NULLASTConsumer TheConsumer; // must pass a consumer in to ParseAST(). This one does nothing
 
   //fprintf(stderr, "ready? Parse.\n");
-  fprintf(stderr, "actually parsing file %s using clang\n", filename); 
+  CHILL_DEBUG_PRINT("actually parsing file %s using clang\n", filename);
 
   ParseAST( Clang->getPreprocessor(), &TheConsumer, Clang->getASTContext());
 
@@ -2062,7 +2061,7 @@ aClangCompiler::aClangCompiler( char *filename ) {
   // TUD->dump();  // print it out 
 
   // create another AST, very similar to the clang AST but not written by idiots
-  fprintf(stderr, "converting entire clang AST into chill AST (ir_clang.cc)\n"); 
+  CHILL_DEBUG_PRINT("converting entire clang AST into chill AST (ir_clang.cc)\n");
   chillAST_node * wholefile = ConvertTranslationUnit( TUD, filename); 
 
   fflush(stdout);
@@ -2136,17 +2135,17 @@ chillAST_FunctionDecl*  aClangCompiler::findprocedurebyname( char *procname ) {
   //fprintf(stderr, "procs has %d members\n", procs.size());
 
   if ( procs.size() == 0 ) { 
-    fprintf(stderr, "could not find function named '%s' in AST from file %s\n", procname, SourceFileName);
+    CHILL_ERROR("could not find function named '%s' in AST from file %s\n", procname, SourceFileName);
     exit(-1);
   }
   
   if ( procs.size() > 1 ) { 
-    fprintf(stderr, "oddly, found %d functions named '%s' in AST from file %s\n", procs.size(), procname, SourceFileName);
-    fprintf(stderr, "I am unsure what to do\n"); 
+    CHILL_ERROR("oddly, found %d functions named '%s' in AST from file %s\n", procs.size(), procname, SourceFileName);
+    CHILL_ERROR("I am unsure what to do\n");
     exit(-1);
   }
 
-  fprintf(stderr, "found the procedure named %s\n", procname); 
+  CHILL_DEBUG_PRINT("found the procedure named %s\n", procname);
   return (chillAST_FunctionDecl *)procs[0];
 
 }
@@ -2226,7 +2225,7 @@ IR_clangCode_Global_Init::~IR_clangCode_Global_Init()
 // ----------------------------------------------------------------------------
 
 IR_clangCode::IR_clangCode(const char *fname, const char *proc_name): IR_Code() {
-  fprintf(stderr, "\nIR_xxxxCode::IR_xxxxCode()\n\n"); 
+  CHILL_DEBUG_PRINT("IR_xxxxCode::IR_xxxxCode()\n");
   //fprintf(stderr, "IR_clangCode::IR_clangCode( filename %s, procedure %s )\n", filename, proc_name);
   
   filename = strdup(fname); // filename is internal to IR_clangCode
@@ -2260,15 +2259,14 @@ IR_clangCode::IR_clangCode(const char *fname, const char *proc_name): IR_Code() 
     pInstance->setCurrentFunction( localFD ); 
 
     chillAST_node *b = localFD->getBody();  // we do this just because it will get done next 
-    fprintf(stderr, "in IR_xxxxCode::IR_xxxxCode(), new CG_xxxxBuilder\n"); 
 
-    fprintf(stderr, "ir_clang.cc calling new CG_chillBuilder() umwut?\n"); 
+    CHILL_DEBUG_PRINT("calling new CG_chillBuilder() umwut?\n");
     ocg_ = new omega::CG_chillBuilder();  // ocg == omega code gen
     chillfunc =  localFD; 
 
   }
 
-  fprintf(stderr, "IR_xxxxCode::IR_xxxxCode() returning after reading source file and finding function\n\n"); 
+  CHILL_DEBUG_PRINT("returning after reading source file and finding function\n\n");
 
   //chillfunc->dump( 0, stderr); 
 
@@ -2277,7 +2275,7 @@ IR_clangCode::IR_clangCode(const char *fname, const char *proc_name): IR_Code() 
 
 IR_clangCode::~IR_clangCode() {
   //func_->print(llvm::outs(), 4); // printing as part of the destructor !! 
-  fprintf(stderr, "IR_xxxxCode::~IR_xxxxCode()\noutput happening as part of the destructor !!\n");
+  CHILL_DEBUG_PRINT("\n\toutput happening as part of the destructor !!\n");
   //chillfunc->dump(); 
   //chillfunc->print(); 
 
@@ -2578,7 +2576,7 @@ std::vector<IR_ArrayRef *> IR_clangCode::FindArrayRef(const omega::CG_outputRepr
 
 
 std::vector<IR_Control *> IR_clangCode::FindOneLevelControlStructure(const IR_Block *block) const {
-  fprintf(stderr, "IR_xxxxCode::FindOneLevelControlStructure()\n"); 
+  CHILL_DEBUG_PRINT("IR_xxxxCode::FindOneLevelControlStructure()\n");
   const IR_chillBlock *CB = (const IR_chillBlock *) block; 
   //fprintf(stderr, "block 0x%x\n", block); 
 
@@ -2588,14 +2586,14 @@ std::vector<IR_Control *> IR_clangCode::FindOneLevelControlStructure(const IR_Bl
   //fprintf(stderr, "blockast 0x%x\n", blockast); 
   if (blockast == NULL) { 
     int numstmts = CB->statements.size(); 
-    fprintf(stderr, "%d statements\n", numstmts); 
+    CHILL_DEBUG_PRINT("%d statements\n", numstmts);
 
     if (numstmts == 0) return controls; 
 
     else if (numstmts == 1) blockast = CB->statements[0]; // a single statement
 
     else { 
-      fprintf(stderr, "IR_xxxBlock is dumb, with multiple ways to hold statements\n");
+      CHILL_ERROR( "IR_xxxBlock is dumb, with multiple ways to hold statements\n");
       exit(-1); // TODO FIX 
     }
   }
@@ -2615,11 +2613,14 @@ std::vector<IR_Control *> IR_clangCode::FindOneLevelControlStructure(const IR_Bl
   std::vector<chillAST_node *> children;
 
   
-  if (blockast->asttype == CHILLAST_NODETYPE_FORSTMT) { fflush(stdout); 
-    fprintf(stderr, "found a top level For statement (Loop)\n"); 
-    fprintf(stderr, "For Stmt (loop) is:\n");
-    blockast->print(); 
-    fprintf(stderr, "pushing the loop at TOP\n"); 
+  if (blockast->asttype == CHILLAST_NODETYPE_FORSTMT) {
+    CHILL_DEBUG_BEGIN
+      fflush(stdout);
+      fprintf(stderr, "found a top level For statement (Loop)\n");
+      fprintf(stderr, "For Stmt (loop) is:\n");
+      blockast->print();
+      fprintf(stderr, "pushing the loop at TOP\n");
+    CHILL_DEBUG_END
 
     controls.push_back( new IR_chillLoop( this, (chillAST_ForStmt *)blockast)); 
   }
@@ -2663,16 +2664,16 @@ std::vector<IR_Control *> IR_clangCode::FindOneLevelControlStructure(const IR_Bl
       CHILL_ASTNODE_TYPE typ = children[i]->asttype;
       if (typ == CHILLAST_NODETYPE_LOOP) {
         if (numchildren == 1) { 
-          fprintf(stderr, "found a For statement (Loop)\n"); 
+          CHILL_DEBUG_PRINT("found a For statement (Loop)\n");
         }
         else { 
-          fprintf(stderr, "found a For statement (Loop) at %d within a Basic Block\n", i); 
+          CHILL_DEBUG_PRINT("found a For statement (Loop) at %d within a Basic Block\n", i);
         }
         //children[i]->print(); printf("\n"); fflush(stdout);
         
         ns = basicblock->numstatements();
         if (ns) {
-          fprintf(stderr, "pushing a run of statements %d to %d as a block\n", i-ns, i-1); 
+          CHILL_DEBUG_PRINT("pushing a run of statements %d to %d as a block\n", i-ns, i-1);
           controls.push_back( basicblock );
           basicblock = new IR_chillBlock(this); // start a new one
         }
@@ -2704,17 +2705,17 @@ std::vector<IR_Control *> IR_clangCode::FindOneLevelControlStructure(const IR_Bl
     
   }
   else { 
-    fprintf(stderr, "IR_clangCode::FindOneLevelControlStructure(), block is a %s???\n", blockast->getTypeString());
+    CHILL_ERROR("IR_clangCode::FindOneLevelControlStructure(), block is a %s???\n", blockast->getTypeString());
     exit(-1);
   }
   
-  fprintf(stderr, "returning vector of %d controls\n", controls.size() ); 
+  CHILL_DEBUG_PRINT("returning vector of %d controls\n", controls.size() );
   return controls;
 }
 
 
 IR_Block *IR_clangCode::MergeNeighboringControlStructures(const std::vector<IR_Control *> &controls) const {
-  fprintf(stderr, "IR_xxxxCode::MergeNeighboringControlStructures  %d controls\n", controls.size());
+  CHILL_DEBUG_PRINT("IR_xxxxCode::MergeNeighboringControlStructures  %d controls\n", controls.size());
 
   if (controls.size() == 0)
     return NULL;
@@ -2726,7 +2727,7 @@ IR_Block *IR_clangCode::MergeNeighboringControlStructures(const std::vector<IR_C
    for (int i = 0; i < controls.size(); i++) {
     switch (controls[i]->type()) {
     case IR_CONTROL_LOOP: {
-      fprintf(stderr, "control %d is IR_CONTROL_LOOP\n", i); 
+      CHILL_DEBUG_PRINT("control %d is IR_CONTROL_LOOP\n", i);
       chillAST_ForStmt *loop =  static_cast<IR_chillLoop *>(controls[i])->chillforstmt;
       if (parent == NULL) {
         parent = loop->parent;
@@ -2739,7 +2740,7 @@ IR_Block *IR_clangCode::MergeNeighboringControlStructures(const std::vector<IR_C
       break;
      }
     case IR_CONTROL_BLOCK: {
-      fprintf(stderr, "control %d is IR_CONTROL_BLOCK\n", i); 
+      CHILL_DEBUG_PRINT("control %d is IR_CONTROL_BLOCK\n", i);
       IR_chillBlock *CB =  static_cast<IR_chillBlock*>(controls[i]);
       std::vector<chillAST_node*> blockstmts = CB->statements;
       if (statements.size() != 0) { 
@@ -2758,8 +2759,7 @@ IR_Block *IR_clangCode::MergeNeighboringControlStructures(const std::vector<IR_C
       else {
         if (CB->chillAST)  CBlock->addStatement(CBlock->chillAST); // if this is a block, add theblock's statements? 
         else { // should never happen
-          fprintf(stderr, "WARNING: ir_clang.cc  IR_clangCode::MergeNeighboringControlStructures");
-          fprintf(stderr, "    empty IR_CONTROL_BLOCK \n");
+          CHILL_DEBUG_PRINT("WARNING: empty IR_CONTROL_BLOCK \n");
         }
       }
       break;
@@ -2923,9 +2923,8 @@ void IR_clangCode::ReplaceCode(IR_Control *old, omega::CG_outputRepr *repr) {
     }
     break; 
   case IR_CONTROL_BLOCK:
-    fprintf(stderr, "old is IR_CONTROL_BLOCK\n"); 
-    fprintf(stderr, "IR_clangCode::ReplaceCode() stubbed out\n"); 
-    exit(-1); 
+    CHILL_ERROR("old is IR_CONTROL_BLOCK\n");
+    exit(-1);
     //tf_old = static_cast<IR_chillBlock *>(old)->getStmtList()[0];
     break; 
   default:
@@ -2935,17 +2934,18 @@ void IR_clangCode::ReplaceCode(IR_Control *old, omega::CG_outputRepr *repr) {
   
   fflush(stdout); 
   //fprintf(stderr, "\nafter inserting %d statements into the Clang IR,", numnew);
-  fprintf(stderr, "\nnew parent2 is\n\n{\n");
-  std::vector<chillAST_node*>  newparentcode = par->getChildren();
-  for (int i=0; i<newparentcode.size(); i++) { 
-    fflush(stdout); 
-    //fprintf(stderr, "%d ", i); 
-    newparentcode[i]->print(); printf(";\n"); fflush(stdout); 
-  }
+  CHILL_DEBUG_BEGIN
+    fprintf(stderr, "new parent2 is\n\n{\n");
+    std::vector<chillAST_node*>  newparentcode = par->getChildren();
+    for (int i=0; i<newparentcode.size(); i++) {
+      fflush(stdout);
+      //fprintf(stderr, "%d ", i);
+      newparentcode[i]->print(); printf(";\n"); fflush(stdout);
+    }
+    fprintf(stderr, "}\n");
+  CHILL_DEBUG_END
 
 
-
-  fprintf(stderr, "}\n"); 
 
 }
 
@@ -3045,14 +3045,14 @@ IR_OPERATION_TYPE IR_clangCode::QueryExpOperation(const omega::CG_outputRepr *re
     if (!strcmp(opstring, "/")) return IR_OP_DIVIDE;
     if (!strcmp(opstring, "=")) return IR_OP_ASSIGNMENT;
 
-    fprintf(stderr, "ir_clang.cc  IR_clangCode::QueryExpOperation() UNHANDLED Binary(or Unary)Operator op type (%s)\n", opstring); 
+    CHILL_ERROR("UNHANDLED Binary(or Unary)Operator op type (%s)\n", opstring);
     exit(-1);
   }
   else if (node->isDeclRefExpr() ) return  IR_OP_VARIABLE; // ?? 
   //else if (node->is ) return  something;
   else { 
-    fprintf(stderr, "IR_clangCode::QueryExpOperation()  UNHANDLED NODE TYPE %s\n", node->getTypeString());
-    exit(-1); 
+    CHILL_ERROR("IR_clangCode::QueryExpOperation()  UNHANDLED NODE TYPE %s\n", node->getTypeString());
+    exit(-1);
   }
 
   /* CLANG 
@@ -3123,7 +3123,7 @@ std::vector<omega::CG_outputRepr *> IR_clangCode::QueryExpOperand(const omega::C
       v.push_back(new omega::CG_chillRepr( bop->rhs )); 
     }
     else { 
-      fprintf(stderr, "ir_clang.cc  IR_clangCode::QueryExpOperand() Binary Operator  UNHANDLED op (%s)\n", op); 
+      CHILL_ERROR("Binary Operator  UNHANDLED op (%s)\n", op);
       exit(-1);
     }
   } // BinaryOperator
@@ -3135,13 +3135,13 @@ std::vector<omega::CG_outputRepr *> IR_clangCode::QueryExpOperand(const omega::C
       v.push_back( new omega::CG_chillRepr( uop->subexpr ));
     }
     else { 
-      fprintf(stderr, "ir_clang.cc  IR_clangCode::QueryExpOperand() Unary Operator  UNHANDLED op (%s)\n", op); 
+      CHILL_ERROR("ir_clang.cc  IR_clangCode::QueryExpOperand() Unary Operator  UNHANDLED op (%s)\n", op);
       exit(-1);
     }
   } // unaryoperator
   else { 
-    fprintf(stderr, "ir_clang.cc  IR_clangCode::QueryExpOperand() UNHANDLED node type %s\n", e->getTypeString()); 
-    exit(-1); 
+    CHILL_ERROR("UNHANDLED node type %s\n", e->getTypeString());
+    exit(-1);
   }
     
 

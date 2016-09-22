@@ -37,6 +37,7 @@
 #include "chill_error.hh"
 #include <string.h>
 #include <list>
+#include <chilldebug.h>
 
 // TODO 
 #define _DEBUG_ true
@@ -51,19 +52,19 @@ const std::string Loop::overflow_var_name_prefix = std::string("over");
 void echocontroltype( const IR_Control *control ) { 
   switch(control->type()) { 
   case IR_CONTROL_BLOCK: {
-    fprintf(stderr, "IR_CONTROL_BLOCK\n"); 
+    CHILL_DEBUG_PRINT("IR_CONTROL_BLOCK\n");
     break;
   }
   case IR_CONTROL_LOOP: {
-    fprintf(stderr, "IR_CONTROL_LOOP\n"); 
+    CHILL_DEBUG_PRINT("IR_CONTROL_LOOP\n");
     break;
   }
   case IR_CONTROL_IF: {
-    fprintf(stderr, "IR_CONTROL_IF\n"); 
+    CHILL_DEBUG_PRINT("IR_CONTROL_IF\n");
     break;
   }
   default:
-    fprintf(stderr, "just a bunch of statements?\n"); 
+    CHILL_DEBUG_PRINT("just a bunch of statements?\n");
     
   } // switch
 }
@@ -107,10 +108,10 @@ void Loop::reduce(int stmt_num,
   //ir->printStmt(stmt[stmt_num].code);
   
   if (stmt[stmt_num].reduction != 1) {
-    std::cout << "loop.cc Cannot reduce this statement\n";
+    CHILL_DEBUG_PRINT("Cannot reduce this statement\n");
     return;
   }
-  fprintf(stderr, "loop.cc CAN reduce this statment?\n"); 
+  CHILL_DEBUG_PRINT("CAN reduce this statment?\n");
 
   /*for (int i = 0; i < level.size(); i++)
     if (stmt[stmt_num].loop_level[level[i] - 1].segreducible != true) {
@@ -303,19 +304,17 @@ bool Loop::isInitialized() const {
 bool Loop::init_loop(std::vector<ir_tree_node *> &ir_tree,
                      std::vector<ir_tree_node *> &ir_stmt) {
   
-  fprintf(stderr, "\n                                                  Loop::init_loop()\n");
-  
-  fprintf(stderr, "extract_ir_stmts()\n");
-  fprintf(stderr, "ir_tree has %d statements\n", ir_tree.size()); 
+  CHILL_DEBUG_PRINT("extract_ir_stmts()\n");
+  CHILL_DEBUG_PRINT("ir_tree has %d statements\n", ir_tree.size());
 
   ir_stmt = extract_ir_stmts(ir_tree);
   
-  fprintf(stderr,"nesting level stmt size = %d\n", (int)ir_stmt.size());
+  CHILL_DEBUG_PRINT("nesting level stmt size = %d\n", (int)ir_stmt.size());
   stmt_nesting_level_.resize(ir_stmt.size());
   
   std::vector<int> stmt_nesting_level(ir_stmt.size());
   
-  fprintf(stderr, "%d statements?\n", (int)ir_stmt.size()); 
+  CHILL_DEBUG_PRINT("%d statements?\n", (int)ir_stmt.size());
   
   // find out how deeply nested each statement is.  (how can these be different?) 
   for (int i = 0; i < ir_stmt.size(); i++) {
@@ -330,14 +329,14 @@ bool Loop::init_loop(std::vector<ir_tree_node *> &ir_tree,
     }
     stmt_nesting_level_[i] = t;
     stmt_nesting_level[i] = t;
-    fprintf(stderr, "stmt_nesting_level[%d] = %d\n", i, t); 
+    CHILL_DEBUG_PRINT("stmt_nesting_level[%d] = %d\n", i, t);
   }
   
   if (actual_code.size() == 0)
     actual_code = std::vector<CG_outputRepr*>(ir_stmt.size());
   
   stmt = std::vector<Statement>(ir_stmt.size());
-  fprintf(stderr, "in init_loop, made %d stmts\n", (int)ir_stmt.size());
+  CHILL_DEBUG_PRINT("in init_loop, made %d stmts\n", (int)ir_stmt.size());
   
   uninterpreted_symbols =             std::vector<std::map<std::string, std::vector<omega::CG_outputRepr * > > >(ir_stmt.size());
   uninterpreted_symbols_stringrepr =  std::vector<std::map<std::string, std::vector<omega::CG_outputRepr * > > >(ir_stmt.size());
@@ -357,34 +356,34 @@ bool Loop::init_loop(std::vector<ir_tree_node *> &ir_tree,
       }
     }
     
-    fprintf(stderr, "max nesting level %d at location %d\n", max_nesting_level, loc); 
+    CHILL_DEBUG_PRINT("max nesting level %d at location %d\n", max_nesting_level, loc);
     
     // most deeply nested statement acting as a reference point
     if (n_dim == -1) {
-      fprintf(stderr, "loop.cc L356  n_dim now max_nesting_level %d\n", max_nesting_level); 
+      CHILL_DEBUG_PRINT("n_dim now max_nesting_level %d\n", max_nesting_level);
       n_dim = max_nesting_level;
       max_loc = loc;
       
       index = std::vector<std::string>(n_dim);
       
       ir_tree_node *itn = ir_stmt[loc];
-      fprintf(stderr, "itn = stmt[%d]\n", loc); 
+      CHILL_DEBUG_PRINT("itn = stmt[%d]\n", loc);
       int cur_dim = n_dim - 1;
       while (itn->parent != NULL) {
-        fprintf(stderr, "parent\n"); 
+        CHILL_DEBUG_PRINT("parent\n");
         
         itn = itn->parent;
         if (itn->content->type() == IR_CONTROL_LOOP) {
-          fprintf(stderr, "IR_CONTROL_LOOP  cur_dim %d\n", cur_dim); 
+          CHILL_DEBUG_PRINT("IR_CONTROL_LOOP  cur_dim %d\n", cur_dim);
           IR_Loop *IRL = static_cast<IR_Loop *>(itn->content);
           index[cur_dim] = IRL->index()->name();
-          fprintf(stderr, "index[%d] = '%s'\n", cur_dim, index[cur_dim].c_str());
+          CHILL_DEBUG_PRINT("index[%d] = '%s'\n", cur_dim, index[cur_dim].c_str());
           itn->payload = cur_dim--;
         }
       }
     }
     
-    fprintf(stderr, "align loops by names,\n"); 
+    CHILL_DEBUG_PRINT("align loops by names,\n");
     // align loops by names, temporary solution
     ir_tree_node *itn = ir_stmt[loc];  // defined outside loops?? 
     int depth = stmt_nesting_level_[loc] - 1;
@@ -422,13 +421,13 @@ bool Loop::init_loop(std::vector<ir_tree_node *> &ir_tree,
       }
     }
     
-    fprintf(stderr, "\nset relation variable names                      ****\n");
+    CHILL_DEBUG_PRINT("set relation variable names                      ****\n");
     // set relation variable names
     
     // this finds the loop variables for loops enclosing this statement and puts
     // them in an Omega Relation (just their names, which could fail) 
     
-    fprintf(stderr, "Relation r(%d)\n", n_dim); 
+    CHILL_DEBUG_PRINT("Relation r(%d)\n", n_dim);
     Relation r(n_dim);
     F_And *f_root = r.add_and();
     itn = ir_stmt[loc];
@@ -828,18 +827,17 @@ bool Loop::init_loop(std::vector<ir_tree_node *> &ir_tree,
 
 Loop::Loop(const IR_Control *control) {
   
-  fprintf(stderr, "\nLoop::Loop(const IR_Control *control)\n");
-  fprintf(stderr, "control type is %d   ", control->type()); 
+  CHILL_DEBUG_PRINT("control type is %d   ", control->type());
   echocontroltype(control);
-  
+
+  CHILL_DEBUG_PRINT("2set last_compute_cg_ = NULL; \n");
   last_compute_cgr_ = NULL;
   last_compute_cg_ = NULL;
-  fprintf(stderr, "2set last_compute_cg_ = NULL; \n"); 
 
   ir = const_cast<IR_Code *>(control->ir_); // point to the CHILL IR that this loop came from
   if (ir == 0) { 
-    fprintf(stderr, "ir gotten from control = 0x%x\n", (long)ir);
-    fprintf(stderr, "loop.cc GONNA DIE SOON *******************************\n\n");
+    CHILL_DEBUG_PRINT("ir gotten from control = 0x%x\n", (long)ir);
+    CHILL_DEBUG_PRINT("loop.cc GONNA DIE SOON *******************************\n\n");
   }
   
   init_code = NULL;
@@ -848,8 +846,8 @@ Loop::Loop(const IR_Control *control) {
   overflow_var_name_counter = 1;
   known = Relation::True(0);
   
-  fprintf(stderr, "in Loop::Loop, calling  build_ir_tree()\n"); 
-  fprintf(stderr, "\nloop.cc, Loop::Loop() about to clone control\n"); 
+  CHILL_DEBUG_PRINT("calling build_ir_tree()\n");
+  CHILL_DEBUG_PRINT("about to clone control\n");
   ir_tree = build_ir_tree(control->clone(), NULL);
   //fprintf(stderr,"in Loop::Loop. ir_tree has %ld parts\n", ir_tree.size()); 
   
@@ -4008,11 +4006,11 @@ std::pair<Relation, Relation> construct_reduced_IS_And_XFORM(IR_Code *ir,
     
     }
   */
-  if (_DEBUG_) {
+  CHILL_DEBUG_BEGIN
     std::cout << "relation debug" << std::endl;
     IS.print();
-  }
-  
+  CHILL_DEBUG_END
+
   F_And *f_root = XFORM.add_and();
   
   count_ = 1;
@@ -4031,12 +4029,12 @@ std::pair<Relation, Relation> construct_reduced_IS_And_XFORM(IR_Code *ir,
   omega::EQ_Handle h = f_root->add_EQ();
   h.update_coef(XFORM.output_var((loops.size()) * 2 + 1), 1);
   h.update_const(-lex_order[xform.n_out() - 1]);
-  
-  if (_DEBUG_) {
+
+  CHILL_DEBUG_BEGIN
     std::cout << "relation debug" << std::endl;
     IS.print();
     XFORM.print();
-  }
+  CHILL_DEBUG_END
   
   return std::pair<Relation, Relation>(IS, XFORM);
   
@@ -4299,23 +4297,23 @@ std::map<std::string, std::vector<std::string> > recurse_on_exp_for_arrays(
 
 
 std::vector<CG_outputRepr *> find_guards(IR_Code *ir, IR_Control *code) {
-  fprintf(stderr, "find_guards()\n"); 
+  CHILL_DEBUG_PRINT("find_guards()\n");
   std::vector<CG_outputRepr *> guards;
   switch (code->type()) {
   case IR_CONTROL_IF: {
-    fprintf(stderr, "find_guards() it's an if\n"); 
+    CHILL_DEBUG_PRINT("find_guards() it's an if\n");
     CG_outputRepr *cond = dynamic_cast<IR_If*>(code)->condition();
     
     std::vector<CG_outputRepr *> then_body;
     std::vector<CG_outputRepr *> else_body;
     IR_Block *ORTB = dynamic_cast<IR_If*>(code)->then_body(); 
     if (ORTB != NULL) {
-      fprintf(stderr, "recursing on then\n"); 
+      CHILL_DEBUG_PRINT("recursing on then\n");
       then_body = find_guards(ir, ORTB); 
       //dynamic_cast<IR_If*>(code)->then_body());
     }
     if (dynamic_cast<IR_If*>(code)->else_body() != NULL) {
-      fprintf(stderr, "recursing on then\n"); 
+      CHILL_DEBUG_PRINT("recursing on then\n");
       else_body = find_guards(ir,
                               dynamic_cast<IR_If*>(code)->else_body());
     }
@@ -4330,9 +4328,9 @@ std::vector<CG_outputRepr *> find_guards(IR_Code *ir, IR_Control *code) {
     break;
   }
   case IR_CONTROL_BLOCK: {
-    fprintf(stderr, "find_guards() it's a control block\n"); 
+    CHILL_DEBUG_PRINT("it's a control block\n");
     IR_Block*  IRCB = dynamic_cast<IR_Block*>(code);
-    fprintf(stderr, "find_guards() calling ir->FindOneLevelControlStructure(IRCB);\n"); 
+    CHILL_DEBUG_PRINT("calling ir->FindOneLevelControlStructure(IRCB);\n");
     std::vector<IR_Control *> stmts = ir->FindOneLevelControlStructure(IRCB); 
 
     for (int i = 0; i < stmts.size(); i++) {
@@ -4343,7 +4341,7 @@ std::vector<CG_outputRepr *> find_guards(IR_Code *ir, IR_Control *code) {
     break;
   }
   case IR_CONTROL_LOOP: {
-    fprintf(stderr, "find_guards() it's a control loop\n"); 
+    CHILL_DEBUG_PRINT("it's a control loop\n");
     std::vector<CG_outputRepr *> body = find_guards(ir,
                                                     dynamic_cast<IR_Loop*>(code)->body());
     if (body.size() > 0)

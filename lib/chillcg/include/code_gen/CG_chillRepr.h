@@ -12,7 +12,7 @@
 #endif
 
 
-#include "chill_ast.hh"
+#include "chillAST/chillASTs.hh"
 
 
 namespace omega {

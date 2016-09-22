@@ -3,7 +3,6 @@
 
 #include <omega.h>
 #include "ir_code.hh"
-//#include <AstInterface_CLANG.h>
 #include "chill_error.hh"
 
 #define __STDC_CONSTANT_MACROS
@@ -29,7 +28,7 @@
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Basic/DiagnosticOptions.h"
 
-#include "chill_ast.hh"
+#include "chillAST.h"
 
 extern std::vector<chillAST_VarDecl *> VariableDeclarations;  // a global.   TODO
 
@@ -282,14 +281,6 @@ public:
   std::vector<chillAST_node *>statements;
   chillAST_node *chillAST;             // how about for now we say if there are statements, which is presumably the top level of statements from ... somewhere, otherwise the code is in   chillAST
   
-  //IR_chillBlock(const IR_Code *ir, const StmtList& bDecl) : bDecl_(bDecl), cs_(NULL) {
-  //  fprintf(stderr, "MISTAKE IR_chillBlock bdecl\n");  exit(-1); 
-  //  ir_ = ir;
-  //} 
-  //IR_chillBlock(const IR_Code *ir, clang::CompoundStmt *cs) : cs_(cs) {
-  //  fprintf(stderr, "MISTAKE IR_chillBlock cs\n"); exit(-1); 
-  //  ir_ = ir;
-  //} 
   IR_chillBlock( const IR_chillBlock *CB ) {  // clone existing IR_chillBlock
     ir_ = CB->ir_;
     for (int i=0; i<CB->statements.size(); i++) statements.push_back( CB->statements[i] ); 
