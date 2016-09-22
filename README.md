@@ -6,11 +6,10 @@
 
 ### Build
 
-1. build boost, rose
-2. checkout repo, cd
-3. `cmake -DROSEHOME=<ROSEHOME> -DBOOSTHOME=<BOOSTHOME> -H. -Bbuild`
-4. `cmake --build build -- -j10`
-5. If no errors during build, executables are in `build`
+1. checkout repo, cd
+2. `cmake -DROSEHOME=<ROSEHOME> -DBOOSTHOME=<BOOSTHOME> -H. -Bbuild`
+3. `cmake --build build -- -j10`
+4. If no errors during build, executables are in `build`
 
 ### Install
 
