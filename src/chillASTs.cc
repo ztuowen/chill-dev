@@ -2141,7 +2141,7 @@ void chillAST_ForStmt::loseLoopWithLoopVar( char *var ) {
 
 chillAST_BinaryOperator::chillAST_BinaryOperator() {
   //fprintf(stderr, "chillAST_BinaryOperator::chillAST_BinaryOperator()  %p   no parent\n", this);
-  CHILL_DEBUG_PRINT("chillAST_BinaryOperator::chillAST_BinaryOperator()  no parent\n");
+  CHILL_DEBUG_PRINT("no parent\n");
   lhs = rhs = NULL;
   op = NULL;
   asttype = CHILLAST_NODETYPE_BINARYOPERATOR; 
@@ -2152,7 +2152,7 @@ chillAST_BinaryOperator::chillAST_BinaryOperator() {
 
 chillAST_BinaryOperator::chillAST_BinaryOperator(chillAST_node *l, const char *oper, chillAST_node *r, chillAST_node *par) { 
   //fprintf(stderr, "chillAST_BinaryOperator::chillAST_BinaryOperator( l %p  %s  r %p,   parent %p)  this %p\n", l, oper, r, par, this); 
-  CHILL_DEBUG_PRINT("chillAST_BinaryOperator::chillAST_BinaryOperator( l  %s  r )\n", oper);
+  CHILL_DEBUG_PRINT("( l  %s  r )\n", oper);
 
   //if (l && r ) { 
   //  fprintf(stderr, "("); l->print(0,stderr); fprintf(stderr, ") %s (", oper); r->print(0,stderr); fprintf(stderr, ")\n\n"); 
