@@ -11,6 +11,8 @@
 #include "omegatools.hh"
 #include <string.h>
 
+#include <code_gen/CG_utils.h>
+
 using namespace omega;
 
 void Loop::permute(const std::vector<int> &pi) {
@@ -26,6 +28,7 @@ void Loop::original() {
   for (int i = 0; i < stmt.size(); i++)
     active.insert(i);
   setLexicalOrder(0, active);
+  //apply_xform();
 }
 void Loop::permute(int stmt_num, int level, const std::vector<int> &pi) {
   // check for sanity of parameters
@@ -35,7 +38,7 @@ void Loop::permute(int stmt_num, int level, const std::vector<int> &pi) {
       "invalid statement number " + to_string(stmt_num));
   std::set<int> active;
   if (level < 0 || level > stmt[stmt_num].loop_level.size())
-    throw std::invalid_argument("invalid loop level " + to_string(level));
+    throw std::invalid_argument("3invalid loop level " + to_string(level));
   else if (level == 0) {
     for (int i = 0; i < stmt.size(); i++)
       active.insert(i);
@@ -436,8 +439,7 @@ void Loop::permute(const std::set<int> &active, const std::vector<int> &pi) {
           break;
         case LoopLevelTile: {
           new_loop_level[j - 1].type = LoopLevelTile;
-          int ref_level = stmt[*i].loop_level[reverse_pi[j - level]
-                                              - 1].payload;
+          int ref_level = stmt[*i].loop_level[reverse_pi[j - level]-1].payload;
           if (ref_level >= level && ref_level < level + pi.size())
             new_loop_level[j - 1].payload = reverse_pi[ref_level
                                                        - level];
@@ -485,12 +487,18 @@ void Loop::permute(const std::set<int> &active, const std::vector<int> &pi) {
   setLexicalOrder(2 * level - 2, active);
 }
 
+
+void Loop::set_array_size(std::string name, int size ){
+  array_dims.insert(std::pair<std::string, int >(name, size));
+}
+
+
 std::set<int> Loop::split(int stmt_num, int level, const Relation &cond) {
   // check for sanity of parameters
   if (stmt_num < 0 || stmt_num >= stmt.size())
     throw std::invalid_argument("invalid statement " + to_string(stmt_num));
   if (level <= 0 || level > stmt[stmt_num].loop_level.size())
-    throw std::invalid_argument("invalid loop level " + to_string(level));
+    throw std::invalid_argument("4invalid loop level " + to_string(level));
   
   std::set<int> result;
   int dim = 2 * level - 1;
@@ -784,8 +792,17 @@ std::set<int> Loop::split(int stmt_num, int level, const Relation &cond) {
       
       stmt[*i].IS = part1;
       
-      if (Intersection(copy(part2),
-                       Extend_Set(copy(this->known), n - this->known.n_set())).is_upper_bound_satisfiable()) {
+      int n1 = part2.n_set();
+      int m = this->known.n_set();
+      Relation test;
+      if(m > n1)
+        test = Intersection(copy(this->known),
+                            Extend_Set(copy(part2), m - part2.n_set()));
+      else
+        test = Intersection(copy(part2),
+                            Extend_Set(copy(this->known), n1 - this->known.n_set()));
+      
+      if (test.is_upper_bound_satisfiable()) {
         Statement new_stmt;
         new_stmt.code = stmt[*i].code->clone();
         new_stmt.IS = part2;
@@ -793,14 +810,23 @@ std::set<int> Loop::split(int stmt_num, int level, const Relation &cond) {
         new_stmt.ir_stmt_node = NULL;
         new_stmt.loop_level = stmt[*i].loop_level;
         
+        new_stmt.has_inspector = stmt[*i].has_inspector;
+        new_stmt.reduction = stmt[*i].reduction;
+        new_stmt.reductionOp = stmt[*i].reductionOp;
+        
         stmt_nesting_level_.push_back(stmt_nesting_level_[*i]);
-
+        
+        
         if (place_after)
           assign_const(new_stmt.xform, dim - 1, cur_lex + 1);
         else
           assign_const(new_stmt.xform, dim - 1, cur_lex - 1);
         
+        fprintf(stderr, "loop_basic.cc L828 adding stmt %d\n", stmt.size()); 
         stmt.push_back(new_stmt);
+
+        uninterpreted_symbols.push_back(uninterpreted_symbols[stmt_num]);
+        uninterpreted_symbols_stringrepr.push_back(uninterpreted_symbols_stringrepr[stmt_num]);
         dep.insert();
         what_stmt_num[*i] = stmt.size() - 1;
         if (*i == stmt_num)
@@ -898,7 +924,7 @@ void Loop::skew(const std::set<int> &stmt_nums, int level,
         "invalid statement number " + to_string(*i));
     if (level < 1 || level > stmt[*i].loop_level.size())
       throw std::invalid_argument(
-        "invalid loop level " + to_string(level));
+        "5invalid loop level " + to_string(level));
     for (int j = stmt[*i].loop_level.size(); j < skew_amount.size(); j++)
       if (skew_amount[j] != 0)
         throw std::invalid_argument("invalid skewing formula");
@@ -952,76 +978,56 @@ void Loop::skew(const std::set<int> &stmt_nums, int level,
                 int cur_dep_dim = get_dep_dim_of(*i, kk + 1);
                 if (skew_amount[kk] > 0) {
                   if (lb != -posInfinity
-                      && stmt[*i].loop_level[kk].type
-                      == LoopLevelOriginal
-                      && dv.lbounds[cur_dep_dim]
-                      != -posInfinity)
-                    lb += skew_amount[kk]
-                      * dv.lbounds[cur_dep_dim];
+                      && stmt[*i].loop_level[kk].type == LoopLevelOriginal
+                      && dv.lbounds[cur_dep_dim] != -posInfinity)
+                    lb += skew_amount[kk] * dv.lbounds[cur_dep_dim];
                   else {
                     if (cur_dep_dim != -1
-                        && !(dv.lbounds[cur_dep_dim]
-                             == 0
-                             && dv.ubounds[cur_dep_dim]
-                             == 0))
+                        && !(dv.lbounds[cur_dep_dim] == 0
+                             && dv.ubounds[cur_dep_dim]== 0))
                       lb = -posInfinity;
                   }
                   if (ub != posInfinity
-                      && stmt[*i].loop_level[kk].type
-                      == LoopLevelOriginal
-                      && dv.ubounds[cur_dep_dim]
-                      != posInfinity)
-                    ub += skew_amount[kk]
-                      * dv.ubounds[cur_dep_dim];
+                      && stmt[*i].loop_level[kk].type == LoopLevelOriginal
+                      && dv.ubounds[cur_dep_dim] != posInfinity)
+                    ub += skew_amount[kk] * dv.ubounds[cur_dep_dim];
                   else {
                     if (cur_dep_dim != -1
-                        && !(dv.lbounds[cur_dep_dim]
-                             == 0
-                             && dv.ubounds[cur_dep_dim]
-                             == 0))
+                        && !(dv.lbounds[cur_dep_dim] == 0
+                             && dv.ubounds[cur_dep_dim] == 0))
                       ub = posInfinity;
                   }
                 } else if (skew_amount[kk] < 0) {
                   if (lb != -posInfinity
-                      && stmt[*i].loop_level[kk].type
-                      == LoopLevelOriginal
-                      && dv.ubounds[cur_dep_dim]
-                      != posInfinity)
-                    lb += skew_amount[kk]
-                      * dv.ubounds[cur_dep_dim];
+                      && stmt[*i].loop_level[kk].type == LoopLevelOriginal
+                      && dv.ubounds[cur_dep_dim] != posInfinity)
+                    lb += skew_amount[kk] * dv.ubounds[cur_dep_dim];
                   else {
                     if (cur_dep_dim != -1
-                        && !(dv.lbounds[cur_dep_dim]
-                             == 0
-                             && dv.ubounds[cur_dep_dim]
-                             == 0))
+                        && !(dv.lbounds[cur_dep_dim] == 0
+                             && dv.ubounds[cur_dep_dim] == 0))
                       lb = -posInfinity;
                   }
                   if (ub != posInfinity
-                      && stmt[*i].loop_level[kk].type
-                      == LoopLevelOriginal
-                      && dv.lbounds[cur_dep_dim]
-                      != -posInfinity)
-                    ub += skew_amount[kk]
-                      * dv.lbounds[cur_dep_dim];
+                      && stmt[*i].loop_level[kk].type == LoopLevelOriginal
+                      && dv.lbounds[cur_dep_dim] != -posInfinity)
+                    ub += skew_amount[kk] * dv.lbounds[cur_dep_dim];
                   else {
                     if (cur_dep_dim != -1
-                        && !(dv.lbounds[cur_dep_dim]
-                             == 0
-                             && dv.ubounds[cur_dep_dim]
-                             == 0))
+                        && !(dv.lbounds[cur_dep_dim] == 0
+                             && dv.ubounds[cur_dep_dim] == 0))
                       ub = posInfinity;
                   }
                 }
               }
               dv.lbounds[dep_dim] = lb;
               dv.ubounds[dep_dim] = ub;
-              if ((dv.isCarried(dep_dim)
-                   && dv.hasPositive(dep_dim)) && dv.quasi)
+              if ((dv.isCarried(dep_dim) && dv.hasPositive(dep_dim)) 
+                  && dv.quasi)
                 dv.quasi = false;
               
-              if ((dv.isCarried(dep_dim)
-                   && dv.hasNegative(dep_dim)) && !dv.quasi)
+              if ((dv.isCarried(dep_dim) && dv.hasNegative(dep_dim)) 
+                  && !dv.quasi)
                 throw loop_error(
                   "loop error: Skewing is illegal, dependence violation!");
               dv.lbounds[dep_dim] = lb;
@@ -1085,7 +1091,7 @@ void Loop::shift(const std::set<int> &stmt_nums, int level, int shift_amount) {
         "invalid statement number " + to_string(*i));
     if (level < 1 || level > stmt[*i].loop_level.size())
       throw std::invalid_argument(
-        "invalid loop level " + to_string(level));
+        "6invalid loop level " + to_string(level));
   }
   
   // do nothing
@@ -1185,16 +1191,25 @@ void Loop::fuse(const std::set<int> &stmt_nums, int level) {
   // check for sanity of parameters
   std::vector<int> ref_lex;
   int ref_stmt_num;
+  apply_xform(); 
   for (std::set<int>::const_iterator i = stmt_nums.begin();
        i != stmt_nums.end(); i++) {
-    if (*i < 0 || *i >= stmt.size())
+    if (*i < 0 || *i >= stmt.size()) {
+      fprintf(stderr, "statement number %d   should be in [0, %d)\n", *i, stmt.size()); 
       throw std::invalid_argument(
-        "invalid statement number " + to_string(*i));
+        "FUSE invalid statement number " + to_string(*i));
+    }
     if (level <= 0
-        || (level > (stmt[*i].xform.n_out() - 1) / 2
-            || level > stmt[*i].loop_level.size()))
+        //    || (level > (stmt[*i].xform.n_out() - 1) / 2
+        //    || level > stmt[*i].loop_level.size())
+      ) {
+      fprintf(stderr, "FUSE level %d ", level);
+      fprintf(stderr, "must be greater than zero and \n");
+      fprintf(stderr, "must NOT be greater than (%d - 1)/2 == %d   and\n", stmt[*i].xform.n_out(), (stmt[*i].xform.n_out() - 1) / 2);
+      fprintf(stderr, "must NOT be greater than %d\n", stmt[*i].loop_level.size());
       throw std::invalid_argument(
-        "invalid loop level " + to_string(level));
+        "FUSE invalid loop level " + to_string(level));
+    }
     if (ref_lex.size() == 0) {
       ref_lex = getLexicalOrder(*i);
       ref_stmt_num = *i;
@@ -1258,11 +1273,63 @@ void Loop::fuse(const std::set<int> &stmt_nums, int level) {
   
   std::vector<std::set<int> > s = sort_by_same_loops(same_loop, level);
   
-  std::set<int> s1;
-  std::set<int> s2;
-  std::set<int> s4;
-  std::vector<std::set<int> > s3;
+  std::vector<bool> s2;
+
+  for (int i = 0; i < s.size(); i++) {
+    s2.push_back(false);
+  }
+
   for (std::set<int>::iterator kk = stmt_nums.begin(); kk != stmt_nums.end();
+       kk++)
+    for (int i = 0; i < s.size(); i++)
+      if (s[i].find(*kk) != s[i].end()) {
+        
+        s2[i] = true;
+      }
+  
+  try {
+    
+    //Dependence Check for Ordering Constraint
+    //Graph<std::set<int>, bool> dummy = construct_induced_graph_at_level(s5,
+    //    dep, dep_dim);
+    
+    Graph<std::set<int>, bool> g = construct_induced_graph_at_level(s, dep,
+                                                                    dep_dim);
+    std::cout << g;
+    s = typed_fusion(g, s2);
+  } catch (const loop_error &e) {
+    
+    throw loop_error(
+      "statements cannot be fused together due to negative dependence");
+    
+  }
+  
+  int order = 0;
+  for (int i = 0; i < s.size(); i++) {
+    for (std::set<int>::iterator it = s[i].begin(); it != s[i].end(); it++) {
+      assign_const(stmt[*it].xform, 2 * level - 2, order);
+    }
+    order++;
+  }
+
+
+  //plan for selective typed fusion
+  
+  /*
+    1. sort the lex values of the statements
+    2. construct induced graph on sorted statements
+    3. pick a node from the graph, check if it is before/after from the candidate set for fusion
+    equal-> set the max fused node of this node to be the start/target node for fusion
+    before -> augment and continue
+    
+    4. once target node identified and is on work queue update successors and other nodes to start node
+    5. augment and continue
+    6. if all candidate nodes dont end up in start node throw error
+    7. Get nodes and update lexical values
+    
+  */
+
+  /* for (std::set<int>::iterator kk = stmt_nums.begin(); kk != stmt_nums.end();
        kk++)
     for (int i = 0; i < s.size(); i++)
       if (s[i].find(*kk) != s[i].end()) {
@@ -1282,10 +1349,12 @@ void Loop::fuse(const std::set<int> &stmt_nums, int level) {
     s5.push_back(s4);
     
     //Dependence Check for Ordering Constraint
-
+    //Graph<std::set<int>, bool> dummy = construct_induced_graph_at_level(s5,
+    //      dep, dep_dim);
+    
     Graph<std::set<int>, bool> g = construct_induced_graph_at_level(s3, dep,
                                                                     dep_dim);
-    
+    std::cout<< g;
     s = typed_fusion(g);
   } catch (const loop_error &e) {
     
@@ -1346,7 +1415,7 @@ void Loop::fuse(const std::set<int> &stmt_nums, int level) {
     
   } else
     throw loop_error("Typed Fusion Error");
-  
+  */
 }
 
 
@@ -1354,7 +1423,9 @@ void Loop::fuse(const std::set<int> &stmt_nums, int level) {
 void Loop::distribute(const std::set<int> &stmt_nums, int level) {
   if (stmt_nums.size() == 0 || stmt_nums.size() == 1)
     return;
-  
+  fprintf(stderr, "Loop::distribute()\n");
+
+
   // invalidate saved codegen computation
   delete last_compute_cgr_;
   last_compute_cgr_ = NULL;
@@ -1369,11 +1440,12 @@ void Loop::distribute(const std::set<int> &stmt_nums, int level) {
     if (*i < 0 || *i >= stmt.size())
       throw std::invalid_argument(
         "invalid statement number " + to_string(*i));
+    
     if (level < 1
         || (level > (stmt[*i].xform.n_out() - 1) / 2
             || level > stmt[*i].loop_level.size()))
       throw std::invalid_argument(
-        "invalid loop level " + to_string(level));
+        "8invalid loop level " + to_string(level));
     if (ref_lex.size() == 0) {
       ref_lex = getLexicalOrder(*i);
       ref_stmt_num = *i;
@@ -1386,6 +1458,7 @@ void Loop::distribute(const std::set<int> &stmt_nums, int level) {
             + to_string(level) + " subloop");
     }
   }
+
   // find SCC in the to-be-distributed loop
   int dep_dim = get_dep_dim_of(ref_stmt_num, level);
   std::set<int> same_loop = getStatements(ref_lex, dim - 1);
@@ -1491,6 +1564,276 @@ void Loop::distribute(const std::set<int> &stmt_nums, int level) {
     order++;
   }
   // no need to update dependence graph
+  
   return;
+}
+
+
+
+
+std::vector<IR_ArrayRef *> FindOuterArrayRefs(IR_Code *ir,
+                                              std::vector<IR_ArrayRef *> &arr_refs) {
+    std::vector<IR_ArrayRef *> to_return;
+  for (int i = 0; i < arr_refs.size(); i++)
+    if (!ir->parent_is_array(arr_refs[i])) {
+      int j;
+      for (j = 0; j < to_return.size(); j++)
+        if (*to_return[j] == *arr_refs[i])
+          break;
+      if (j == to_return.size())
+        to_return.push_back(arr_refs[i]);
+    }
+  return to_return;
+}
+
+
+
+
+
+std::vector<std::vector<std::string> > constructInspectorVariables(IR_Code *ir,
+                                                                   std::set<IR_ArrayRef *> &arr, std::vector<std::string> &index) {
+  
+  fprintf(stderr, "constructInspectorVariables()\n"); 
+
+  std::vector<std::vector<std::string> > to_return;
+  
+  for (std::set<IR_ArrayRef *>::iterator i = arr.begin(); i != arr.end();
+       i++) {
+    
+    std::vector<std::string> per_index;
+    
+    CG_outputRepr *subscript = (*i)->index(0);
+    
+    if ((*i)->n_dim() > 1)
+      throw ir_error(
+        "multi-dimensional array support non-existent for flattening currently");
+    
+    while (ir->QueryExpOperation(subscript) == IR_OP_ARRAY_VARIABLE) {
+      
+      std::vector<CG_outputRepr *> v = ir->QueryExpOperand(subscript);
+      
+      IR_ArrayRef *ref = static_cast<IR_ArrayRef *>(ir->Repr2Ref(v[0]));
+      //per_index.push_back(ref->name());
+      
+      subscript = ref->index(0);
+      
+    }
+    
+    if (ir->QueryExpOperation(subscript) == IR_OP_VARIABLE) {
+      std::vector<CG_outputRepr *> v = ir->QueryExpOperand(subscript);
+      IR_ScalarRef *ref = static_cast<IR_ScalarRef *>(ir->Repr2Ref(v[0]));
+      per_index.push_back(ref->name());
+      int j;
+      for (j = 0; j < index.size(); j++)
+        if (index[j] == ref->name())
+          break;
+      
+      if (j == index.size())
+        throw ir_error("Non index variable in array expression");
+      
+      int k;
+      for (k = 0; k < to_return.size(); k++)
+        if (to_return[k][0] == ref->name())
+          break;
+      if (k == to_return.size()) { 
+        to_return.push_back(per_index);
+        fprintf(stderr, "adding index %s\n", ref->name().c_str()); 
+      }
+      
+    }
+    
+  }
+  
+  return to_return;
+  
+}
+
+/*std::vector<CG_outputRepr *> constructInspectorData(IR_Code *ir, std::vector<std::vector<std::string> >  &indices){
+  
+  std::vector<CG_outputRepr *> to_return;
+  
+  for(int i =0; i < indices.size(); i++)
+  ir->CreateVariableDeclaration(indices[i][0]);
+  return to_return;
+  }
+  
+  
+  CG_outputRepr* constructInspectorFunction(IR_Code* ir, std::vector<std::vector<std::string> >  &indices){
+  
+  CG_outputRepr *to_return;
+  
+  
+  
+  return to_return;
+  }
+  
+*/
+
+CG_outputRepr * checkAndGenerateIndirectMappings(CG_outputBuilder * ocg,
+                                                 std::vector<std::vector<std::string> > &indices,
+                                                 CG_outputRepr * instance, CG_outputRepr * class_def,
+                                                 CG_outputRepr * count_var) {
+  
+  CG_outputRepr *to_return = NULL;
+  
+  for (int i = 0; i < indices.size(); i++)
+    if (indices[i].size() > 1) {
+      std::string index = indices[i][indices[i].size() - 1];
+      CG_outputRepr *rep = ocg->CreateArrayRefExpression(
+        ocg->CreateDotExpression(instance,
+                                 ocg->lookup_member_data(class_def, index, instance)),
+        count_var);
+      for (int j = indices[i].size() - 2; j >= 0; j--)
+        rep = ocg->CreateArrayRefExpression(indices[i][j], rep);
+      
+      CG_outputRepr *lhs = ocg->CreateArrayRefExpression(
+        ocg->CreateDotExpression(instance,
+                                 ocg->lookup_member_data(class_def, indices[i][0], instance)),
+        count_var);
+      
+      to_return = ocg->StmtListAppend(to_return,
+                                      ocg->CreateAssignment(0, lhs, rep));
+      
+    }
+  
+  return to_return;
+  
+}
+
+CG_outputRepr *generatePointerAssignments(CG_outputBuilder *ocg,
+                                          std::string prefix_name,
+                                          std::vector<std::vector<std::string> > &indices,
+                                          CG_outputRepr *instance, 
+                                          CG_outputRepr *class_def) {
+  
+  fprintf(stderr, "generatePointerAssignments()\n");
+  CG_outputRepr *list = NULL;
+
+  fprintf(stderr, "prefix '%s',   %d indices\n",  prefix_name.c_str(), indices.size()); 
+  for (int i = 0; i < indices.size(); i++) {
+    
+    std::string s = prefix_name + "_" + indices[i][0];
+
+    fprintf(stderr, "s %s\n", s.c_str()); 
+    
+    // create a variable definition for a pointer to int with this name
+    // that seems to be the only actual result of this routine ... 
+    //chillAST_VarDecl *vd = new chillAST_VarDecl( "int",  prefix_name.c_str(), "*", NULL);
+    //vd->print(); printf("\n"); fflush(stdout); 
+    //vd->dump(); printf("\n"); fflush(stdout); 
+    
+    CG_outputRepr *ptr_exp = ocg->CreatePointer(s); // but dropped on the floor. unused 
+    //fprintf(stderr, "ptr_exp created\n"); 
+    
+    //CG_outputRepr *rhs = ocg->CreateDotExpression(instance,
+    //                                              ocg->lookup_member_data(class_def, indices[i][0], instance));
+    
+    //CG_outputRepr *ptr_assignment = ocg->CreateAssignment(0, ptr_exp, rhs);
+    
+    //list = ocg->StmtListAppend(list, ptr_assignment);
+    
+  }
+  
+  fprintf(stderr, "generatePointerAssignments() DONE\n\n");
+  return list;
+}
+
+void Loop::normalize(int stmt_num, int loop_level) {
+  
+  if (stmt_num < 0 || stmt_num >= stmt.size())
+    throw std::invalid_argument(
+      
+      "invalid statement number " + to_string(stmt_num));
+  
+  if (loop_level <= 0)
+    throw std::invalid_argument(
+      "12invalid loop level " + to_string(loop_level));
+  if (loop_level > stmt[stmt_num].loop_level.size())
+    throw std::invalid_argument(
+      "there is no loop level " + to_string(loop_level)
+      + " for statement " + to_string(stmt_num));
+  
+  apply_xform(stmt_num);
+  
+  Relation r = copy(stmt[stmt_num].IS);
+  
+  Relation bound = get_loop_bound(r, loop_level, this->known);
+  if (!bound.has_single_conjunct() || !bound.is_satisfiable()
+      || bound.is_tautology())
+    throw loop_error("unable to extract loop bound for normalize");
+  
+  // extract the loop stride
+  coef_t stride;
+  std::pair<EQ_Handle, Variable_ID> result = find_simplest_stride(bound,
+                                                                  bound.set_var(loop_level));
+  if (result.second == NULL)
+    stride = 1;
+  else
+    stride = abs(result.first.get_coef(result.second))
+      / gcd(abs(result.first.get_coef(result.second)),
+            abs(result.first.get_coef(bound.set_var(loop_level))));
+  
+  if (stride != 1)
+    throw loop_error(
+      "normalize currently only handles unit stride, non unit stride present in loop bounds");
+  
+  GEQ_Handle lb;
+  
+  Conjunct *c = bound.query_DNF()->single_conjunct();
+  for (GEQ_Iterator gi(c->GEQs()); gi; gi++) {
+    int coef = (*gi).get_coef(bound.set_var(loop_level));
+    if (coef > 0)
+      lb = *gi;
+  }
+  
+  //Loop bound already zero
+  //Nothing to do.
+  if (lb.is_const(bound.set_var(loop_level)) && lb.get_const() == 0)
+    return;
+  
+  if (lb.is_const_except_for_global(bound.set_var(loop_level))) {
+    
+    int n = stmt[stmt_num].xform.n_out();
+    
+    Relation r(n, n);
+    F_And *f_root = r.add_and();
+    for (int j = 1; j <= n; j++)
+      if (j != 2 * loop_level) {
+        EQ_Handle h = f_root->add_EQ();
+        h.update_coef(r.input_var(j), 1);
+        h.update_coef(r.output_var(j), -1);
+      }
+    
+    stmt[stmt_num].xform = Composition(r, stmt[stmt_num].xform);
+    stmt[stmt_num].xform.simplify();
+    
+    for (Constr_Vars_Iter ci(lb); ci; ci++) {
+      if ((*ci).var->kind() == Global_Var) {
+        Global_Var_ID g = (*ci).var->get_global_var();
+        Variable_ID v;
+        if (g->arity() == 0)
+          v = stmt[stmt_num].xform.get_local(g);
+        else
+          v = stmt[stmt_num].xform.get_local(g,
+                                             (*ci).var->function_of());
+        
+        F_And *f_super_root = stmt[stmt_num].xform.and_with_and();
+        F_Exists *f_exists = f_super_root->add_exists();
+        F_And *f_root = f_exists->add_and();
+        
+        EQ_Handle h = f_root->add_EQ();
+        h.update_coef(stmt[stmt_num].xform.output_var(2 * loop_level),
+                      1);
+        h.update_coef(stmt[stmt_num].xform.input_var(loop_level), -1);
+        h.update_coef(v, 1);
+        
+        stmt[stmt_num].xform.simplify();
+      }
+      
+    }
+    
+  } else
+    throw loop_error("loop bounds too complex for normalize!");
+  
 }
 

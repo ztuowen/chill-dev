@@ -21,8 +21,15 @@
 
 using namespace omega;
 
+//
+// data copy function by referring arrays by numbers.
+// e.g. A[i] = A[i-1] + B[i]
+//      parameter array_ref_num=[0,2] means to copy data touched by A[i-1] and A[i]
+//
 bool Loop::datacopy(const std::vector<std::pair<int, std::vector<int> > > &array_ref_nums, int level,
                     bool allow_extra_read, int fastest_changing_dimension, int padding_stride, int padding_alignment, int memory_type) {
+  //fprintf(stderr, "Loop::datacopy()\n"); 
+
   // check for sanity of parameters
   std::set<int> same_loop;
   for (int i = 0; i < array_ref_nums.size(); i++) {
@@ -67,11 +74,22 @@ bool Loop::datacopy(const std::vector<std::pair<int, std::vector<int> > > &array
     throw std::invalid_argument("found no array references to copy");
   
   // do the copy
-  return datacopy_privatized(selected_refs, level, std::vector<int>(), allow_extra_read, fastest_changing_dimension, padding_stride, padding_alignment, memory_type);
+  bool whatever = datacopy_privatized(selected_refs, level, std::vector<int>(), allow_extra_read, fastest_changing_dimension, padding_stride, padding_alignment, memory_type);
+  return whatever;
 }
 
+//
+// data copy function by referring arrays by name.
+// e.g. A[i] = A[i-1] + B[i]
+//      parameter array_name=A means to copy data touched by A[i-1] and A[i]
+//
 bool Loop::datacopy(int stmt_num, int level, const std::string &array_name,
                     bool allow_extra_read, int fastest_changing_dimension, int padding_stride, int padding_alignment, int memory_type) {
+
+  fflush(stdout); 
+  //fprintf(stderr, "Loop::datacopy2()\n"); 
+  //fprintf(stderr, "array name %s   stmt num %d\n", array_name.c_str(), stmt_num);
+
   // check for sanity of parameters
   if (stmt_num < 0 || stmt_num >= stmt.size())
     throw std::invalid_argument("invalid statement number " + to_string(stmt_num));
@@ -95,16 +113,38 @@ bool Loop::datacopy(int stmt_num, int level, const std::string &array_name,
     if (t.size() != 0)
       selected_refs.push_back(std::make_pair(*i, t)); 
   }
+
+  //fprintf(stderr, "selected refs:\n"); 
+  //for (int i=0; i<selected_refs.size(); i++) { 
+  //  //fprintf(stderr, "%d  0x%x  ", selected_refs[i].first, selected_refs[i].second[0]); 
+  //  selected_refs[i].second[0]->Dump(); printf("\n"); fflush(stdout); 
+  //} 
+
   if (selected_refs.size() == 0)
     throw std::invalid_argument("found no array references with name " + to_string(array_name) + " to copy");
   
+  IR_ArrayRef *AR = selected_refs[0].second[0];
+  //IR_roseArrayRef *RAR = (IR_roseArrayRef *)AR; 
+  //fprintf(stderr, "before datacopy_privatized,   ");
+  //AR->Dump();
+  
   // do the copy
-  return datacopy_privatized(selected_refs, level, std::vector<int>(), allow_extra_read, fastest_changing_dimension, padding_stride, padding_alignment, memory_type);
+  //fprintf(stderr, "\nLoop::datacopy2 calling privatized\n"); 
+
+  bool whatever =  datacopy_privatized(selected_refs, level, std::vector<int>(), allow_extra_read, fastest_changing_dimension, padding_stride, padding_alignment, memory_type);
+
+  //AR = selected_refs[0].second[0];
+  //fprintf(stderr, "after datacopy_privatized,   ");
+  //AR->Dump();
+  
+  return whatever;
 }
 
 
 bool Loop::datacopy_privatized(int stmt_num, int level, const std::string &array_name, const std::vector<int> &privatized_levels,
                                bool allow_extra_read, int fastest_changing_dimension, int padding_stride, int padding_alignment, int memory_type) {
+  //fprintf(stderr, "Loop::datacopy_privatized()\n"); 
+
   // check for sanity of parameters
   if (stmt_num < 0 || stmt_num >= stmt.size())
     throw std::invalid_argument("invalid statement number " + to_string(stmt_num));
@@ -131,11 +171,14 @@ bool Loop::datacopy_privatized(int stmt_num, int level, const std::string &array
     throw std::invalid_argument("found no array references with name " + to_string(array_name) + " to copy");
   
   // do the copy
-  return datacopy_privatized(selected_refs, level, privatized_levels, allow_extra_read, fastest_changing_dimension, padding_stride, padding_alignment, memory_type);
+  bool whatever = datacopy_privatized(selected_refs, level, privatized_levels, allow_extra_read, fastest_changing_dimension, padding_stride, padding_alignment, memory_type);
+  return whatever;
 }
 
 
 bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<int> > > &array_ref_nums, int level, const std::vector<int> &privatized_levels, bool allow_extra_read, int fastest_changing_dimension, int padding_stride, int padding_alignment, int memory_type) {
+  //fprintf(stderr, "Loop::datacopy_privatized2()\n"); 
+
   // check for sanity of parameters
   std::set<int> same_loop;
   for (int i = 0; i < array_ref_nums.size(); i++) {
@@ -180,13 +223,28 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<int>
     throw std::invalid_argument("found no array references to copy");
   
   // do the copy
-  return datacopy_privatized(selected_refs, level, privatized_levels, allow_extra_read, fastest_changing_dimension, padding_stride, padding_alignment, memory_type);
+  bool whatever = datacopy_privatized(selected_refs, level, privatized_levels, allow_extra_read, fastest_changing_dimension, padding_stride, padding_alignment, memory_type);
+  return whatever; 
 }
 
-bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_ArrayRef *> > > &stmt_refs, int level,
+
+//
+// Implement low level datacopy function with lots of options.
+//
+
+bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_ArrayRef *> > > &stmt_refs, 
+                               int level,
                                const std::vector<int> &privatized_levels,
-                               bool allow_extra_read, int fastest_changing_dimension,
-                               int padding_stride, int padding_alignment, int memory_type) {
+                               bool allow_extra_read, 
+                               int fastest_changing_dimension,
+                               int padding_stride, 
+                               int padding_alignment, 
+                               int memory_type) {
+
+  //fprintf(stderr, "\nLoop::datacopy_privatized3()                                        *****\n"); 
+  //fprintf(stderr, "privatized_levels.size() %d\n", privatized_levels.size()); 
+  //fprintf(stderr, "level %d\n", level); 
+
   if (stmt_refs.size() == 0)
     return true;
   
@@ -233,6 +291,12 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
       }
     }
   }
+
+  //fprintf(stderr, "sym %p\n", sym);
+  if (!sym) { 
+    fprintf(stderr, "sym NULL, gonna die\n"); int *i=0; int j=i[0]; 
+  }
+
   if (!(fastest_changing_dimension >= -1 && fastest_changing_dimension < sym->n_dim()))
     throw std::invalid_argument("invalid fastest changing dimension for the array to be copied");
   if (padding_stride < 0)
@@ -255,6 +319,7 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
     default:
       throw loop_error("unsupported array layout");
     }
+  // OK, parameter sanity checked
 
   
   // invalidate saved codegen computation
@@ -264,20 +329,58 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
   last_compute_cg_ = NULL;
   
   // build iteration spaces for all reads and for all writes separately
+  //fprintf(stderr, "dp3: before apply_xform() ARRAY REFS\n"); 
+  //for (int i = 0; i < stmt_refs.size(); i++) {
+  //  for (int j = 0; j < stmt_refs[i].second.size(); j++) {
+  //    IR_ArrayRef *AR = stmt_refs[i].second[j];
+  //    fprintf(stderr, "array ref ij %d %d   ", i, j); AR->Dump(); fprintf(stderr, "\n"); 
+  //  }
+  //} 
+  //for (int i=0; i<stmt.size(); i++) {
+  //  fprintf(stderr, "stmt %d = ", i);
+  //  stmt[i].code->dump(); 
+  //  fprintf(stderr, "\n"); 
+  //} 
+
   apply_xform(active);
+  //fprintf(stderr, "dp3: back from apply_xform() ARRAY REFS\n"); 
+
+  //for (int i = 0; i < stmt_refs.size(); i++) {
+  //  for (int j = 0; j < stmt_refs[i].second.size(); j++) {
+  //    IR_ArrayRef *AR = stmt_refs[i].second[j];
+  //    fprintf(stderr, "array ref ij %d %d   ", i, j);
+  //    AR->Dump();
+  //    fprintf(stderr, "\n"); 
+  //  }
+  //} 
+
+  //for (int i=0; i<stmt.size(); i++) {
+  //  fprintf(stderr, "stmt %d = ", i);
+  //  stmt[i].code->dump(); 
+  //  fprintf(stderr, "\n"); 
+  //} 
+
   
   bool has_write_refs = false;
   bool has_read_refs = false;
   Relation wo_copy_is = Relation::False(level-1+privatized_levels.size()+n_dim);
   Relation ro_copy_is = Relation::False(level-1+privatized_levels.size()+n_dim);
+  //fprintf(stderr, "\n\ni range: 0-%d\n", -1 + stmt_refs.size()); 
+  int stmt_num = stmt_refs[0].first;
   for (int i = 0; i < stmt_refs.size(); i++) {
     int stmt_num = stmt_refs[i].first;
     
+    //fprintf(stderr, "j range: 0-%d\n", -1 + stmt_refs[i].second.size()); 
+
     for (int j = 0; j < stmt_refs[i].second.size(); j++) {
+      //fprintf(stderr, "ij %d %d\n", i, j);
+
       Relation mapping(stmt[stmt_num].IS.n_set(), level-1+privatized_levels.size()+n_dim);
       for (int k = 1; k <= mapping.n_inp(); k++)
         mapping.name_input_var(k, stmt[stmt_num].IS.set_var(k)->name());
       mapping.setup_names();
+      mapping.print();  fflush(stdout);  //   "{[I] -> [_t1] : I = _t1 }
+
       F_And *f_root = mapping.add_and();
       for (int k = 1; k <= level-1; k++) {
         EQ_Handle h = f_root->add_EQ();
@@ -290,12 +393,28 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
         h.update_coef(mapping.output_var(level+k), -1);
       }
       for (int k = 0; k < n_dim; k++) {
+        IR_ArrayRef *AR = stmt_refs[i].second[j];
+        //fprintf(stderr, "array ref ");
+        AR->Dump();
+
         CG_outputRepr *repr = stmt_refs[i].second[j]->index(k);
-        exp2formula(ir, mapping, f_root, freevar, repr, mapping.output_var(level-1+privatized_levels.size()+k+1), 'w', IR_COND_EQ, false);
+        //fprintf(stderr, "k %d  j %d   repr  ", k, j); repr->dump(); fflush(stdout); 
+
+        exp2formula(ir, 
+                    mapping, 
+                    f_root, 
+                    freevar, 
+                    repr, 
+                    mapping.output_var(level-1+privatized_levels.size()+k+1), 
+                    'w', 
+                    IR_COND_EQ, 
+                    false,
+                    uninterpreted_symbols[stmt_num],
+                    uninterpreted_symbols_stringrepr[stmt_num]);
         repr->clear();
         delete repr;
       }
-      Relation r = Range(Restrict_Domain(mapping, Intersection(copy(stmt[stmt_num].IS), Extend_Set(copy(this->known), stmt[stmt_num].IS.n_set() - this->known.n_set()))));
+      Relation r = omega::Range(Restrict_Domain(mapping, Intersection(copy(stmt[stmt_num].IS), Extend_Set(copy(this->known), stmt[stmt_num].IS.n_set() - this->known.n_set()))));
       if (stmt_refs[i].second[j]->is_write()) {
         has_write_refs = true;
         wo_copy_is = Union(wo_copy_is, r);
@@ -312,6 +431,7 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
     }
   }
   
+  //fprintf(stderr, "dp3: simplify\n"); 
   // simplify read and write footprint iteration space
   {
     if (allow_extra_read)
@@ -356,6 +476,7 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
     ro_copy_is.setup_names();
   }
   
+  //fprintf(stderr, "\ndp3: build merged\n"); 
   // build merged footprint iteration space for calculating temporary array size
   Relation copy_is = SimpleHull(Union(copy(ro_copy_is), copy(wo_copy_is)), true, true);
   
@@ -368,37 +489,48 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
   Relation reduced_copy_is = copy(copy_is);
   
   for (int i = 0; i < n_dim; i++) {
+    //fprintf(stderr, "i %d/%d\n", i, n_dim); 
     if (i != 0)
       reduced_copy_is = Project(reduced_copy_is, level-1+privatized_levels.size()+i, Set_Var);
     Relation bound = get_loop_bound(reduced_copy_is, level-1+privatized_levels.size()+i);
     
+    //fprintf(stderr, "dp3: extract stride\n"); 
     // extract stride
     std::pair<EQ_Handle, Variable_ID> result = find_simplest_stride(bound, bound.set_var(level-1+privatized_levels.size()+i+1));
     if (result.second != NULL)
       index_stride[i] = abs(result.first.get_coef(result.second))/gcd(abs(result.first.get_coef(result.second)), abs(result.first.get_coef(bound.set_var(level-1+privatized_levels.size()+i+1))));
     else
       index_stride[i] = 1;
+    //fprintf(stderr, "dp3: index_stride[%d] = %d\n", i,  index_stride[i]); 
     
-    // check if this arary index requires loop
+    // check if this array index requires loop
     Conjunct *c = bound.query_DNF()->single_conjunct();
     for (EQ_Iterator ei(c->EQs()); ei; ei++) {
+      //fprintf(stderr, "dp3: for\n"); 
       if ((*ei).has_wildcards())
         continue;
       
+      //fprintf(stderr, "dp3: no wildcards\n"); 
       int coef = (*ei).get_coef(bound.set_var(level-1+privatized_levels.size()+i+1));
       if (coef != 0) {
+        //fprintf(stderr, "coef != 0\n"); 
         int sign = 1;
         if (coef < 0) {
+          //fprintf(stderr, "coef < 0\n"); 
           coef = -coef;
           sign = -1;
         }
         
         CG_outputRepr *op = NULL;
         for (Constr_Vars_Iter ci(*ei); ci; ci++) {
+          //fprintf(stderr, "dp3: ci\n"); 
           switch ((*ci).var->kind()) {
           case Input_Var:
           {
-            if ((*ci).var != bound.set_var(level-1+privatized_levels.size()+i+1))
+            //fprintf(stderr, "dp3: Input_Var\n"); 
+            if ((*ci).var != bound.set_var(level-1+privatized_levels.size()+i+1)) {
+              //fprintf(stderr, "dp3: IF sign %d\n",(*ci).coef*sign); 
+
               if ((*ci).coef*sign == 1)
                 op = ocg->CreateMinus(op, ocg->CreateIdent((*ci).var->name()));
               else if ((*ci).coef*sign == -1)
@@ -407,10 +539,12 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
                 op = ocg->CreateMinus(op, ocg->CreateTimes(ocg->CreateInt(abs((*ci).coef)), ocg->CreateIdent((*ci).var->name())));
               else // (*ci).coef*sign < -1
                 op = ocg->CreatePlus(op, ocg->CreateTimes(ocg->CreateInt(abs((*ci).coef)), ocg->CreateIdent((*ci).var->name())));
+            }
             break;
           }
           case Global_Var:
           {
+            //fprintf(stderr, "dp3: Global_Var\n"); 
             Global_Var_ID g = (*ci).var->get_global_var();
             if ((*ci).coef*sign == 1)
               op = ocg->CreateMinus(op, ocg->CreateIdent(g->base_name()));
@@ -439,7 +573,8 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
     if (is_index_eq[i])
       continue;
     
-    // seperate lower and upper bounds
+    //fprintf(stderr, "dp3: separate lower and upper bounds\n"); 
+    // separate lower and upper bounds
     std::vector<GEQ_Handle> lb_list, ub_list;
     std::set<Variable_ID> excluded_floor_vars;
     excluded_floor_vars.insert(bound.set_var(level-1+privatized_levels.size()+i+1));
@@ -465,19 +600,41 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
     if (lb_list.size() == 0 || ub_list.size() == 0)
       throw loop_error("failed to calcuate array footprint size");
     
+    //fprintf(stderr, "dp3: build lower bound representation\n"); 
     // build lower bound representation
     std::vector<CG_outputRepr *> lb_repr_list;
     for (int j = 0; j < lb_list.size(); j++){
-      if(this->known.n_set() == 0)
-        lb_repr_list.push_back(output_lower_bound_repr(ocg, lb_list[j], bound.set_var(level-1+privatized_levels.size()+i+1), result.first, result.second, bound, Relation::True(bound.n_set()), std::vector<std::pair<CG_outputRepr *, int> >(bound.n_set(), std::make_pair(static_cast<CG_outputRepr *>(NULL), 0))));
-      else
-        lb_repr_list.push_back(output_lower_bound_repr(ocg, lb_list[j], bound.set_var(level-1+privatized_levels.size()+i+1), result.first, result.second, bound, this->known, std::vector<std::pair<CG_outputRepr *, int> >(bound.n_set(), std::make_pair(static_cast<CG_outputRepr *>(NULL), 0))));
+      if(this->known.n_set() == 0) { 
+        lb_repr_list.push_back(output_lower_bound_repr(ocg, 
+                                                       lb_list[j], 
+                                                       bound.set_var(level-1+privatized_levels.size()+i+1), 
+                                                       result.first, 
+                                                       result.second, 
+                                                       bound, 
+                                                       Relation::True(bound.n_set()), 
+                                                       std::vector<std::pair<CG_outputRepr *, int> >(bound.n_set(), std::make_pair(static_cast<CG_outputRepr *>(NULL), 0)),
+                                                       uninterpreted_symbols[stmt_num]));
+      }
+      else {
+        lb_repr_list.push_back(output_lower_bound_repr(ocg, 
+                                                       lb_list[j], 
+                                                       bound.set_var(level-1+privatized_levels.size()+i+1), 
+                                                       result.first, 
+                                                       result.second, 
+                                                       bound, 
+                                                       this->known, 
+                                                       std::vector<std::pair<CG_outputRepr *, int> >(bound.n_set(), std::make_pair(static_cast<CG_outputRepr *>(NULL), 0)),
+                                                       uninterpreted_symbols[stmt_num]));
+      }
     }
-    if (lb_repr_list.size() > 1)
+    if (lb_repr_list.size() > 1) { 
+      //fprintf(stderr, "loop_datacopy.cc dp3 createInvoke( max )\n"); 
       index_lb[i] = ocg->CreateInvoke("max", lb_repr_list);
+    }
     else if (lb_repr_list.size() == 1)
       index_lb[i] = lb_repr_list[0];
     
+    //fprintf(stderr, "dp3: build temporary array size representation\n"); 
     // build temporary array size representation
     {
       Relation cal(copy_is.n_set(), 1);
@@ -545,6 +702,7 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
         cal = Project(cal, j, Input_Var);
       cal.simplify();
       
+      //fprintf(stderr, "dp3: pad temporary array size\n"); 
       // pad temporary array size
       // TODO: for variable array size, create padding formula
       Conjunct *c = cal.query_DNF()->single_conjunct();
@@ -626,8 +784,9 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
     }
   }
   
+  //fprintf(stderr, "dp3: change the temporary array index order\n"); 
   // change the temporary array index order
-  for (int i = 0; i < index_sz.size(); i++)
+  for (int i = 0; i < index_sz.size(); i++) {
     if (index_sz[i].first == fastest_changing_dimension)
       switch (sym->layout_type()) {
       case IR_ARRAY_LAYOUT_ROW_MAJOR:
@@ -639,36 +798,53 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
       default:
         throw loop_error("unsupported array layout");
       }
-  
+  }
+
+  //fprintf(stderr, "dp3: declare temporary array or scalar\n"); 
   // declare temporary array or scalar
   IR_Symbol *tmp_sym;
   if (index_sz.size() == 0) {
+    //fprintf(stderr, "tmp_sym is a scalar\n"); 
     tmp_sym = ir->CreateScalarSymbol(sym, memory_type);
   }
   else {
+    //fprintf(stderr, "tmp_sym is an array\n"); 
     std::vector<CG_outputRepr *> tmp_array_size(index_sz.size());
-    for (int i = 0; i < index_sz.size(); i++)
+    for (int i = 0; i < index_sz.size(); i++) { 
       tmp_array_size[i] = index_sz[i].second->clone();
+      index_sz[i].second->dump();  // THIS PRINTF
+    }
     tmp_sym = ir->CreateArraySymbol(sym, tmp_array_size, memory_type);
   }
   
+  //fprintf(stderr, "dp3: create temporary array read initialization code\n"); 
   // create temporary array read initialization code
   CG_outputRepr *copy_code_read;
-  if (has_read_refs)
+  if (has_read_refs) { 
+    //fprintf(stderr, "has read refs\n");
     if (index_sz.size() == 0) {
-      IR_ScalarRef *tmp_scalar_ref = ir->CreateScalarRef(static_cast<IR_ScalarSymbol *>(tmp_sym));
+         //fprintf(stderr, "if\n"); 
       
+      //fprintf(stderr, "tmp sym %s\n", tmp_sym->name().c_str()); 
+      IR_ScalarRef *tmp_scalar_ref = ir->CreateScalarRef(static_cast<IR_ScalarSymbol *>(tmp_sym)); // create ref from symbol
+      // tmp_scalar_ref is incomplete 
+
       std::vector<CG_outputRepr *> rhs_index(n_dim);
-      for (int i = 0; i < index_lb.size(); i++)
+      for (int i = 0; i < index_lb.size(); i++) { 
+        //fprintf(stderr, "i %d\n", i); 
         if (is_index_eq[i])
           rhs_index[i] = index_lb[i]->clone();
         else
           rhs_index[i] = ir->builder()->CreateIdent(copy_is.set_var(level-1+privatized_levels.size()+i+1)->name());
+      }
       IR_ArrayRef *copied_array_ref = ir->CreateArrayRef(sym, rhs_index);
       
+      // IR_ScalarRef tmp_scalar_ref has no actual reference yet. It only has the variable definition. 
       copy_code_read = ir->builder()->CreateAssignment(0, tmp_scalar_ref->convert(), copied_array_ref->convert());
+      //fprintf(stderr, "if ends\n"); 
     }
     else {
+      //fprintf(stderr, "else\n"); 
       std::vector<CG_outputRepr *> lhs_index(index_sz.size());
       for (int i = 0; i < index_sz.size(); i++) {
         int cur_index_num = index_sz[i].first;
@@ -693,7 +869,9 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
         lhs_index[i] = cur_index_repr;
       }
       
+      //fprintf(stderr, "dp3: making tmp_array_ref\n"); 
       IR_ArrayRef *tmp_array_ref = ir->CreateArrayRef(static_cast<IR_ArraySymbol *>(tmp_sym), lhs_index);
+      //fprintf(stderr, "dp3: DONE making tmp_array_ref\n"); 
       
       std::vector<CG_outputRepr *> rhs_index(n_dim);
       for (int i = 0; i < index_lb.size(); i++)
@@ -703,13 +881,22 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
           rhs_index[i] = ir->builder()->CreateIdent(copy_is.set_var(level-1+privatized_levels.size()+i+1)->name());
       IR_ArrayRef *copied_array_ref = ir->CreateArrayRef(sym, rhs_index);
       
-      copy_code_read = ir->builder()->CreateAssignment(0, tmp_array_ref->convert(), copied_array_ref->convert());
+      //fprintf(stderr, "dp3: loop_datacopy.cc  copy_code_read = CreateAssignment\n"); 
+      //copy_code_read = ir->builder()->CreateAssignment(0, tmp_array_ref->convert(), copied_array_ref->convert());
+      CG_outputRepr *lhs = tmp_array_ref->convert();
+      CG_outputRepr *rhs = copied_array_ref->convert();
+      copy_code_read = ir->builder()->CreateAssignment(0, lhs, rhs); //tmp_array_ref->convert(), copied_array_ref->convert());
+      //fprintf(stderr, "dp3: loop_datacopy.cc  copy_code_read = CreateAssignment DONE\n\n"); 
     }
+  } // has read refs 
   
+  //fprintf(stderr, "dp3: create temporary array write back code\n");   
   // create temporary array write back code
   CG_outputRepr *copy_code_write;
-  if (has_write_refs)
+  if (has_write_refs) { 
+    //fprintf(stderr, "has_write_refs\n"); 
     if (index_sz.size() == 0) {
+      //fprintf(stderr, "index_sz.size() == 0\n"); 
       IR_ScalarRef *tmp_scalar_ref = ir->CreateScalarRef(static_cast<IR_ScalarSymbol *>(tmp_sym));
       
       std::vector<CG_outputRepr *> rhs_index(n_dim);
@@ -723,6 +910,8 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
       copy_code_write = ir->builder()->CreateAssignment(0, copied_array_ref->convert(), tmp_scalar_ref->convert());
     }
     else {
+      //fprintf(stderr, "index_sz.size() NOT = 0\n"); 
+      
       std::vector<CG_outputRepr *> lhs_index(n_dim);
       for (int i = 0; i < index_lb.size(); i++)
         if (is_index_eq[i])
@@ -758,9 +947,11 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
       
       copy_code_write = ir->builder()->CreateAssignment(0, copied_array_ref->convert(), tmp_array_ref->convert());
     }
+  }   // has write refs 
   
   // now we can remove those loops for array indexes that are
   // dependent on others
+  //fprintf(stderr, "dp3: now we can remove those loops\n"); 
   if (!(index_sz.size() == n_dim && (sym->layout_type() == IR_ARRAY_LAYOUT_ROW_MAJOR || n_dim <= 1))) {
     Relation mapping(level-1+privatized_levels.size()+n_dim, level-1+privatized_levels.size()+index_sz.size());
     F_And *f_root = mapping.add_and();
@@ -793,8 +984,8 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
         cur_index++;
       }
     
-    wo_copy_is = Range(Restrict_Domain(copy(mapping), wo_copy_is));
-    ro_copy_is = Range(Restrict_Domain(copy(mapping), ro_copy_is));
+    wo_copy_is = omega::Range(Restrict_Domain(copy(mapping), wo_copy_is));
+    ro_copy_is = omega::Range(Restrict_Domain(copy(mapping), ro_copy_is));
     for (int i = 1; i <= level-1+privatized_levels.size(); i++) {
       wo_copy_is.name_set_var(i, copy_is.set_var(i)->name());
       ro_copy_is.name_set_var(i, copy_is.set_var(i)->name());
@@ -808,6 +999,8 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
   }
   
   // insert read copy statement
+  //fprintf(stderr, "dp3: insert read copy statement\n"); 
+  
   int old_num_stmt = stmt.size();
   int ro_copy_stmt_num = -1;
   if (has_read_refs) {
@@ -834,8 +1027,10 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
     copy_stmt_read.IS = ro_copy_is;
     copy_stmt_read.xform = copy_xform;
     copy_stmt_read.code = copy_code_read;
+    //fprintf(stderr, "dp3: copy_stmt_read.code = \n"); 
     copy_stmt_read.loop_level = std::vector<LoopLevel>(ro_copy_is.n_set());
     copy_stmt_read.ir_stmt_node = NULL;
+    copy_stmt_read.has_inspector = false;
     for (int i = 0; i < level-1; i++) {
       copy_stmt_read.loop_level[i].type = stmt[*(active.begin())].loop_level[i].type;
       if (stmt[*(active.begin())].loop_level[i].type == LoopLevelTile &&
@@ -859,12 +1054,12 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
       copy_stmt_read.loop_level[level-1+i].parallel_level = stmt[*(active.begin())].loop_level[privatized_levels[i]].parallel_level;
     }
     int left_num_dim = num_dep_dim - (get_last_dep_dim_before(*(active.begin()), level) + 1);
-    for (int i = 0; i < min(left_num_dim, static_cast<int>(index_sz.size())); i++) {
+    for (int i = 0; i < std::min(left_num_dim, static_cast<int>(index_sz.size())); i++) {
       copy_stmt_read.loop_level[level-1+privatized_levels.size()+i].type = LoopLevelOriginal;
       copy_stmt_read.loop_level[level-1+privatized_levels.size()+i].payload = num_dep_dim-left_num_dim+i;
       copy_stmt_read.loop_level[level-1+privatized_levels.size()+i].parallel_level = 0;
     }
-    for (int i = min(left_num_dim, static_cast<int>(index_sz.size())); i < index_sz.size(); i++) {
+    for (int i = std::min(left_num_dim, static_cast<int>(index_sz.size())); i < index_sz.size(); i++) {
       copy_stmt_read.loop_level[level-1+privatized_levels.size()+i].type = LoopLevelUnknown;
       copy_stmt_read.loop_level[level-1+privatized_levels.size()+i].payload = -1;
       copy_stmt_read.loop_level[level-1+privatized_levels.size()+i].parallel_level = 0;
@@ -872,11 +1067,17 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
     
     
     shiftLexicalOrder(lex, dim-1, 1);
+
+    fprintf(stderr, "loop_datacopy.cc L1071 adding stmt %d\n", stmt.size()); 
     stmt.push_back(copy_stmt_read);
+
+    uninterpreted_symbols.push_back(uninterpreted_symbols[*(active.begin())]);
+    uninterpreted_symbols_stringrepr.push_back(uninterpreted_symbols_stringrepr[*(active.begin())]);
     ro_copy_stmt_num = stmt.size() - 1;
     dep.insert();
   }
   
+  //fprintf(stderr, "dp3: insert write copy statement\n"); 
   // insert write copy statement
   int wo_copy_stmt_num = -1;
   if (has_write_refs) {
@@ -905,6 +1106,7 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
     copy_stmt_write.code = copy_code_write;
     copy_stmt_write.loop_level = std::vector<LoopLevel>(wo_copy_is.n_set());
     copy_stmt_write.ir_stmt_node = NULL;
+    copy_stmt_write.has_inspector = false;
     
     for (int i = 0; i < level-1; i++) {
       copy_stmt_write.loop_level[i].type = stmt[*(active.begin())].loop_level[i].type;
@@ -929,28 +1131,35 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
       copy_stmt_write.loop_level[level-1+i].parallel_level = stmt[*(active.begin())].loop_level[privatized_levels[i]].parallel_level;
     }
     int left_num_dim = num_dep_dim - (get_last_dep_dim_before(*(active.begin()), level) + 1);
-    for (int i = 0; i < min(left_num_dim, static_cast<int>(index_sz.size())); i++) {
+    for (int i = 0; i < std::min(left_num_dim, static_cast<int>(index_sz.size())); i++) {
       copy_stmt_write.loop_level[level-1+privatized_levels.size()+i].type = LoopLevelOriginal;
       copy_stmt_write.loop_level[level-1+privatized_levels.size()+i].payload = num_dep_dim-left_num_dim+i;
       copy_stmt_write.loop_level[level-1+privatized_levels.size()+i].parallel_level = 0;
     }
-    for (int i = min(left_num_dim, static_cast<int>(index_sz.size())); i < index_sz.size(); i++) {
+    for (int i = std::min(left_num_dim, static_cast<int>(index_sz.size())); i < index_sz.size(); i++) {
       copy_stmt_write.loop_level[level-1+privatized_levels.size()+i].type = LoopLevelUnknown;
       copy_stmt_write.loop_level[level-1+privatized_levels.size()+i].payload = -1;
       copy_stmt_write.loop_level[level-1+privatized_levels.size()+i].parallel_level = 0;
     }
     lex[dim-1]++;
     shiftLexicalOrder(lex, dim-1, -2);
+
+    fprintf(stderr, "loop_datacopy.cc L1147 adding stmt %d\n", stmt.size()); 
     stmt.push_back(copy_stmt_write);
+
+    uninterpreted_symbols.push_back(uninterpreted_symbols[*(active.begin())]);
+    uninterpreted_symbols_stringrepr.push_back(uninterpreted_symbols_stringrepr[*(active.begin())]);
     wo_copy_stmt_num = stmt.size() - 1;
     dep.insert();
   }
   
+  //fprintf(stderr, "replace original array accesses with temporary array accesses\n"); 
   // replace original array accesses with temporary array accesses
   for (int i =0; i < stmt_refs.size(); i++)
     for (int j = 0; j < stmt_refs[i].second.size(); j++) {
       if (index_sz.size() == 0) {
         IR_ScalarRef *tmp_scalar_ref = ir->CreateScalarRef(static_cast<IR_ScalarSymbol *>(tmp_sym));
+        //fprintf(stderr, "dp3: loop_datacopy.cc calling ReplaceExpression  i%d j%d\n", i, j); 
         ir->ReplaceExpression(stmt_refs[i].second[j], tmp_scalar_ref->convert());
       }
       else {
@@ -980,11 +1189,14 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
         }
         
         IR_ArrayRef *tmp_array_ref = ir->CreateArrayRef(static_cast<IR_ArraySymbol *>(tmp_sym), index_repr);
+        //fprintf(stderr, "loop_datacopy.cc  ir->ReplaceExpression( ... )\n");
         ir->ReplaceExpression(stmt_refs[i].second[j], tmp_array_ref->convert());
       }
     }
   
   // update dependence graph
+  //fprintf(stderr, "update dependence graph\n"); 
+
   int dep_dim = get_last_dep_dim_before(*(active.begin()), level) + 1;
   if (ro_copy_stmt_num != -1) {
     for (int i = 0; i < old_num_stmt; i++) {
@@ -1029,6 +1241,8 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
     }
     
     // insert dependences from copy statement loop to copied statements
+    //fprintf(stderr, "insert dependences from copy statement loop to copied statements\n"); 
+
     DependenceVector dv;
     dv.type = DEP_W2R;
     dv.sym = tmp_sym->clone();
@@ -1085,6 +1299,8 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
     }
     
     // insert dependences from copied statements to write statements
+    //fprintf(stderr, "dp3: insert dependences from copied statements to write statements\n"); 
+
     DependenceVector dv;
     dv.type = DEP_W2R;
     dv.sym = tmp_sym->clone();
@@ -1133,6 +1349,7 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
       }
     }
   
+  //fprintf(stderr, "Loop::datacopy_privatized3() cleanup\n"); 
   // cleanup
   delete sym;
   delete tmp_sym;
@@ -1147,3 +1364,6 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
   
   return true;
 }
+
+
+

@@ -2,21 +2,15 @@ cmake_minimum_required(VERSION 2.8)
 project(chill)
 set(CHILL_VERSION 0.2.1) # 2.8 doesn't support project version clause
 
-if(NOT DEFINED ROSEHOME)
-    message( FATAL_ERROR "ROSEHOME is not set, try use -DROSEHOME" )
-endif()
-if (NOT DEFINED BOOSTHOME)
-    message( FATAL_ERROR "BOOSTHOME is not set, try use -DBOOSTHOME" )
-endif()
-
 find_package(PythonLibs 2.7 REQUIRED)
+find_package(LLVM REQUIRED CONFIG)
+
+add_definitions(${LLVM_DEFINITIONS})
 
 string(TIMESTAMP build_date "\\\"%m/%d/%Y\\\"")
 
 set(CORE_LIBS 
-    m rose rt util omega codegen rosecg dl parseRel
-    boost_date_time boost_filesystem boost_program_options
-    boost_regex boost_system boost_wave boost_iostreams)
+    omega codegen chillcg parseRel)
 
 set(CORE_SRC
     src/dep.cc
@@ -31,13 +25,36 @@ set(CORE_SRC
     )
 
 set(IR_CHILL_SRC
-    src/ir_rose.cc
-    src/ir_rose_utils.cc
+    src/ir_clang.cc
+    src/chill_ast.cc
     )
 
 set(PYTHON_SRC
     src/chillmodule.cc
     )
+
+llvm_map_components_to_libnames(llvm_libs all)
+set(clang_libs
+        clangTooling
+        clangFrontendTool
+        clangFrontend
+        clangDriver
+        clangSerialization
+        clangCodeGen
+        clangParse
+        clangSema
+        clangStaticAnalyzerFrontend
+        clangStaticAnalyzerCheckers
+        clangStaticAnalyzerCore
+        clangAnalysis
+        clangARCMigrate
+        clangRewrite
+        clangRewriteFrontend
+        clangEdit
+        clangAST
+        clangLex
+        clangBasic
+        )
 
 set(COMMON_FLAGS "-DCHILL_BUILD_DATE=\"${build_date}\" -DCHILL_BUILD_VERSION=\"\\\"${CHILL_VERSION}\\\"\"")
 
@@ -51,18 +68,16 @@ else()
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/omega/include
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/parserel/include
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/codegen/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/chillcg/include
         )
 endif()
 
-link_directories(${ROSEHOME}/lib ${BOOSTOME}/lib)
-
 include_directories(
     include
-    lib/rosecg/include
+    lib/chillcg/include
+    lib/iegenlib/src
     ${OMEGA_INC}
-    ${ROSEHOME}/include
-    ${ROSEHOME}/include/rose
-    ${BOOSTHOME}/include
+    ${LLVM_INCLUDE_DIRS}
     ${PYTHON_INCLUDE_DIRS})
 
 add_executable(chill
@@ -73,15 +88,17 @@ add_executable(chill
 
 target_link_libraries(chill
         ${CORE_LIBS}
+        ${llvm_libs}
+        ${clang_libs}
         ${PYTHON_LIBRARY})
-add_dependencies(chill omega codegen rosecg parseRel)
+add_dependencies(chill omega codegen chillcg parseRel)
 
 install(TARGETS chill
         RUNTIME DESTINATION bin)
 
 add_subdirectory(lib/omega)
 add_subdirectory(lib/codegen)
-add_subdirectory(lib/rosecg)
+add_subdirectory(lib/chillcg)
 add_subdirectory(lib/parserel)
 
 add_subdirectory(doc)

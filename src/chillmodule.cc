@@ -10,7 +10,6 @@
 #include <omega.h>
 #include "loop.hh"
 #include "ir_code.hh"
-#include "ir_rose.hh"
 
 #include "chillmodule.hh"
 
@@ -81,11 +80,6 @@ static void init_loop(int loop_num_start, int loop_num_end) {
   }
   else {
     if (ir_code == NULL) {
-      if (procedure_name.empty())
-        procedure_name = "main";
-        
-      ir_code = new IR_roseCode(source_filename.c_str(), procedure_name.c_str());
-          
       IR_Block *block = ir_code->GetCode();
       ir_controls = ir_code->FindOneLevelControlStructure(block);
       for (int i = 0; i < ir_controls.size(); i++) {

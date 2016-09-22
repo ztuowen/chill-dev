@@ -9,7 +9,6 @@
 #include "loop.hh"
 #include <omega.h>
 #include "ir_code.hh"
-#include "ir_rose.hh"
 
 #include "chillmodule.hh" // Python wrapper functions for CHiLL
 
@@ -76,8 +75,6 @@ int main( int argc, char* argv[] )
     lnum_start = get_loop_num_start();
     lnum_end = get_loop_num_end();
     DEBUG_PRINT("calling ROSE code gen?    loop num %d\n", lnum);
-    finalize_loop(lnum_start, lnum_end);
-    ((IR_roseCode*)(ir_code))->finalizeRose();
     delete ir_code;
   }
   Py_Finalize();
