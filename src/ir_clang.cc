@@ -41,6 +41,7 @@ History:
 #include "code_gen/CG_chillRepr.h"
 #include "code_gen/CG_chillBuilder.h"
 #include <vector>
+#include <chilldebug.h>
 
 #include "chill_ast.hh"
 
@@ -2473,6 +2474,7 @@ IR_ArrayRef *IR_clangCode::CreateArrayRef(const IR_ArraySymbol *sym, std::vector
 
   // now we've got the vardecl AND the indeces to make a chillAST that represents the array reference
   // TODO Passing NULL for chillAST node?
+  CHILL_DEBUG_PRINT("Passed NULL as chillAST node");
   chillAST_ArraySubscriptExpr *ASE = new chillAST_ArraySubscriptExpr( vd, inds, NULL);
 
   auto ref = new IR_chillArrayRef( this, ASE, 0 );

@@ -28,7 +28,7 @@ std::vector<int> loops;
 //---
 int main( int argc, char* argv[] )
 {
-  DEBUG_PRINT("%s  main()\n", argv[0]);
+  CHILL_DEBUG_PRINT("%s  main()\n", argv[0]);
   if (argc > 2) {
     fprintf(stderr, "Usage: %s [script_file]\n", argv[0]);
     exit(-1);
@@ -74,7 +74,7 @@ int main( int argc, char* argv[] )
     int lnum_end;
     lnum_start = get_loop_num_start();
     lnum_end = get_loop_num_end();
-    DEBUG_PRINT("calling ROSE code gen?    loop num %d\n", lnum);
+    CHILL_DEBUG_PRINT("calling ROSE code gen?    loop num %d\n", lnum_start);
     delete ir_code;
   }
   Py_Finalize();

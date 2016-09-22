@@ -771,7 +771,7 @@ static void register_globals(PyObject* m) {
 PyMODINIT_FUNC
 initchill(void)    // pass C methods to python 
 {
-  DEBUG_PRINT("in C, initchill() to set up C methods to be called from python\n");
+  CHILL_DEBUG_PRINT("in C, initchill() to set up C methods to be called from python\n");
   PyObject* m = Py_InitModule("chill", ChillMethods);
   register_globals(m);
 }

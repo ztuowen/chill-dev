@@ -80,7 +80,9 @@ struct IR_chillArraySymbol: public IR_ArraySymbol {
   bool operator==(const IR_Symbol &that) const;
   IR_Symbol *clone() const;
     // TODO Hack to pass build
-  IR_CONSTANT_TYPE elem_type() const {return IR_CONSTANT_UNKNOWN;};
+  IR_CONSTANT_TYPE elem_type() const {
+      fprintf(stderr,"Not implemented elem_type in IR_chillArraySymbol");
+      return IR_CONSTANT_UNKNOWN;};
   
 };
 

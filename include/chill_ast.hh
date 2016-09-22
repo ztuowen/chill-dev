@@ -293,8 +293,8 @@ public:
   }
 
   virtual void replaceChild( chillAST_node *old, chillAST_node *newchild ) { 
-    fprintf(stderr,"(%s) forgot to implement replaceChild() ... using generic\n" ,Chill_AST_Node_Names[asttype]); 
-    fprintf(stderr, "%d children\n", children.size()); 
+    fprintf(stderr,"(%s) forgot to implement replaceChild() ... using generic\n" ,Chill_AST_Node_Names[asttype]);
+    fprintf(stderr, "%d children\n", children.size());
     for (int i=0; i<children.size(); i++) { 
       if (children[i] == old) { 
         children[i] = newchild;
@@ -302,7 +302,7 @@ public:
         return; 
       }
     }
-    fprintf(stderr, "%s %p generic replaceChild called with oldchild that was not a child\n", 
+    fprintf(stderr, "%s %p generic replaceChild called with oldchild that was not a child\n",
             getTypeString(), this) ;
     fprintf(stderr, "printing\n"); 
     print(); fprintf(stderr, "\nchild: ");

@@ -248,6 +248,7 @@ struct IR_While: public IR_Control {
 
 
 // Abstract class for compiler IR.
+// TODO made a lot of definition to pass instantiation for IR_clangCode
 class IR_Code {
 protected:
   // the only data members in IR_Code are Omega classes
