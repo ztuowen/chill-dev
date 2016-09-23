@@ -23,27 +23,28 @@ class stencilInfo {
 public:
   uint dimensions;        // number of dimensions in the stencil
   uint elements;          // total number of elements in the stencil
-  chillAST_VarDecl* srcArrayVariable;   // the variable of the source array
-  chillAST_VarDecl* dstArrayVariable;   // the variable of the destination array
+  chillAST_VarDecl *srcArrayVariable;   // the variable of the source array
+  chillAST_VarDecl *dstArrayVariable;   // the variable of the destination array
 
   int minOffset[3];         // the minimum offset for each dimension  NOTE hardcoded to 3 dimensions TODO 
   int maxOffset[3];         // the maximum offset for each dimension
 
-  chillAST_VarDecl* indexVariables[3];  // the variable used for indexing each dimension
+  chillAST_VarDecl *indexVariables[3];  // the variable used for indexing each dimension
 
-  std::vector<  std::vector< int > > offsets;  //  k+1, j-47, i+0   etc
+  std::vector<std::vector<int> > offsets;  //  k+1, j-47, i+0   etc
 
-  
-  std::vector< std::vector<chillAST_node*> > coefficients;  // the coefficients of for each element, NOT IN ANY SET ORDER
-  chillAST_node* find_coefficient( int i, int j, int k ) ; // hardcoded 3 dimensions TODO
+
+  std::vector<std::vector<chillAST_node *> > coefficients;  // the coefficients of for each element, NOT IN ANY SET ORDER
+  chillAST_node *find_coefficient(int i, int j, int k); // hardcoded 3 dimensions TODO
 
   // constructors
-  stencilInfo(); 
-  stencilInfo( chillAST_node *topstatement ) ; 
+  stencilInfo();
 
-  void walktree( chillAST_node *node, std::vector< chillAST_node * > &coeffstohere ); 
+  stencilInfo(chillAST_node *topstatement);
 
-  void print( FILE *fp=stdout );
+  void walktree(chillAST_node *node, std::vector<chillAST_node *> &coeffstohere);
+
+  void print(FILE *fp = stdout);
 
   int radius();
 

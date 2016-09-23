@@ -117,8 +117,8 @@ public:
   Loop(const IR_Control *control);
   ~Loop();
   
-  omega::CG_outputRepr *getCode(int effort = 3) const; // TODO was 1 
-  //chillAST_node* LoopCuda::getCode(int effort, std::set<int> stmts) const;
+  omega::CG_outputRepr *getCode(int effort = 3) const; // TODO was 1
+  //chillAST_node* getCode(int effort, std::set<int> stmts) const;
 
   void stencilASEPadded(int stmt_num); 
   

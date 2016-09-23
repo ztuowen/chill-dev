@@ -7,7 +7,7 @@
 #include <string.h>
 #include <code_gen/CG_outputRepr.h>
 
-#ifndef __STDC_CONSTANT_MACROS 
+#ifndef __STDC_CONSTANT_MACROS
 #define __STDC_CONSTANT_MACROS 
 #endif
 
@@ -17,69 +17,70 @@
 
 namespace omega {
 
-class CG_chillRepr : public CG_outputRepr {
-  friend class CG_chillBuilder;
-public:
-  CG_chillRepr() { stmtclassname = strdup("NOTHING");  }
+  class CG_chillRepr : public CG_outputRepr {
+    friend class CG_chillBuilder;
+
+  public:
+    CG_chillRepr() { stmtclassname = strdup("NOTHING"); }
 
 
-  char *type() const { return strdup("chill"); }; 
-  // 
-  std::vector<chillAST_node*> chillnodes;  // TODO make private
-  void printChillNodes() const { 
-    for (int i=0; i<chillnodes.size(); i++) {
-      chillnodes[i]->print(); printf("\n"); } 
-    fflush(stdout); 
-  }; 
+    char *type() const { return strdup("chill"); };
+    //
+    std::vector<chillAST_node *> chillnodes;  // TODO make private
+    void printChillNodes() const {
+      for (int i = 0; i < chillnodes.size(); i++) {
+        chillnodes[i]->print();
+        printf("\n");
+      }
+      fflush(stdout);
+    };
 
-  CG_chillRepr( std::vector<chillAST_node*> cnodes ) { 
-    chillnodes = cnodes;
-  }
+    CG_chillRepr(std::vector<chillAST_node *> cnodes) {
+      chillnodes = cnodes;
+    }
 
-  CG_chillRepr( chillAST_node *chillast ) { 
-    stmtclassname = strdup(chillast->getTypeString()); 
-    //fprintf(stderr, "made new chillRepr of class %s\n", stmtclassname); 
-    if (chillast->asttype == CHILLAST_NODETYPE_COMPOUNDSTMT) { 
-      std::vector<chillAST_node*> children = chillast->getChildren(); 
-      int numchildren = children.size();
-      for (int i=0; i<numchildren; i++) {
-        chillnodes.push_back( children[i] ); 
-        //fprintf(stderr, "adding a statement from a CompoundStmt\n"); 
+    CG_chillRepr(chillAST_node *chillast) {
+      stmtclassname = strdup(chillast->getTypeString());
+      //fprintf(stderr, "made new chillRepr of class %s\n", stmtclassname);
+      if (chillast->asttype == CHILLAST_NODETYPE_COMPOUNDSTMT) {
+        std::vector<chillAST_node *> children = chillast->getChildren();
+        int numchildren = children.size();
+        for (int i = 0; i < numchildren; i++) {
+          chillnodes.push_back(children[i]);
+          //fprintf(stderr, "adding a statement from a CompoundStmt\n");
+        }
+      } else { // for now, assume it's a single statement
+        chillnodes.push_back(chillast);  // ??
       }
     }
-    else { // for now, assume it's a single statement 
-      chillnodes.push_back( chillast );  // ?? 
-    }
-  }
-  void addStatement( chillAST_node *s ) { chillnodes.push_back( s ); } ;
-  
-  std::vector<chillAST_node*> getChillCode() const { return chillnodes; }; 
 
-  chillAST_node *GetCode() ;
- 
-  
-  ~CG_chillRepr();
-  CG_outputRepr *clone() const;
-  void clear();
+    void addStatement(chillAST_node *s) { chillnodes.push_back(s); };
 
-  
-  
+    std::vector<chillAST_node *> getChillCode() const { return chillnodes; };
+
+    chillAST_node *GetCode();
 
 
+    ~CG_chillRepr();
 
-  //---------------------------------------------------------------------------
-  // Dump operations
-  //---------------------------------------------------------------------------
-  void dump() const { printChillNodes(); }; 
-  void Dump() const;
-  //void DumpToFile(FILE *fp = stderr) const;
-private:
+    CG_outputRepr *clone() const;
+
+    void clear();
 
 
-  char *stmtclassname;    // chill 
-  
-};
+    //---------------------------------------------------------------------------
+    // Dump operations
+    //---------------------------------------------------------------------------
+    void dump() const { printChillNodes(); };
 
+    void Dump() const;
+    //void DumpToFile(FILE *fp = stderr) const;
+  private:
+
+
+    char *stmtclassname;    // chill
+
+  };
 
 
 } // namespace

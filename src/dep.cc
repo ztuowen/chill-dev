@@ -26,51 +26,51 @@
 // Class: DependeceVector
 //-----------------------------------------------------------------------------
 
-std::ostream& operator<<(std::ostream &os, const DependenceVector &d) {
+std::ostream &operator<<(std::ostream &os, const DependenceVector &d) {
   if (d.sym != NULL) {
     os << d.sym->name();
     os << ':';
     if (d.quasi)
       os << "_quasi";
-    
+
   }
-  
+
   switch (d.type) {
-  case DEP_W2R:
-    os << "flow";
-    // Check for reduction implemetation correctness
-    if (d.is_reduction)
-      os << "_reduction";
-    break;
-  case DEP_R2W:
-    os << "anti";
-    // TODO: Remove Check for reduction implemetation correctness
-    if (d.is_reduction)
-      os << "_reduction";
-    break;
-  case DEP_W2W:
-    os << "output";
-    // TODO: Remove Check for reduction implemetation correctness
-    if (d.is_reduction)
-      os << "_reduction";
-    break;
-  case DEP_R2R:
-    os << "input";
-    break;
-  case DEP_CONTROL:
-    os << "control";
-    break;
-  default:
-    os << "unknown";
-    break;
+    case DEP_W2R:
+      os << "flow";
+      // Check for reduction implemetation correctness
+      if (d.is_reduction)
+        os << "_reduction";
+      break;
+    case DEP_R2W:
+      os << "anti";
+      // TODO: Remove Check for reduction implemetation correctness
+      if (d.is_reduction)
+        os << "_reduction";
+      break;
+    case DEP_W2W:
+      os << "output";
+      // TODO: Remove Check for reduction implemetation correctness
+      if (d.is_reduction)
+        os << "_reduction";
+      break;
+    case DEP_R2R:
+      os << "input";
+      break;
+    case DEP_CONTROL:
+      os << "control";
+      break;
+    default:
+      os << "unknown";
+      break;
   }
-  
+
   os << '(';
-  
+
   for (int i = 0; i < d.lbounds.size(); i++) {
     omega::coef_t lbound = d.lbounds[i];
     omega::coef_t ubound = d.ubounds[i];
-    
+
     if (lbound == ubound)
       os << lbound;
     else {
@@ -91,13 +91,13 @@ std::ostream& operator<<(std::ostream &os, const DependenceVector &d) {
       } else
         os << lbound << '~' << ubound;
     }
-    
+
     if (i < d.lbounds.size() - 1)
       os << ", ";
   }
-  
+
   os << ')';
-  
+
   return os;
 }
 
@@ -139,6 +139,7 @@ DependenceVector &DependenceVector::operator=(const DependenceVector &that) {
   }
   return *this;
 }
+
 DependenceType DependenceVector::getType() const {
   return type;
 }
@@ -161,14 +162,14 @@ bool DependenceVector::is_control_dependence() const {
 bool DependenceVector::has_negative_been_carried_at(int dim) const {
   if (!is_data_dependence())
     throw std::invalid_argument("only works for data dependences");
-  
+
   if (dim < 0 || dim >= lbounds.size())
     return false;
-  
+
   for (int i = 0; i < dim; i++)
     if (lbounds[i] > 0 || ubounds[i] < 0)
       return false;
-  
+
   if (lbounds[dim] < 0)
     return true;
   else
@@ -179,36 +180,36 @@ bool DependenceVector::has_negative_been_carried_at(int dim) const {
 bool DependenceVector::has_been_carried_at(int dim) const {
   if (!is_data_dependence())
     throw std::invalid_argument("only works for data dependences");
-  
+
   if (dim < 0 || dim >= lbounds.size())
     return false;
-  
+
   for (int i = 0; i < dim; i++)
     if (lbounds[i] > 0 || ubounds[i] < 0)
       return false;
-  
-  if ((lbounds[dim] != 0)  || (ubounds[dim] !=0))
+
+  if ((lbounds[dim] != 0) || (ubounds[dim] != 0))
     return true;
-  
+
   return false;
 }
 
 bool DependenceVector::has_been_carried_before(int dim) const {
   if (!is_data_dependence())
     throw std::invalid_argument("only works for data dependences");
-  
+
   if (dim < 0)
     return false;
   if (dim > lbounds.size())
     dim = lbounds.size();
-  
+
   for (int i = 0; i < dim; i++) {
     if (lbounds[i] > 0)
       return true;
     if (ubounds[i] < 0)
       return true;
   }
-  
+
   return false;
 }
 
@@ -219,11 +220,11 @@ bool DependenceVector::isZero() const {
 bool DependenceVector::isZero(int dim) const {
   if (dim >= lbounds.size())
     throw std::invalid_argument("invalid dependence dimension");
-  
+
   for (int i = 0; i <= dim; i++)
     if (lbounds[i] != 0 || ubounds[i] != 0)
       return false;
-  
+
   return true;
 }
 
@@ -235,7 +236,7 @@ bool DependenceVector::isPositive() const {
       else if (lbounds[i] > 0)
         return true;
     }
-  
+
   return false;
 }
 
@@ -247,7 +248,7 @@ bool DependenceVector::isNegative() const {
       else if (ubounds[i] < 0)
         return true;
     }
-  
+
   return false;
 }
 
@@ -255,7 +256,7 @@ bool DependenceVector::isAllPositive() const {
   for (int i = 0; i < lbounds.size(); i++)
     if (lbounds[i] < 0)
       return false;
-  
+
   return true;
 }
 
@@ -263,14 +264,14 @@ bool DependenceVector::isAllNegative() const {
   for (int i = 0; i < ubounds.size(); i++)
     if (ubounds[i] > 0)
       return false;
-  
+
   return true;
 }
 
 bool DependenceVector::hasPositive(int dim) const {
   if (dim >= lbounds.size())
     throw std::invalid_argument("invalid dependence dimension");
-  
+
   if (lbounds[dim] > 0)
     //av: changed from ubounds to lbounds may have side effects
     return true;
@@ -281,7 +282,7 @@ bool DependenceVector::hasPositive(int dim) const {
 bool DependenceVector::hasNegative(int dim) const {
   if (dim >= lbounds.size())
     throw std::invalid_argument("invalid dependence dimension");
-  
+
   if (ubounds[dim] < 0)
     //av: changed from lbounds to ubounds may have side effects
     return true;
@@ -292,45 +293,45 @@ bool DependenceVector::hasNegative(int dim) const {
 bool DependenceVector::isCarried(int dim, omega::coef_t distance) const {
   if (distance <= 0)
     throw std::invalid_argument("invalid dependence distance size");
-  
+
   if (dim > lbounds.size())
     dim = lbounds.size();
-  
+
   for (int i = 0; i < dim; i++)
     if (lbounds[i] > 0)
       return false;
     else if (ubounds[i] < 0)
       return false;
-  
+
   if (dim >= lbounds.size())
     return true;
-  
+
   if (lbounds[dim] > distance)
     return false;
   else if (ubounds[dim] < -distance)
     return false;
-  
+
   return true;
 }
 
 bool DependenceVector::canPermute(const std::vector<int> &pi) const {
   if (pi.size() != lbounds.size())
     throw std::invalid_argument(
-                                "permute dimensionality do not match dependence space");
-  
+        "permute dimensionality do not match dependence space");
+
   for (int i = 0; i < pi.size(); i++) {
     if (lbounds[pi[i]] > 0)
       return true;
     else if (lbounds[pi[i]] < 0)
       return false;
   }
-  
+
   return true;
 }
 
 std::vector<DependenceVector> DependenceVector::normalize() const {
   std::vector<DependenceVector> result;
-  
+
   DependenceVector dv(*this);
   for (int i = 0; i < dv.lbounds.size(); i++) {
     if (dv.lbounds[i] < 0 && dv.ubounds[i] >= 0) {
@@ -351,63 +352,63 @@ std::vector<DependenceVector> DependenceVector::normalize() const {
     else
       break;
   }
-  
+
   result.push_back(dv);
   return result;
 }
 
 std::vector<DependenceVector> DependenceVector::permute(
-                                                        const std::vector<int> &pi) const {
+    const std::vector<int> &pi) const {
   if (pi.size() != lbounds.size())
     throw std::invalid_argument(
-                                "permute dimensionality do not match dependence space");
-  
+        "permute dimensionality do not match dependence space");
+
   const int n = lbounds.size();
-  
+
   DependenceVector dv(*this);
   for (int i = 0; i < n; i++) {
     dv.lbounds[i] = lbounds[pi[i]];
     dv.ubounds[i] = ubounds[pi[i]];
   }
-  
+
   int violated = 0;
-  
+
   for (int i = 0; i < n; i++) {
     if (dv.lbounds[i] > 0)
       break;
     else if (dv.lbounds[i] < 0)
       violated = 1;
   }
-  
+
   if (((violated == 1) && !quasi) && !is_scalar_dependence) {
     throw ir_error("dependence violation");
-    
+
   }
-  
+
   return dv.normalize();
 }
 
 DependenceVector DependenceVector::reverse() const {
   const int n = lbounds.size();
-  
+
   DependenceVector dv(*this);
   switch (type) {
-  case DEP_W2R:
-    dv.type = DEP_R2W;
-    break;
-  case DEP_R2W:
-    dv.type = DEP_W2R;
-    break;
-  default:
-    dv.type = type;
+    case DEP_W2R:
+      dv.type = DEP_R2W;
+      break;
+    case DEP_R2W:
+      dv.type = DEP_W2R;
+      break;
+    default:
+      dv.type = type;
   }
-  
+
   for (int i = 0; i < n; i++) {
     dv.lbounds[i] = -ubounds[i];
     dv.ubounds[i] = -lbounds[i];
   }
   dv.quasi = true;
-  
+
   return dv;
 }
 
@@ -473,10 +474,10 @@ DependenceVector DependenceVector::reverse() const {
 DependenceGraph DependenceGraph::permute(const std::vector<int> &pi,
                                          const std::set<int> &active) const {
   DependenceGraph g;
-  
+
   for (int i = 0; i < vertex.size(); i++)
     g.insert(vertex[i].first);
-  
+
   for (int i = 0; i < vertex.size(); i++)
     for (EdgeList::const_iterator j = vertex[i].second.begin();
          j != vertex[i].second.end(); j++) {
@@ -502,7 +503,7 @@ DependenceGraph DependenceGraph::permute(const std::vector<int> &pi,
         g.connect(i, j->first, dv);
       }
     }
-  
+
   return g;
 }
 
@@ -522,23 +523,23 @@ DependenceGraph DependenceGraph::permute(const std::vector<int> &pi,
 
 DependenceGraph DependenceGraph::subspace(int dim) const {
   DependenceGraph g;
-  
+
   for (int i = 0; i < vertex.size(); i++)
     g.insert(vertex[i].first);
-  
+
   for (int i = 0; i < vertex.size(); i++)
     for (EdgeList::const_iterator j = vertex[i].second.begin();
          j != vertex[i].second.end(); j++)
-      
+
       for (int k = 0; k < j->second.size(); k++) {
-        if(j->second[k].type != DEP_CONTROL){
+        if (j->second[k].type != DEP_CONTROL) {
           if (j->second[k].isCarried(dim))
             g.connect(i, j->first, j->second[k]);
-        }else
+        } else
           g.connect(i, j->first, j->second[k]);
-        
+
       }
-  
+
   return g;
 }
 
@@ -549,7 +550,7 @@ bool DependenceGraph::isPositive() const {
       for (int k = 0; k < j->second.size(); k++)
         if (!j->second[k].isPositive())
           return false;
-  
+
   return true;
 }
 
@@ -560,7 +561,7 @@ bool DependenceGraph::hasPositive(int dim) const {
       for (int k = 0; k < j->second.size(); k++)
         if (!j->second[k].hasPositive(dim))
           return false;
-  
+
   return true;
 }
 
@@ -571,6 +572,6 @@ bool DependenceGraph::hasNegative(int dim) const {
       for (int k = 0; k < j->second.size(); k++)
         if (!j->second[k].hasNegative(dim))
           return false;
-  
+
   return true;
 }

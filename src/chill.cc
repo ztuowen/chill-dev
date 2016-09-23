@@ -26,27 +26,26 @@ std::vector<int> loops;
 // CHiLL program main
 // Initialize state and run script or interactive mode
 //---
-int main( int argc, char* argv[] )
-{
+int main(int argc, char *argv[]) {
   CHILL_DEBUG_PRINT("%s  main()\n", argv[0]);
   if (argc > 2) {
     fprintf(stderr, "Usage: %s [script_file]\n", argv[0]);
     exit(-1);
   }
-  
+
   // Create PYTHON interpreter
   /* Pass argv[0] to the Python interpreter */
   Py_SetProgramName(argv[0]);
-  
+
   /* Initialize the Python interpreter.  Required. */
   Py_Initialize();
-  
+
   /* Add a static module */
   initchill();
-  
+
   if (argc == 2) {
-    FILE* f = fopen(argv[1], "r");
-    if(!f){
+    FILE *f = fopen(argv[1], "r");
+    if (!f) {
       printf("can't open script file \"%s\"\n", argv[1]);
       exit(-1);
     }
@@ -61,8 +60,8 @@ int main( int argc, char* argv[] )
     printf("Copyright (C) 2008 University of Southern California\n");
     printf("Copyright (C) 2009-2012 University of Utah\n");
     fflush(stdout);
-    is_interactive=true;
-    PyRun_InteractiveLoop(stdin,"-");
+    is_interactive = true;
+    PyRun_InteractiveLoop(stdin, "-");
     printf("CHiLL ending...\n");
     fflush(stdout);
   }

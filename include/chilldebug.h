@@ -12,11 +12,11 @@
 #define FILENAME basename(strdup(__FILE__))
 
 #ifdef DEBUGCHILL 
-#define CHILL_DEBUG_PRINT(format,args...) fprintf(stderr,"%s, %s, LN%d:\t" format,FILENAME,__FUNCTION__, \
+#define CHILL_DEBUG_PRINT(format,args...) fprintf(stderr,"%15s | %15s | LN%-4d:\t" format,FILENAME,__FUNCTION__, \
         __LINE__, ##args )
 #define CHILL_DEBUG_BEGIN   { \
-                                fprintf(stderr,"=========\t%s, %s, LN%d\t=========\n",FILENAME,__FUNCTION__,__LINE__);
-#define CHILL_DEBUG_END     fprintf(stderr,"===========================\n");}
+                                fprintf(stderr,"=========\t%15s, %15s, LN%-4d\t=========\n",FILENAME,__FUNCTION__,__LINE__);
+#define CHILL_DEBUG_END     fprintf(stderr,"^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");}
 #else
 #define CHILL_DEBUG_PRINT(format,args...) do {} while(0) /* Don't do anything  */
 #define CHILL_DEBUG_BEGIN   while(0) {

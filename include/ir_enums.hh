@@ -21,4 +21,5 @@ enum IR_CONDITION_TYPE    {IR_COND_LT, IR_COND_LE,
 enum IR_ARRAY_LAYOUT_TYPE {IR_ARRAY_LAYOUT_ROW_MAJOR,
                            IR_ARRAY_LAYOUT_COLUMN_MAJOR,
                            IR_ARRAY_LAYOUT_SPACE_FILLING};
+
 #endif
