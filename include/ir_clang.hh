@@ -149,7 +149,7 @@ struct IR_chillScalarRef : public IR_ScalarRef {
     dre = NULL;
     //bop = ins; //   do we need this? 
     if (pos == OP_LEFT) {
-      chillAST_node *lhs = ins->lhs;
+      chillAST_Node *lhs = ins->lhs;
       if (lhs->isDeclRefExpr()) {
         chillAST_DeclRefExpr *DRE = (chillAST_DeclRefExpr *) lhs;
         dre = DRE;
@@ -161,7 +161,7 @@ struct IR_chillScalarRef : public IR_ScalarRef {
         exit(-1);
       }
     } else {
-      chillAST_node *rhs = ins->rhs;
+      chillAST_Node *rhs = ins->rhs;
       if (rhs->isDeclRefExpr()) {
         chillAST_DeclRefExpr *DRE = (chillAST_DeclRefExpr *) rhs;
         dre = DRE;
@@ -265,9 +265,9 @@ struct IR_chillLoop : public IR_Loop {
 
   chillAST_DeclRefExpr *chillindex;   // the loop index variable  (I)  // was DeclRefExpr
   chillAST_ForStmt *chillforstmt;
-  chillAST_node *chilllowerbound;
-  chillAST_node *chillupperbound;
-  chillAST_node *chillbody;    // presumably a compound statement, but not guaranteeed
+  chillAST_Node *chilllowerbound;
+  chillAST_Node *chillupperbound;
+  chillAST_Node *chillbody;    // presumably a compound statement, but not guaranteeed
   IR_CONDITION_TYPE conditionoperator;
 
   IR_chillLoop(const IR_Code *ir, clang::ForStmt *tf);
@@ -309,18 +309,18 @@ private:
 public:
 
   // Block is a basic block?? (no, just a chunk of code )
-  std::vector<chillAST_node *> statements;
+  std::vector<chillAST_Node *> statements;
 
   IR_chillBlock(const IR_chillBlock *CB) {  // clone existing IR_chillBlock
     ir_ = CB->ir_;
     for (int i = 0; i < CB->statements.size(); i++) statements.push_back(CB->statements[i]);
   }
 
-  IR_chillBlock(const IR_Code *ir, std::vector<chillAST_node *> ast) : statements(ast) {
+  IR_chillBlock(const IR_Code *ir, std::vector<chillAST_Node *> ast) : statements(ast) {
     ir_ = ir;
   }
 
-  IR_chillBlock(const IR_Code *ir, chillAST_node *ast = NULL) { //  : cs_(NULL), bDecl_(NULL) {
+  IR_chillBlock(const IR_Code *ir, chillAST_Node *ast = NULL) { //  : cs_(NULL), bDecl_(NULL) {
     ir_ = ir;
     if (ast != NULL)
       statements.push_back(ast);
@@ -336,11 +336,11 @@ public:
   IR_Control *clone() const;
 
   //StmtList getStmtList() const;
-  std::vector<chillAST_node *> getStmtList() const;
+  std::vector<chillAST_Node *> getStmtList() const;
 
   int numstatements() { return statements.size(); };
 
-  void addStatement(chillAST_node *s);
+  void addStatement(chillAST_Node *s);
 
   void dump() const;
 };
@@ -434,7 +434,7 @@ public:
   aClangCompiler *ClangCompiler; // this is the thing we really just want one of
 
 
-  void setCurrentFunction(chillAST_node *F) { chillFD = (chillAST_FunctionDecl *) F; };
+  void setCurrentFunction(chillAST_Node *F) { chillFD = (chillAST_FunctionDecl *) F; };
 
   chillAST_FunctionDecl *getCurrentFunction() { return chillFD; };
 
@@ -457,7 +457,7 @@ protected:
   char *procedurename;
 
 
-  chillAST_node *entire_file_AST;
+  chillAST_Node *entire_file_AST;
   chillAST_FunctionDecl *chillfunc;   // the function we're currenly modifying
 
   std::vector<chillAST_VarDecl> entire_file_symbol_table;

@@ -30,7 +30,7 @@ namespace omega {
   //}
   
 
-  chillAST_node * CG_chillRepr::GetCode() { 
+  chillAST_Node * CG_chillRepr::GetCode() {
     //fprintf(stderr, "CG_chillRepr::GetCode() this %p   size %d\n", this, chillnodes.size()); 
 
     if (0 == chillnodes.size()) return NULL; // error?

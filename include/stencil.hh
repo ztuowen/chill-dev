@@ -16,7 +16,7 @@
 // *extern Loop *myloop;  // ???
 
 
-//void stencil( chillAST_node *topstatement, class stencilInfo &SI ); // stencilInfo was originally a struct, and this was the way it got filled in.  TODO remove
+//void stencil( chillAST_Node *topstatement, class stencilInfo &SI ); // stencilInfo was originally a struct, and this was the way it got filled in.  TODO remove
 
 
 class stencilInfo {
@@ -34,15 +34,15 @@ public:
   std::vector<std::vector<int> > offsets;  //  k+1, j-47, i+0   etc
 
 
-  std::vector<std::vector<chillAST_node *> > coefficients;  // the coefficients of for each element, NOT IN ANY SET ORDER
-  chillAST_node *find_coefficient(int i, int j, int k); // hardcoded 3 dimensions TODO
+  std::vector<std::vector<chillAST_Node *> > coefficients;  // the coefficients of for each element, NOT IN ANY SET ORDER
+  chillAST_Node *find_coefficient(int i, int j, int k); // hardcoded 3 dimensions TODO
 
   // constructors
   stencilInfo();
 
-  stencilInfo(chillAST_node *topstatement);
+  stencilInfo(chillAST_Node *topstatement);
 
-  void walktree(chillAST_node *node, std::vector<chillAST_node *> &coeffstohere);
+  void walktree(chillAST_Node *node, std::vector<chillAST_Node *> &coeffstohere);
 
   void print(FILE *fp = stdout);
 

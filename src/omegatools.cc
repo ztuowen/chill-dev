@@ -613,7 +613,7 @@ void exp2formula(IR_Code *ir,
       CG_chillRepr *CR = (CG_chillRepr *) v[0]; // cheat for now.  we should not know this is a chillRepr
       //fprintf(stderr, "v     "); CR->dump(); fflush(stdout);
       //fprintf(stderr, "v     "); v[0]->dump(); /* printf("\n"); */ fflush(stdout);
-      chillAST_node *node = CR->GetCode();
+      chillAST_Node *node = CR->GetCode();
 
 
       //fprintf(stderr, "\n**** walking parents!\n");
@@ -695,7 +695,7 @@ void exp2formula(IR_Code *ir,
       // r is enclosing relation, we build another that will include
       Variable_ID e = find_index(r, s, side); // s is the array named "index"
 
-      std::vector<chillAST_node *> internals = ((CG_chillRepr *) v[0])->getChillCode();
+      std::vector<chillAST_Node *> internals = ((CG_chillRepr *) v[0])->getChillCode();
       int numnodes = internals.size(); // always 1?
       std::vector<chillAST_DeclRefExpr *> dres;
       std::vector<chillAST_VarDecl *> decls;

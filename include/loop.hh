@@ -118,7 +118,7 @@ public:
   ~Loop();
   
   omega::CG_outputRepr *getCode(int effort = 3) const; // TODO was 1
-  //chillAST_node* getCode(int effort, std::set<int> stmts) const;
+  //chillAST_Node* getCode(int effort, std::set<int> stmts) const;
 
   void stencilASEPadded(int stmt_num); 
   

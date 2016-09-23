@@ -26,7 +26,7 @@ namespace omega {
 
     char *type() const { return strdup("chill"); };
     //
-    std::vector<chillAST_node *> chillnodes;  // TODO make private
+    std::vector<chillAST_Node *> chillnodes;  // TODO make private
     void printChillNodes() const {
       for (int i = 0; i < chillnodes.size(); i++) {
         chillnodes[i]->print();
@@ -35,15 +35,15 @@ namespace omega {
       fflush(stdout);
     };
 
-    CG_chillRepr(std::vector<chillAST_node *> cnodes) {
+    CG_chillRepr(std::vector<chillAST_Node *> cnodes) {
       chillnodes = cnodes;
     }
 
-    CG_chillRepr(chillAST_node *chillast) {
+    CG_chillRepr(chillAST_Node *chillast) {
       stmtclassname = strdup(chillast->getTypeString());
       //fprintf(stderr, "made new chillRepr of class %s\n", stmtclassname);
-      if (chillast->asttype == CHILLAST_NODETYPE_COMPOUNDSTMT) {
-        std::vector<chillAST_node *> children = chillast->getChildren();
+      if (chillast->getType() == CHILLAST_NODE_COMPOUNDSTMT) {
+        std::vector<chillAST_Node *> children = chillast->getChildren();
         int numchildren = children.size();
         for (int i = 0; i < numchildren; i++) {
           chillnodes.push_back(children[i]);
@@ -54,11 +54,11 @@ namespace omega {
       }
     }
 
-    void addStatement(chillAST_node *s) { chillnodes.push_back(s); };
+    void addStatement(chillAST_Node *s) { chillnodes.push_back(s); };
 
-    std::vector<chillAST_node *> getChillCode() const { return chillnodes; };
+    std::vector<chillAST_Node *> getChillCode() const { return chillnodes; };
 
-    chillAST_node *GetCode();
+    chillAST_Node *GetCode();
 
 
     ~CG_chillRepr();

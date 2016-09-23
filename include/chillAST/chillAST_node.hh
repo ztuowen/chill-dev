@@ -5,91 +5,102 @@
 
 #include "chillAST_def.hh"
 
-// an actual chill ast. 
-// nodes based on clang AST which are in turn based on C++ 
-
-class chillAST_node {   // generic node. a tree of these is the AST. this is virtual (can't instantiate)
+//! generic node of the actual chillAST, a multiway tree node.
+class chillAST_Node {
 public:
+  //! this Node's parent
+  chillAST_Node *parent;
+  //! this node's children
+  chillAST_NodeList children;
+  //! whether it is from a source file, when false it is from included files
+  bool isFromSourceFile;
+  //! the name of file this node from
+  char *filename;
+  //! for compiler internals, formerly a comment
+  char *metacomment;
+  std::vector<chillAST_Preprocessing *> preprocessinginfo;
 
-  static int chill_scalar_counter;   // for manufactured scalars 
-  static int chill_array_counter;   // for manufactured arrays
-  static int chill_pointer_counter; // for manufactured arrays
+  //! for manufactured scalars 
+  static int chill_scalar_counter;
+  //! for manufactured arrays
+  static int chill_array_counter;
+  //! for manufactured pointer
+  static int chill_pointer_counter;
+  //! the type of this current node
+  virtual CHILLAST_NODE_TYPE getType() {return CHILLAST_NODE_UNKNOWN;};
 
+  bool isSourceFile() { return (getType() == CHILLAST_NODE_SOURCEFILE); };
 
-  CHILL_ASTNODE_TYPE asttype;
+  bool isTypeDefDecl() { return (getType() == CHILLAST_NODE_TYPEDEFDECL); };
 
-  bool isSourceFile() { return (asttype == CHILLAST_NODETYPE_SOURCEFILE); };
+  bool isVarDecl() { return (getType() == CHILLAST_NODE_VARDECL); };
 
-  bool isTypeDefDecl() { return (asttype == CHILLAST_NODETYPE_TYPEDEFDECL); };
+  bool isFunctionDecl() { return (getType() == CHILLAST_NODE_FUNCTIONDECL); };
 
-  bool isVarDecl() { return (asttype == CHILLAST_NODETYPE_VARDECL); };
+  bool isRecordDecl() { return (getType() == CHILLAST_NODE_RECORDDECL); };
 
-  bool isFunctionDecl() { return (asttype == CHILLAST_NODETYPE_FUNCTIONDECL); };
+  bool isMacroDefinition() { return (getType() == CHILLAST_NODE_MACRODEFINITION); };
 
-  bool isRecordDecl() { return (asttype == CHILLAST_NODETYPE_RECORDDECL); };
+  bool isCompoundStmt() { return (getType() == CHILLAST_NODE_COMPOUNDSTMT); };
 
-  bool isMacroDefinition() { return (asttype == CHILLAST_NODETYPE_MACRODEFINITION); };
+  bool isLoop() { return (getType() == CHILLAST_NODE_LOOP); };    // AKA ForStmt
+  bool isForStmt() { return (getType() == CHILLAST_NODE_LOOP); };    // AKA Loop
+  bool isIfStmt() { return (getType() == CHILLAST_NODE_IFSTMT); };
 
-  bool isCompoundStmt() { return (asttype == CHILLAST_NODETYPE_COMPOUNDSTMT); };
+  bool isTernaryOperator() { return (getType() == CHILLAST_NODE_TERNARYOPERATOR); };
 
-  bool isLoop() { return (asttype == CHILLAST_NODETYPE_LOOP); };    // AKA ForStmt
-  bool isForStmt() { return (asttype == CHILLAST_NODETYPE_LOOP); };    // AKA Loop
-  bool isIfStmt() { return (asttype == CHILLAST_NODETYPE_IFSTMT); };
+  bool isBinaryOperator() { return (getType() == CHILLAST_NODE_BINARYOPERATOR); };
 
-  bool isTernaryOperator() { return (asttype == CHILLAST_NODETYPE_TERNARYOPERATOR); };
+  bool isUnaryOperator() { return (getType() == CHILLAST_NODE_UNARYOPERATOR); };
 
-  bool isBinaryOperator() { return (asttype == CHILLAST_NODETYPE_BINARYOPERATOR); };
+  bool isArraySubscriptExpr() { return (getType() == CHILLAST_NODE_ARRAYSUBSCRIPTEXPR); };
 
-  bool isUnaryOperator() { return (asttype == CHILLAST_NODETYPE_UNARYOPERATOR); };
+  bool isMemberExpr() { return (getType() == CHILLAST_NODE_MEMBEREXPR); };
 
-  bool isArraySubscriptExpr() { return (asttype == CHILLAST_NODETYPE_ARRAYSUBSCRIPTEXPR); };
+  bool isDeclRefExpr() { return (getType() == CHILLAST_NODE_DECLREFEXPR); };
 
-  bool isMemberExpr() { return (asttype == CHILLAST_NODETYPE_MEMBEREXPR); };
+  bool isIntegerLiteral() { return (getType() == CHILLAST_NODE_INTEGERLITERAL); };
 
-  bool isDeclRefExpr() { return (asttype == CHILLAST_NODETYPE_DECLREFEXPR); };
+  bool isFloatingLiteral() { return (getType() == CHILLAST_NODE_FLOATINGLITERAL); };
 
-  bool isIntegerLiteral() { return (asttype == CHILLAST_NODETYPE_INTEGERLITERAL); };
+  bool isImplicitCastExpr() { return (getType() == CHILLAST_NODE_IMPLICITCASTEXPR); };
 
-  bool isFloatingLiteral() { return (asttype == CHILLAST_NODETYPE_FLOATINGLITERAL); };
+  bool isReturnStmt() { return (getType() == CHILLAST_NODE_RETURNSTMT); };
 
-  bool isImplicitCastExpr() { return (asttype == CHILLAST_NODETYPE_IMPLICITCASTEXPR); };
+  bool isCallExpr() { return (getType() == CHILLAST_NODE_CALLEXPR); };
 
-  bool isReturnStmt() { return (asttype == CHILLAST_NODETYPE_RETURNSTMT); };
+  bool isParenExpr() { return (getType() == CHILLAST_NODE_PARENEXPR); };
 
-  bool isCallExpr() { return (asttype == CHILLAST_NODETYPE_CALLEXPR); };
+  bool isSizeof() { return (getType() == CHILLAST_NODE_SIZEOF); };
 
-  bool isParenExpr() { return (asttype == CHILLAST_NODETYPE_PARENEXPR); };
+  bool isMalloc() { return (getType() == CHILLAST_NODE_MALLOC); };
 
-  bool isSizeof() { return (asttype == CHILLAST_NODETYPE_SIZEOF); };
+  bool isFree() { return (getType() == CHILLAST_NODE_FREE); };
 
-  bool isMalloc() { return (asttype == CHILLAST_NODETYPE_MALLOC); };
+  bool isPreprocessing() { return (getType() == CHILLAST_NODE_PREPROCESSING); };
 
-  bool isFree() { return (asttype == CHILLAST_NODETYPE_FREE); };
+  bool isNoOp() { return (getType() == CHILLAST_NODE_NOOP); };
 
-  bool isPreprocessing() { return (asttype == CHILLAST_NODETYPE_PREPROCESSING); };
+  bool isNull() { return (getType() == CHILLAST_NODE_NULL); };
 
-  bool isNoOp() { return (asttype == CHILLAST_NODETYPE_NOOP); };
+  bool isCStyleCastExpr() { return (getType() == CHILLAST_NODE_CSTYLECASTEXPR); };
 
-  bool isNull() { return (asttype == CHILLAST_NODETYPE_NULL); };
+  bool isCStyleAddressOf() { return (getType() == CHILLAST_NODE_CSTYLEADDRESSOF); };
 
-  bool isCStyleCastExpr() { return (asttype == CHILLAST_NODETYPE_CSTYLECASTEXPR); };
+  bool isCudaMalloc() { return (getType() == CHILLAST_NODE_CUDAMALLOC); };
 
-  bool isCStyleAddressOf() { return (asttype == CHILLAST_NODETYPE_CSTYLEADDRESSOF); };
+  bool isCudaFree() { return (getType() == CHILLAST_NODE_CUDAFREE); };
 
-  bool isCudaMalloc() { return (asttype == CHILLAST_NODETYPE_CUDAMALLOC); };
+  bool isCudaMemcpy() { return (getType() == CHILLAST_NODE_CUDAMEMCPY); };
 
-  bool isCudaFree() { return (asttype == CHILLAST_NODETYPE_CUDAFREE); };
+  bool isCudaKERNELCALL() { return (getType() == CHILLAST_NODE_CUDAKERNELCALL); };
 
-  bool isCudaMemcpy() { return (asttype == CHILLAST_NODETYPE_CUDAMEMCPY); };
+  bool isCudaSYNCTHREADS() { return (getType() == CHILLAST_NODE_CUDASYNCTHREADS); };
 
-  bool isCudaKERNELCALL() { return (asttype == CHILLAST_NODETYPE_CUDAKERNELCALL); };
-
-  bool isCudaSYNCTHREADS() { return (asttype == CHILLAST_NODETYPE_CUDASYNCTHREADS); };
-
-  bool isDeclStmt() { return (asttype == CHILLAST_NODETYPE_DECLSTMT); }; // doesn't exist
+  bool isDeclStmt() { return (getType() == CHILLAST_NODE_DECLSTMT); }; // doesn't exist
 
   bool isConstant() {
-    return (asttype == CHILLAST_NODETYPE_INTEGERLITERAL) || (asttype == CHILLAST_NODETYPE_FLOATINGLITERAL);
+    return (getType() == CHILLAST_NODE_INTEGERLITERAL) || (getType() == CHILLAST_NODE_FLOATINGLITERAL);
   }
 
 
@@ -126,28 +137,22 @@ public:
   // void addDecl( chillAST_VarDecl *vd); // recursive, adds to first  symbol table it can find 
 
   // TODO decide how to hide some data
-  chillAST_node *parent;
-  bool isFromSourceFile;  // false = #included 
-  char *filename;  // file this node is from
 
   int getNumChildren() { return children.size(); };
-  std::vector<chillAST_node *> children;
 
-  std::vector<chillAST_node *>& getChildren() { return children; };  // not usually useful
-  void setChildren(std::vector<chillAST_node *> &c) { children = c; }; // does not set parent. probably should
-  chillAST_node *getChild(int which) { return children[which]; };
+  chillAST_NodeList& getChildren() { return children; };  // not usually useful
+  void setChildren(chillAST_NodeList &c) { children = c; }; // does not set parent. probably should
+  chillAST_Node *getChild(int which) { return children[which]; };
 
-  void setChild(int which, chillAST_node *n) {
+  void setChild(int which, chillAST_Node *n) {
     children[which] = n;
     children[which]->parent = this;
   };
 
-  char *metacomment; // for compiler internals, formerly a comment
   void setMetaComment(const char *c) { metacomment = strdup(c); };
 
-  std::vector<chillAST_Preprocessing *> preprocessinginfo;
 
-  virtual void addChild(chillAST_node *c) {
+  virtual void addChild(chillAST_Node *c) {
     c->parent = this;
     // check to see if it's already there
     for (int i = 0; i < children.size(); i++) {
@@ -159,7 +164,13 @@ public:
     children.push_back(c);
   };  // not usually useful
 
-  virtual void insertChild(int i, chillAST_node *node) {
+  virtual void addChildren(const chillAST_NodeList &c){
+    for (int i =0;i<c.size();++i){
+      addChild(c[i]);
+    }
+  }
+
+  virtual void insertChild(int i, chillAST_Node *node) {
     //fprintf(stderr, "%s inserting child of type %s at location %d\n", getTypeString(), node->getTypeString(), i); 
     node->parent = this;
     children.insert(children.begin() + i, node);
@@ -169,15 +180,15 @@ public:
     children.erase(children.begin() + i);
   };
 
-  int findChild(chillAST_node *c) {
+  int findChild(chillAST_Node *c) {
     for (int i = 0; i < children.size(); i++) {
       if (children[i] == c) return i;
     }
     return -1;
   }
 
-  virtual void replaceChild(chillAST_node *old, chillAST_node *newchild) {
-    CHILL_DEBUG_PRINT("(%s) forgot to implement replaceChild() ... using generic\n", Chill_AST_Node_Names[asttype]);
+  virtual void replaceChild(chillAST_Node *old, chillAST_Node *newchild) {
+    CHILL_DEBUG_PRINT("(%s) forgot to implement replaceChild() ... using generic\n", getTypeString());
     CHILL_DEBUG_PRINT("%d children\n", children.size());
     for (int i = 0; i < children.size(); i++) {
       if (children[i] == old) {
@@ -216,42 +227,43 @@ public:
    * @param var
    */
   virtual void loseLoopWithLoopVar(char *var) {
-    std::vector<chillAST_node *> dupe = children; // simple enough?
+    std::vector<chillAST_Node *> dupe = children; // simple enough?
     for (int i = 0; i < dupe.size(); i++) {  // recurse on all children
       dupe[i]->loseLoopWithLoopVar(var);
     }
   }
 
   virtual int evalAsInt() {
-    CHILL_ERROR("(%s) can't be evaluated as an integer??\n", Chill_AST_Node_Names[asttype]);
+    CHILL_ERROR("(%s) can't be evaluated as an integer??\n", getTypeString());
     print();
     exit(-1);
   }
 
   virtual const char *getUnderlyingType() {
-    CHILL_ERROR("(%s) forgot to implement getUnderlyingType()\n", Chill_AST_Node_Names[asttype]);
+    CHILL_ERROR("(%s) forgot to implement getUnderlyingType()\n", getTypeString());
     dump();
     print();
     exit(-1);
   };
 
   virtual chillAST_VarDecl *getUnderlyingVarDecl() {
-    CHILL_ERROR("(%s) forgot to implement getUnderlyingVarDecl()\n", Chill_AST_Node_Names[asttype]);
+    CHILL_ERROR("(%s) forgot to implement getUnderlyingVarDecl()\n", getTypeString());
     dump();
     print();
     exit(-1);
   };
 
 
-  virtual chillAST_node *findref() {// find the SINGLE constant or data reference at this node or below
-    CHILL_ERROR("(%s) forgot to implement findref()\n", Chill_AST_Node_Names[asttype]);
+  //! find the SINGLE constant or data reference at this node or below
+  virtual chillAST_Node *findref() {
+    CHILL_ERROR("(%s) forgot to implement findref()\n", getTypeString());
     dump();
     print();
     exit(-1);
   };
 
   virtual void gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento) {
-    CHILL_ERROR("(%s) forgot to implement gatherArrayRefs()\n", Chill_AST_Node_Names[asttype]);
+    CHILL_ERROR("(%s) forgot to implement gatherArrayRefs()\n", getTypeString());
     dump();
     print();
     exit(-1);
@@ -259,7 +271,7 @@ public:
 
   // TODO we MIGHT want the VarDecl // NOTHING IMPLEMENTS THIS? ??? 
   virtual void gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {
-    CHILL_ERROR("(%s) forgot to implement gatherScalarRefs()\n", Chill_AST_Node_Names[asttype]);
+    CHILL_ERROR("(%s) forgot to implement gatherScalarRefs()\n", getTypeString());
     dump();
     print();
     exit(-1);
@@ -289,81 +301,81 @@ public:
   }
 
   //! recursive walk parent links, avoiding loops
-  chillAST_node *findContainingNonLoop() {
+  chillAST_Node *findContainingNonLoop() {
     fprintf(stderr, "%s::findContainingNonLoop()   ", getTypeString());
     if (!parent) return NULL;
     if (parent->isCompoundStmt() && parent->getParent()->isForStmt())
       return parent->getParent()->findContainingNonLoop(); // keep recursing
     if (parent->isForStmt()) return parent->findContainingNonLoop(); // keep recursing
-    return (chillAST_node *) parent; // return non-loop
+    return (chillAST_Node *) parent; // return non-loop
   }
 
   // TODO gather loop init and cond (and if cond) like gatherloopindeces
 
   virtual void gatherDeclRefExprs(std::vector<chillAST_DeclRefExpr *> &refs) {  // both scalar and arrays
-    fprintf(stderr, "(%s) forgot to implement gatherDeclRefExpr()\n", Chill_AST_Node_Names[asttype]);
+    fprintf(stderr, "(%s) forgot to implement gatherDeclRefExpr()\n", getTypeString());
   };
 
 
   virtual void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls) {
-    fprintf(stderr, "(%s) forgot to implement gatherVarUsage()\n", Chill_AST_Node_Names[asttype]);
+    fprintf(stderr, "(%s) forgot to implement gatherVarUsage()\n", getTypeString());
   };
 
   virtual void gatherVarLHSUsage(std::vector<chillAST_VarDecl *> &decls) {
-    fprintf(stderr, "(%s) forgot to implement gatherVarLHSUsage()\n", Chill_AST_Node_Names[asttype]);
+    fprintf(stderr, "(%s) forgot to implement gatherVarLHSUsage()\n", getTypeString());
   };
 
   //! ACTUAL Declaration
   virtual void gatherVarDecls(std::vector<chillAST_VarDecl *> &decls) {
-    fprintf(stderr, "(%s) forgot to implement gatherVarDecls()\n", Chill_AST_Node_Names[asttype]);
+    fprintf(stderr, "(%s) forgot to implement gatherVarDecls()\n", getTypeString());
   };
 
 
   virtual void
   gatherVarDeclsMore(std::vector<chillAST_VarDecl *> &decls) {  // even if the decl itself is not in the ast.
-    fprintf(stderr, "(%s) forgot to implement gatherVarDeclsMore()\n", Chill_AST_Node_Names[asttype]);
+    fprintf(stderr, "(%s) forgot to implement gatherVarDeclsMore()\n", getTypeString());
   };
 
   virtual void gatherScalarVarDecls(std::vector<chillAST_VarDecl *> &decls) {  // ACTUAL Declaration
-    fprintf(stderr, "(%s) forgot to implement gatherScalarVarDecls()\n", Chill_AST_Node_Names[asttype]);
+    fprintf(stderr, "(%s) forgot to implement gatherScalarVarDecls()\n", getTypeString());
   };
 
   virtual void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls) {  // ACTUAL Declaration
-    fprintf(stderr, "(%s) forgot to implement gatherArrayVarDecls()\n", Chill_AST_Node_Names[asttype]);
+    fprintf(stderr, "(%s) forgot to implement gatherArrayVarDecls()\n", getTypeString());
   };
 
   virtual chillAST_VarDecl *findArrayDecl(const char *name) { // scoping TODO
     if (!hasSymbolTable()) return parent->findArrayDecl(name); // most things
     else
-      fprintf(stderr, "(%s) forgot to implement gatherArrayVarDecls()\n", Chill_AST_Node_Names[asttype]);
+      fprintf(stderr, "(%s) forgot to implement gatherArrayVarDecls()\n", getTypeString());
   }
 
 
   virtual void replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl) {
-    fprintf(stderr, "(%s) forgot to implement replaceVarDecls()\n", Chill_AST_Node_Names[asttype]);
+    fprintf(stderr, "(%s) forgot to implement replaceVarDecls()\n", getTypeString());
   };
 
   //! this just looks for ForStmts with preferred index metacomment attached
   virtual bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bool forcesync = false) {
-    fprintf(stderr, "(%s) forgot to implement findLoopIndexesToReplace()\n", Chill_AST_Node_Names[asttype]);
+    fprintf(stderr, "(%s) forgot to implement findLoopIndexesToReplace()\n", getTypeString());
     return false;
   }
 
 
-  virtual chillAST_node *constantFold() {  // hacky. TODO. make nice
-    CHILL_ERROR("(%s) forgot to implement constantFold()\n", Chill_AST_Node_Names[asttype]);
+  virtual chillAST_Node *constantFold() {  // hacky. TODO. make nice
+    CHILL_ERROR("(%s) forgot to implement constantFold()\n", getTypeString());
     exit(-1);;
   };
 
-  virtual chillAST_node *clone() {   // makes a deep COPY (?)
-    CHILL_ERROR("(%s) forgot to implement clone()\n", Chill_AST_Node_Names[asttype]);
+  virtual chillAST_Node *clone() {   // makes a deep COPY (?)
+    CHILL_ERROR("(%s) forgot to implement clone()\n", getTypeString());
     exit(-1);;
   };
 
   //! Print AST
   virtual void dump(int indent = 0, FILE *fp = stderr) {
     fflush(fp);
-    CHILL_ERROR("(%s) forgot to implement dump()\n", Chill_AST_Node_Names[asttype]);
+    CHILL_ERROR("(%s) forgot to implement dump()\n", getTypeString());
   };// print ast
 
   // TODO We might want to print the code a bit differently, This can be only a generic dump
@@ -372,21 +384,21 @@ public:
     fflush(fp);
     fprintf(fp, "\n");
     chillindent(indent, fp);
-    fprintf(fp, "(%s) forgot to implement print()\n", Chill_AST_Node_Names[asttype]);
+    fprintf(fp, "(%s) forgot to implement print()\n", getTypeString());
   };
 
   virtual void printName(int indent = 0, FILE *fp = stderr) {
     fflush(fp);
     fprintf(fp, "\n");
     chillindent(indent, fp);
-    fprintf(fp, "(%s) forgot to implement printName()\n", Chill_AST_Node_Names[asttype]);
+    fprintf(fp, "(%s) forgot to implement printName()\n", getTypeString());
   };// print CODE 
 
   //! The AST's print version
   virtual char *stringRep(int indent = 0) {
     fflush(stdout);
     // TODO chillindent(indent, fp);
-    CHILL_ERROR("(%s) forgot to implement stringRep()\n", Chill_AST_Node_Names[asttype]);
+    CHILL_ERROR("(%s) forgot to implement stringRep()\n", getTypeString());
     exit(-1);
   }
 
@@ -394,7 +406,7 @@ public:
   virtual void printonly(int indent = 0, FILE *fp = stderr) { print(indent, fp); };
 
   //virtual void printString( std::string &s ) {
-  //  fprintf(stderr,"(%s) forgot to implement printString()\n" ,Chill_AST_Node_Names[asttype]);
+  //  fprintf(stderr,"(%s) forgot to implement printString()\n" ,getTypeString());
   //}
 
 
@@ -434,7 +446,7 @@ public:
   }
 
 
-  // generic for chillAST_node with children
+  // generic for chillAST_Node with children
   virtual void find_deepest_loops(std::vector<chillAST_ForStmt *> &loops) { // returns DEEPEST nesting of loops
     std::vector<chillAST_ForStmt *> deepest; // deepest below here
 
@@ -461,13 +473,11 @@ public:
   }
 
 
-  const char *getTypeString() { return Chill_AST_Node_Names[asttype]; };
+  const char *getTypeString() { return ChillAST_Node_Names[getType()]; };
 
-  int getType() { return asttype; };
+  void setParent(chillAST_Node *p) { parent = p; };
 
-  void setParent(chillAST_node *p) { parent = p; };
-
-  chillAST_node *getParent() { return parent; };
+  chillAST_Node *getParent() { return parent; };
 
   chillAST_SourceFile *getSourceFile() {
     if (isSourceFile()) return ((chillAST_SourceFile *) this);
@@ -480,7 +490,7 @@ public:
     exit(-1);
   }
 
-  virtual chillAST_node *findDatatype(char *t) {
+  virtual chillAST_Node *findDatatype(char *t) {
     fprintf(stderr, "%s looking for datatype %s\n", getTypeString(), t);
     if (parent != NULL) return parent->findDatatype(t); // most nodes do this
     return NULL;
@@ -515,21 +525,21 @@ public:
     return;
   }
 
-  virtual chillAST_node *getEnclosingStatement(int level = 0);
+  virtual chillAST_Node *getEnclosingStatement(int level = 0);
 
   virtual chillAST_VarDecl *multibase() {
-    fprintf(stderr, "(%s) forgot to implement multibase()\n", Chill_AST_Node_Names[asttype]);
+    fprintf(stderr, "(%s) forgot to implement multibase()\n", getTypeString());
     exit(-1);
   }
 
-  virtual chillAST_node *multibase2() {
-    fprintf(stderr, "(%s) forgot to implement multibase2()\n", Chill_AST_Node_Names[asttype]);
+  virtual chillAST_Node *multibase2() {
+    fprintf(stderr, "(%s) forgot to implement multibase2()\n", getTypeString());
     exit(-1);
   }
 
 
-  virtual void gatherStatements(std::vector<chillAST_node *> &statements) {
-    fprintf(stderr, "(%s) forgot to implement gatherStatements()\n", Chill_AST_Node_Names[asttype]);
+  virtual void gatherStatements(std::vector<chillAST_Node *> &statements) {
+    fprintf(stderr, "(%s) forgot to implement gatherStatements()\n", getTypeString());
     dump();
     fflush(stdout);
     print();
@@ -537,8 +547,8 @@ public:
   }
 
 
-  virtual bool isSameAs(chillAST_node *other) {  // for tree comparison
-    fprintf(stderr, "(%s) forgot to implement isSameAs()\n", Chill_AST_Node_Names[asttype]);
+  virtual bool isSameAs(chillAST_Node *other) {  // for tree comparison
+    fprintf(stderr, "(%s) forgot to implement isSameAs()\n", getTypeString());
     dump();
     fflush(stdout);
     print();
