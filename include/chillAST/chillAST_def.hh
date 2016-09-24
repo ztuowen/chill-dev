@@ -12,7 +12,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <vector>  // std::vector 
+#include <vector>  // std::vector
 
 #include <ir_enums.hh> // for IR_CONDITION_* 
 
@@ -40,7 +40,7 @@ enum CHILLAST_NODE_TYPE {
   CHILLAST_NODE_IMPLICITCASTEXPR,
   CHILLAST_NODE_RETURNSTMT,
   CHILLAST_NODE_CALLEXPR,
-  CHILLAST_NODE_DECLSTMT,
+  //CHILLAST_NODE_DECLSTMT, not used
   CHILLAST_NODE_PARENEXPR,
   CHILLAST_NODE_CSTYLECASTEXPR,
   CHILLAST_NODE_CSTYLEADDRESSOF,
@@ -142,6 +142,8 @@ class chillAST_IntegerLiteral;
 class chillAST_FloatingLiteral;
 
 class chillAST_ImplicitCastExpr;
+
+class chillAST_IfStmt;
 
 class chillAST_CStyleCastExpr;
 

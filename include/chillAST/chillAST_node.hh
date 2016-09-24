@@ -4,15 +4,19 @@
 #define _CHILLAST_NODE_H_
 
 #include "chillAST_def.hh"
+#include "printer.h"
 
 //! generic node of the actual chillAST, a multiway tree node.
 class chillAST_Node {
 public:
+  friend class chill::printer::GenericPrinter;
   // TODO decide how to hide some data
   //! this Node's parent
   chillAST_Node *parent;
   //! this node's children the only entity that holds childs/subexpressions
   chillAST_NodeList children;
+  //! The parameters that this nodes accept, which every elements is in the scope, but they are not defined in children
+  chillAST_SymbolTable *parameters;
   //! Symbol Scoping
   chillAST_SymbolTable *symbolTable;
   //! typedef Scoping
@@ -40,9 +44,12 @@ public:
     filename = NULL;
     symbolTable = NULL;
     typedefTable = NULL;
+    parameters = NULL;
   }
   //! the type of this current node
   virtual CHILLAST_NODE_TYPE getType() {return CHILLAST_NODE_UNKNOWN;};
+  //! Get the human readable type name
+  const char *getTypeString() { return ChillAST_Node_Names[getType()]; };
   //! the precedence of the current node, 0 being the highest
   virtual int getPrec() {return INT8_MAX;}
 
@@ -434,14 +441,11 @@ public:
 
   virtual void getTopLevelLoops(std::vector<chillAST_ForStmt *> &loops) {
     int n = children.size();
-    //fprintf(stderr, "get_top_level_loops of a %s with %d children\n", getTypeString(), n); 
     for (int i = 0; i < n; i++) {
-      //fprintf(stderr, "child %d is a %s\n", i, children[i]->getTypeString()); 
       if (children[i]->isForStmt()) {
         loops.push_back(((chillAST_ForStmt *) (children[i])));
       }
     }
-    //fprintf(stderr, "found %d top level loops\n", loops.size()); 
   }
 
 
@@ -495,7 +499,6 @@ public:
   }
 
 
-  const char *getTypeString() { return ChillAST_Node_Names[getType()]; };
 
   void setParent(chillAST_Node *p) { parent = p; };
 
@@ -505,53 +508,30 @@ public:
   chillAST_SourceFile *getSourceFile() {
     if (isSourceFile()) return ((chillAST_SourceFile *) this);
     if (parent != NULL) return parent->getSourceFile();
-    fprintf(stderr, "UHOH, getSourceFile() called on node %p %s that does not have a parent and is not a source file\n",
-            this, this->getTypeString());
+    CHILL_ERROR("UHOH, getSourceFile() called on node %p %s that does not have a parent and is not a source file\n", this, this->getTypeString());
     this->print();
-    printf("\n\n");
-    fflush(stdout);
     exit(-1);
   }
 
-  void walk_parents() {
-    fprintf(stderr, "wp: (%s)  ", getTypeString());
-    print();
-    printf("\n");
-    fflush(stdout);
-    if (isSourceFile()) {
-      fprintf(stderr, "(top sourcefile)\n\n");
-      return;
-    }
-
-    if (parent) parent->walk_parents();
-    else fprintf(stderr, "UHOH, %s has no parent??\n", getTypeString());
-    return;
-  }
-
+  // TODO DOC
   virtual chillAST_Node *getEnclosingStatement(int level = 0);
 
+  // TODO DOC
   virtual chillAST_VarDecl *multibase() {
     fprintf(stderr, "(%s) forgot to implement multibase()\n", getTypeString());
     exit(-1);
   }
 
+  // TODO DOC
   virtual chillAST_Node *multibase2() {
     fprintf(stderr, "(%s) forgot to implement multibase2()\n", getTypeString());
     exit(-1);
   }
 
 
+  //! Get a vector of statements
   virtual void gatherStatements(std::vector<chillAST_Node *> &statements) {
     fprintf(stderr, "(%s) forgot to implement gatherStatements()\n", getTypeString());
-    dump();
-    fflush(stdout);
-    print();
-    fprintf(stderr, "\n\n");
-  }
-
-
-  virtual bool isSameAs(chillAST_Node *other) {  // for tree comparison
-    fprintf(stderr, "(%s) forgot to implement isSameAs()\n", getTypeString());
     dump();
     fflush(stdout);
     print();
@@ -562,6 +542,9 @@ public:
 
   void printPreprocAFTER(int indent, FILE *fp);
 
+  virtual chillAST_SymbolTable* getParameters() {return parameters;}
+  virtual chillAST_VarDecl* getParameter(const char * name);
+  virtual void addParameter(chillAST_VarDecl* name);
 
 };
 

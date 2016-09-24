@@ -639,12 +639,6 @@ void chillAST_RecordDecl::printStructure(int indent, FILE *fp) {
   fflush(fp);
 }
 
-
-void chillAST_RecordDecl::dump(int indent, FILE *fp) {
-  chillindent(indent, fp);
-
-}
-
 chillAST_FunctionDecl::chillAST_FunctionDecl(const char *rt, const char *fname, void *unique) {
   CHILL_DEBUG_PRINT("chillAST_FunctionDecl::chillAST_FunctionDecl with unique %p\n", unique);
   if (fname)
@@ -652,38 +646,13 @@ chillAST_FunctionDecl::chillAST_FunctionDecl(const char *rt, const char *fname, 
   else
     functionName = strdup("YouScrewedUp");
   forwarddecl = externfunc = builtin = false;
-  symbolTable = new chillAST_SymbolTable();
+  parameters = new chillAST_SymbolTable();
   this->setFunctionCPU();
   body = new chillAST_CompoundStmt();
   returnType = strdup(rt);
   this->setFunctionCPU();
   uniquePtr = unique; // a quick way to check equivalence. DO NOT ACCESS THROUGH THIS
 };
-
-
-void chillAST_FunctionDecl::addParameter(chillAST_VarDecl *p) {
-  CHILL_DEBUG_PRINT("%s chillAST_FunctionDecl::addParameter( 0x%x  param %s)   total of %d parameters\n", functionName,
-                    p, p->varname, 1 + getSymbolTable()->size());
-
-  if (symbolTableFindName(getSymbolTable(), p->varname)) { // NOT recursive. just in FunctionDecl
-    CHILL_DEBUG_PRINT("chillAST_FunctionDecl::addParameter( %s ), parameter already exists?\n", p->varname);
-    // exit(-1); // ??
-    return; // error?
-  }
-
-  getSymbolTable()->push_back(p);
-  CHILL_DEBUG_PRINT("setting %s isAParameter\n", p->varname);
-  p->isAParameter = true;
-  p->setParent(this); // this is a combined list!
-}
-
-// TODO This couldn't be more wrong!
-void chillAST_FunctionDecl::addDecl(chillAST_VarDecl *vd) { // to symbol table ONLY
-  CHILL_DEBUG_PRINT("chillAST_FunctionDecl::addDecl( %s )\n", vd->varname);
-  if (!body)
-    body = new chillAST_CompoundStmt();
-  body->addVariableToScope(vd);
-}
 
 void chillAST_FunctionDecl::setBody(chillAST_Node *bod) {
   if (bod->isCompoundStmt()) body = (chillAST_CompoundStmt *) bod;
@@ -694,7 +663,6 @@ void chillAST_FunctionDecl::setBody(chillAST_Node *bod) {
   }
   bod->setParent(this);  // well, ...
 }
-
 
 void chillAST_FunctionDecl::insertChild(int i, chillAST_Node *node) {
   fprintf(stderr, "chillAST_FunctionDecl::insertChild()  ");
@@ -729,21 +697,6 @@ void chillAST_FunctionDecl::addChild(chillAST_Node *node) {
   body->addChild(node);
   node->setParent(this); // this, or body??
 }
-
-
-void chillAST_FunctionDecl::printParameterTypes(FILE *fp) {  // also prints names
-  //fprintf(stderr, "\n\n%s chillAST_FunctionDecl::printParameterTypes()\n", functionName);
-  fprintf(fp, "( ");
-  int numparameters = getSymbolTable()->size();
-  for (int i = 0; i < numparameters; i++) {
-    if (i != 0) fprintf(fp, ", ");
-    chillAST_VarDecl *p = (*getSymbolTable())[i];
-    p->print(0, fp); // note: no indent, as this is in the function parens
-  }
-  fprintf(fp, " )"); // end of input parameters
-
-}
-
 
 void chillAST_FunctionDecl::print(int indent, FILE *fp) {
   //fprintf(fp, "\n// functiondecl %p    \n", this);
@@ -795,39 +748,11 @@ void chillAST_FunctionDecl::print(int indent, FILE *fp) {
   fflush(fp);
 }
 
-
-void chillAST_FunctionDecl::dump(int indent, FILE *fp) {
-  fprintf(fp, "\n");
-  fprintf(fp, "// isFromSourceFile ");
-  if (filename) fprintf(fp, "%s  ", filename);
-  if (isFromSourceFile) fprintf(fp, "true\n");
-  else fprintf(fp, "false\n");
-  chillindent(indent, fp);
-  fprintf(fp, "(FunctionDecl %s %s(", returnType, functionName);
-
-  int numparameters = getSymbolTable()->size();
-  for (int i = 0; i < numparameters; i++) {
-    if (i != 0) fprintf(fp, ", ");
-    chillAST_VarDecl *p = (*getSymbolTable())[i];
-    p->print(0, fp);
-  }
-  fprintf(fp, ")\n"); // end of input parameters
-
-  // now the body -
-  if (body) body->dump(indent + 1, fp);
-
-  // tidy up
-  chillindent(indent, fp);
-  fprintf(fp, ")\n");
-  fflush(fp);
-}
-
-
 void chillAST_FunctionDecl::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
   //fprintf(stderr, "chillAST_FunctionDecl::gatherVarDecls()\n");
   //if (0 < children.size()) fprintf(stderr, "functiondecl has %d children\n", children.size());
   //fprintf(stderr, "functiondecl has %d parameters\n", numParameters());
-  for (int i = 0; i < numParameters(); i++) (*getSymbolTable())[i]->gatherVarDecls(decls);
+  for (int i = 0; i < getParameters()->size(); i++) (*getParameters())[i]->gatherVarDecls(decls);
   //fprintf(stderr, "after parms, %d decls\n", decls.size());
   for (int i = 0; i < children.size(); i++) children[i]->gatherVarDecls(decls);
   //fprintf(stderr, "after children, %d decls\n", decls.size());
@@ -842,7 +767,7 @@ void chillAST_FunctionDecl::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
 void chillAST_FunctionDecl::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
   //if (0 < children.size()) fprintf(stderr, "functiondecl has %d children\n", children.size());
 
-  for (int i = 0; i < numParameters(); i++) (*getSymbolTable())[i]->gatherScalarVarDecls(decls);
+  for (int i = 0; i < getParameters()->size(); i++) (*getSymbolTable())[i]->gatherScalarVarDecls(decls);
   for (int i = 0; i < children.size(); i++) children[i]->gatherScalarVarDecls(decls);
   body->gatherScalarVarDecls(decls);  // todo, figure out if functiondecl has actual children
 }
@@ -851,7 +776,7 @@ void chillAST_FunctionDecl::gatherScalarVarDecls(vector<chillAST_VarDecl *> &dec
 void chillAST_FunctionDecl::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
   //if (0 < children.size()) fprintf(stderr, "functiondecl has %d children\n", children.size());
 
-  for (int i = 0; i < numParameters(); i++) (*getSymbolTable())[i]->gatherArrayVarDecls(decls);
+  for (int i = 0; i < getParameters()->size(); i++) (*getSymbolTable())[i]->gatherArrayVarDecls(decls);
   for (int i = 0; i < children.size(); i++) children[i]->gatherArrayVarDecls(decls);
   body->gatherArrayVarDecls(decls);  // todo, figure out if functiondecl has actual children
 }
@@ -942,31 +867,21 @@ void chillAST_FunctionDecl::cleanUpVarDecls() {
     par->removeChild(par->findChild(deletethese[i]));
   }
 
-
-  //fprintf(stderr, "\n\nnow check for vars used but not defined\n");
   // now check for vars used but not defined?
   for (int j = 0; j < used.size(); j++) {
-    //fprintf(stderr, "%s is used\n", used[j]->varname);
     bool definedandused = false;
     for (int i = 0; i < defined.size(); i++) {
       if (used[j] == defined[i]) {
-        //fprintf(stderr, "%s is defined\n", defined[i]->varname);
         definedandused = true;
         break;
       }
     }
     if (!definedandused) {
-      //fprintf(stderr, "%s is used but not defined?\n", used[j]->varname);
-      // add it to the beginning of the function
       insertChild(0, used[j]);
     }
   }
 
 }
-
-//void chillAST_FunctionDecl::replaceVarDecls( chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl ) {
-//  for (int i=0; i<children.size(); i++) children[i]->replaceVarDecls( olddecl, newdecl );
-//}
 
 
 bool chillAST_FunctionDecl::findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bool forcesync) {
@@ -984,7 +899,7 @@ chillAST_MacroDefinition::chillAST_MacroDefinition(const char *mname = NULL, con
   if (mname) macroName = strdup(mname); else macroName = strdup("UNDEFINEDMACRO");
   if(rhs) rhsString = strdup(rhs); else rhsString = NULL;
   metacomment = NULL;
-  symbolTable = new chillAST_SymbolTable();
+  parameters = new chillAST_SymbolTable();
   isFromSourceFile = true; // default
   filename = NULL;
 };
@@ -996,7 +911,7 @@ chillAST_Node *chillAST_MacroDefinition::clone() {
   return this;
   chillAST_MacroDefinition *clo = new chillAST_MacroDefinition( macroName );
   clo->setParent(parent);
-  for (int i=0; i<parameters.size(); i++) clo->addVariableToScope( parameters[i] );
+  for (int i=0; i<parameters->size(); i++) clo->addVariableToScope( (*parameters)[i] );
   clo->setBody( body->clone() );
   return clo;
 
@@ -1022,35 +937,17 @@ void chillAST_MacroDefinition::addChild(chillAST_Node *node) {
   node->setParent(this); // this, or body??
 }
 
-
-void chillAST_MacroDefinition::dump(int indent, FILE *fp) {
-  fprintf(fp, "\n");
-  chillindent(indent, fp);
-  fprintf(fp, "(MacroDefinition %s(", macroName);
-  for (int i = 0; i < numParameters(); i++) {
-    fprintf(fp, "\n");
-    chillindent(indent + 1, fp);
-    fprintf(fp, "(%s)", parameters[i]->varname);
-  }
-  fprintf(fp, ")\n");
-  body->dump(indent + 1, fp);
-  if (rhsString) fprintf(fp, " (aka %s)");
-  fprintf(fp, "\n");
-  fflush(fp);
-}
-
-
 void chillAST_MacroDefinition::print(int indent, FILE *fp) {  // UHOH   TODO
-  CHILL_DEBUG_PRINT("macro has %d parameters\n", numParameters());
+  CHILL_DEBUG_PRINT("macro has %d parameters\n", parameters->size());
 
   printPreprocBEFORE(indent, fp);
 
   fprintf(fp, "#define %s", macroName);
-  if (0 != numParameters()) {
+  if (0 != parameters->size()) {
     fprintf(fp, "(");
-    for (int i = 0; i < numParameters(); i++) {
+    for (int i = 0; i < parameters->size(); i++) {
       if (i) fprintf(fp, ",");
-      fprintf(fp, "%s", parameters[i]->varname);
+      fprintf(fp, "%s", (*parameters)[i]->varname);
     }
     fprintf(fp, ")  ");
   }
@@ -1249,19 +1146,6 @@ void chillAST_ForStmt::print(int indent, FILE *fp) {
 
   printPreprocAFTER(indent, fp);
   fflush(fp); //
-}
-
-void chillAST_ForStmt::dump(int indent, FILE *fp) {
-  chillindent(indent, fp);
-  fprintf(fp, "(ForStmt \n");
-
-  init->dump(indent + 1, fp);
-  cond->dump(indent + 1, fp);
-  incr->dump(indent + 1, fp);
-  body->dump(indent + 1, fp);
-
-  chillindent(indent, fp);
-  fprintf(fp, ")\n");
 }
 
 chillAST_Node *chillAST_ForStmt::constantFold() {
@@ -2052,14 +1936,6 @@ void chillAST_BinaryOperator::replaceVarDecls(chillAST_VarDecl *olddecl, chillAS
   //}
 }
 
-
-bool chillAST_BinaryOperator::isSameAs(chillAST_Node *other) {
-  if (!other->isBinaryOperator()) return false;
-  chillAST_BinaryOperator *o = (chillAST_BinaryOperator *) other;
-  if (strcmp(op, o->op)) return false; // different operators
-  return lhs->isSameAs(o->lhs) && rhs->isSameAs(o->rhs); // recurse
-}
-
 chillAST_TernaryOperator::chillAST_TernaryOperator(const char *oper, chillAST_Node *c, chillAST_Node *l,
                                                    chillAST_Node *r) {
   if (op)
@@ -2589,23 +2465,6 @@ chillAST_MemberExpr::chillAST_MemberExpr(chillAST_Node *bas, const char *mem, vo
   }
 }
 
-
-void chillAST_MemberExpr::dump(int indent, FILE *fp) {
-  chillindent(indent, fp);
-  fprintf(fp, "(MemberExpr \n");
-
-  base->dump(indent + 1, fp);
-  chillindent(indent + 1, fp);
-  if (exptype == CHILLAST_MEMBER_EXP_ARROW) fprintf(fp, "->");
-  else fprintf(fp, ".");
-
-  fprintf(fp, "%s\n", member);
-
-  chillindent(indent, fp);
-  fprintf(fp, ")\n");
-}
-
-
 void chillAST_MemberExpr::print(int indent, FILE *fp) {
   if (base) base->print(indent, fp);
   else {
@@ -2831,26 +2690,6 @@ void chillAST_DeclRefExpr::print(int indent, FILE *fp) {
 
 char *chillAST_DeclRefExpr::stringRep(int indent) {
   return strdup(declarationName);
-}
-
-
-void chillAST_DeclRefExpr::dump(int indent, FILE *fp) {
-  chillindent(indent, fp);
-  fprintf(fp, "(DeclRefExpr '%s' ", declarationType);
-  chillAST_VarDecl *vd = getVarDecl();
-  if (vd) {
-    if (vd->isAParameter) fprintf(fp, "ParmVar  ");
-    else fprintf(fp, "Var  ");
-  }
-  fprintf(fp, "'%s' ", declarationName);  // variable or function name
-
-  if (chillAST_FunctionDecl *fd = getFunctionDecl()) {
-    // print parameter types for functions
-    fd->printParameterTypes(fp);
-  }
-
-  fprintf(fp, ")\n");
-  fflush(fp);
 }
 
 class chillAST_Node *chillAST_DeclRefExpr::constantFold() {  // can never do anything?
@@ -3276,18 +3115,6 @@ chillAST_Node *chillAST_FloatingLiteral::clone() {
   return newone;
 }
 
-bool chillAST_FloatingLiteral::isSameAs(chillAST_Node *other) {
-  if (!other->isFloatingLiteral()) return false;
-  chillAST_FloatingLiteral *o = (chillAST_FloatingLiteral *) other;
-  // should we care about single vs double precision?
-  if (float0double1 != o->float0double1) return false;
-  if (float0double1 == 0) {
-    return value == o->value; // WARNING, comparing floats with ==
-  }
-  return doublevalue == o->doublevalue; // WARNING, comparing doubless with ==
-}
-
-
 chillAST_UnaryOperator::chillAST_UnaryOperator(const char *oper, bool pre, chillAST_Node *sub) {
   op = strdup(oper);
   prefix = pre;
@@ -3420,14 +3247,6 @@ int chillAST_UnaryOperator::evalAsInt() {
   exit(-1);
 
 }
-
-bool chillAST_UnaryOperator::isSameAs(chillAST_Node *other) {
-  if (!other->isUnaryOperator()) return false;
-  chillAST_UnaryOperator *o = (chillAST_UnaryOperator *) other;
-  if (strcmp(op, o->op)) return false; // different operators
-  return subexpr->isSameAs(o->subexpr); // recurse
-}
-
 
 chillAST_ImplicitCastExpr::chillAST_ImplicitCastExpr(chillAST_Node *sub) {
   subexpr = sub;
@@ -3744,17 +3563,6 @@ void chillAST_Malloc::print(int indent, FILE *fp) {
   fflush(fp);
 };
 
-
-void chillAST_Malloc::dump(int indent, FILE *fp) {
-  chillindent(indent, fp);
-  fprintf(fp, "(Malloc \n");
-  sizeexpr->dump(indent + 1, fp);
-  chillindent(indent, fp);
-  fprintf(fp, ")\n");
-  fflush(fp);
-};
-
-
 chillAST_CudaMalloc::chillAST_CudaMalloc(chillAST_Node *devmemptr, chillAST_Node *size) {
   devPtr = devmemptr;
   sizeinbytes = size;  // probably a multiply like   sizeof(int) * 1024
@@ -3767,16 +3575,6 @@ void chillAST_CudaMalloc::print(int indent, FILE *fp) {
   fprintf(fp, ",");
   sizeinbytes->print(0, fp);
   fprintf(fp, ")");
-  fflush(fp);
-};
-
-void chillAST_CudaMalloc::dump(int indent, FILE *fp) {
-  chillindent(indent, fp);
-  fprintf(fp, "(CudaMalloc \n");
-  devPtr->dump(indent + 1, fp);
-  fprintf(fp, "\n");
-  sizeinbytes->dump(indent + 1, fp);
-  fprintf(fp, ")\n");
   fflush(fp);
 };
 
@@ -3899,16 +3697,7 @@ void chillAST_CudaMemcpy::print(int indent, FILE *fp) {
   fflush(fp);
 };
 
-void chillAST_CudaMemcpy::dump(int indent, FILE *fp) {
-  chillindent(indent, fp);
-  fprintf(fp, "(CudaMemcpy \n");
-  dest->dump(indent + 1, fp);
-  src->dump(indent + 1, fp);
-  size->dump(indent + 1, fp);
-  chillindent(indent + 1, fp);
-  fprintf(fp, ",%s\n", cudaMemcpyKind);
-  fflush(fp);
-};
+
 
 class chillAST_Node *chillAST_CudaMemcpy::constantFold() {
   dest = (chillAST_VarDecl *) dest->constantFold();
@@ -4001,19 +3790,6 @@ void chillAST_ReturnStmt::print(int indent, FILE *fp) {
   }
   fflush(fp);
 }
-
-
-void chillAST_ReturnStmt::dump(int indent, FILE *fp) {
-  chillindent(indent, fp);
-  fprintf(fp, "(ReturnStmt");
-  if (returnvalue) {
-    fprintf(fp, "\n");
-    returnvalue->dump(indent + 1, fp);
-    chillindent(indent, fp);
-  }
-  fprintf(fp, ")\n");
-}
-
 
 class chillAST_Node *chillAST_ReturnStmt::constantFold() {
   if (returnvalue) returnvalue = returnvalue->constantFold();
@@ -5238,27 +5014,6 @@ chillAST_Node *chillAST_IfStmt::clone() {
   return IS;
 }
 
-
-void chillAST_IfStmt::dump(int indent, FILE *fp) {
-  chillindent(indent, fp);
-  fprintf(fp, "(if ");
-  fprintf(fp, "\n");
-
-  cond->dump(indent + 1, fp);
-  fprintf(fp, "\n");
-
-  thenpart->dump(indent + 1, fp);
-  fprintf(fp, "\n");
-
-  if (elsepart) {
-    elsepart->dump(indent + 1, fp);
-    fprintf(fp, "\n");
-  }
-  chillindent(indent, fp);
-  fprintf(fp, ")\n");
-}
-
-
 void chillAST_IfStmt::print(int indent, FILE *fp) {
   printPreprocBEFORE(indent, fp);
   chillindent(indent, fp);
@@ -5570,9 +5325,32 @@ chillAST_VarDecl* chillAST_Node::findVariableDecleration(const char *t) {
 }
 
 chillAST_VarDecl* chillAST_Node::getVariableDeclaration(const char *t) {
-  return symbolTableFindName(getSymbolTable(),t);
+  chillAST_VarDecl* vd = symbolTableFindName(getSymbolTable(),t);
+  if (!vd) vd = getParameter(t);
+  return vd;
 }
 
 chillAST_TypedefDecl* chillAST_Node::getTypeDeclaration(const char *t){
   return typedefTableFindName(getTypedefTable(),t);
+}
+
+void chillAST_Node::addParameter(chillAST_VarDecl *vd) {
+  if (!parameters) {
+    CHILL_ERROR("Calling addParameter on construct without parameters");
+    exit(-1);
+  }
+
+  if (symbolTableFindName(getParameters(), vd->varname)) { // NOT recursive. just in FunctionDecl
+    CHILL_ERROR("parameter %s already exists?\n", vd->varname);
+    return;
+  }
+
+  CHILL_DEBUG_PRINT("setting %s isAParameter\n", vd->varname);
+  getParameters()->push_back(vd);
+  vd->isAParameter = true;
+  vd->setParent(this); // this is a combined list!
+}
+
+chillAST_VarDecl* chillAST_Node::getParameter(const char *t) {
+  return symbolTableFindName(getParameters(),t);
 }
