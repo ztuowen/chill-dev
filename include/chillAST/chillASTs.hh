@@ -63,7 +63,6 @@ public:
 
   chillAST_RecordDecl *getStructDef();
 
-
   bool isAStruct() { return isStruct; };
 
   bool isAUnion() { return isUnion; };
@@ -86,7 +85,6 @@ public:
 
   chillAST_VarDecl *findSubpart(const char *name);
 
-  //TODO hide data, set/get type and alias
   chillAST_TypedefDecl();
 
   chillAST_TypedefDecl(char *t, const char *nt);
@@ -143,6 +141,7 @@ public:
     fprintf(stderr, "byref %d\n", tf);
   };
 
+  bool nameis(const char *n) { return !strcmp(n, varname); };
   bool isABuiltin; // if variable is builtin, we don't need to declare it
   void *uniquePtr;  // DO NOT REFERENCE THROUGH THIS! just used to differentiate declarations 
   bool isArray() { return (numdimensions != 0); };
@@ -296,38 +295,6 @@ class chillAST_CompoundStmt : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_COMPOUNDSTMT;}
   // variables that are special for this type of node
-  chillAST_SymbolTable *symbol_table;  // symbols defined inside this compound statement
-  chillAST_TypedefTable *typedef_table;
-
-  bool hasSymbolTable() { return true; };
-
-  bool hasTypeDefTable() { return true; };
-
-  chillAST_Node *findDatatype(char *t) {
-    fprintf(stderr, "chillAST_CompoundStmt::findDatatype( %s )\n", t);
-    if (typedef_table) {
-      for (int i = 0; i < typedef_table->size(); i++) {
-        chillAST_TypedefDecl *tdd = (*typedef_table)[i];
-        if (tdd->nameis(t)) return tdd;
-      }
-    }
-    if (parent) return parent->findDatatype(t);
-    return NULL; // should not happen 
-  }
-
-  chillAST_SymbolTable *getSymbolTable() { return symbol_table; }
-
-  chillAST_SymbolTable *addVariableToSymbolTable(chillAST_VarDecl *vd) {   // chillAST_CompoundStmt method
-    //fprintf(stderr, "\nchillAST_CompoundStmt addVariableToSymbolTable( %s )\n", vd->varname);
-    symbol_table = addSymbolToTable(symbol_table, vd);
-    //printSymbolTable(  symbol_table );
-    return symbol_table;
-  }
-
-  void addTypedefToTypedefTable(chillAST_TypedefDecl *tdd) {
-    typedef_table = addTypedefToTable(typedef_table, tdd);
-  }
-
   // constructors
   chillAST_CompoundStmt(); // never has any args ???
 
@@ -430,21 +397,11 @@ public:
   char *returnType;
   char *functionName;
 
-  // parameters
-  int numParameters() { return parameters.size(); };
-  chillAST_SymbolTable parameters;
+  //! parameters
+  int numParameters() { return symbolTable->size(); };
+  // chillAST_TypedefTable *typedef_table; // TODO typedef here doesn't make sense
 
-  // this is probably a mistake, but symbol_table here is pointing to BODY'S symbol table
-  //chillAST_SymbolTable  *symbol_table;  // symbols defined inside this function. REALLY the body's symbol table?
-
-  chillAST_TypedefTable *typedef_table; // function typedef table
-
-
-  bool hasSymbolTable() { return true; }; // COULD HAVE
-  bool hasTypeDefTable() { return true; }; // COULD HAVE
-
-
-  //char *parametertypes; // a single string?? 
+  //char *parametertypes; // a single string??
   void printParameterTypes(FILE *fp);
 
   void setName(char *n) { functionName = strdup(n); /* probable memory leak */ };
@@ -468,24 +425,11 @@ public:
 
   void *uniquePtr;  // DO NOT REFERENCE THROUGH THIS! USED AS A UNIQUE ID
 
-
-
-
-  chillAST_FunctionDecl(); //  { asttype = CHILLAST_NODE_FUNCTIONDECL; numparameters = 0;};
-  chillAST_FunctionDecl(const char *rt, const char *fname);
-
   chillAST_FunctionDecl(const char *rt, const char *fname, void *unique);
 
   void addParameter(chillAST_VarDecl *p);
 
-  chillAST_VarDecl *hasParameterNamed(const char *name);
-
-  chillAST_VarDecl *findParameterNamed(const char *name) { return hasParameterNamed(name); };
-
   void addDecl(chillAST_VarDecl *vd);  // just adds to symbol table?? TODO
-
-  chillAST_VarDecl *funcHasVariableNamed(const char *name);  // functiondecl::hasVariableNamed
-  //chillAST_VarDecl *findVariableNamed( const char *name ) { return hasVariableNamed( name ); }; 
 
   void addChild(chillAST_Node *node); // special because inserts into BODY
   void insertChild(int i, chillAST_Node *node); // special because inserts into BODY
@@ -520,53 +464,7 @@ public:
 
   chillAST_Node *constantFold();
 
-  chillAST_Node *findDatatype(char *t) {
-    fprintf(stderr, "%s looking for datatype %s\n", getTypeString(), t);
-    if (!typedef_table) { // not here
-      if (parent) return parent->findDatatype(t); // not here, check parents
-      else return NULL; // not defined here and no parent 
-    }
-
-    //fprintf(stderr, "%d typedefs\n", typedef_table->size());
-    for (int i = 0; i < typedef_table->size(); i++) {
-      chillAST_TypedefDecl *tdd = (*typedef_table)[i];
-      if (tdd->nameis(t)) return tdd;
-    }
-    if (parent) return parent->findDatatype(t);
-    return NULL; // should not happen 
-  }
-
-  chillAST_SymbolTable *getParameterSymbolTable() { return &parameters; }
-
-  chillAST_SymbolTable *getSymbolTable() { return body->getSymbolTable(); }  //symbol_table; } //
-  void setSymbolTable(chillAST_SymbolTable *tab) {
-    // no longer keeping a local ?? symbol_table = tab;
-    if (!body) { // can never happen now 
-      body = new chillAST_CompoundStmt();
-    } // only if func is empty!
-    body->symbol_table = tab;
-  }
-
-  chillAST_SymbolTable *addVariableToSymbolTable(chillAST_VarDecl *vd) {  // chillAST_FunctionDecl method
-    //fprintf(stderr, "\nchillAST_FunctionDecl addVariableToSymbolTable( %s )\n", vd->varname);
-
-    // this is all dealing with the body's symbol table
-    // the function has a symbol table called "parameters" but that is a special case
-
-    addSymbolToTable(getSymbolTable(), vd);
-    if (!vd->parent) {
-      //fprintf(stderr, "setting parent of vardecl to be the function whose symbol table it is going into\n"); // ?? 
-      vd->setParent(this);
-      insertChild(0, vd);
-    }
-    //printSymbolTable( getSymbolTable() ); 
-    return getSymbolTable();
-  }
-
-
-  void addTypedefToTypedefTable(chillAST_TypedefDecl *tdd) {
-    typedef_table = addTypedefToTable(typedef_table, tdd);
-  }
+  chillAST_SymbolTable *getParameterTable() { return getSymbolTable(); }
 
   void replaceChild(chillAST_Node *old, chillAST_Node *newchild) {
     body->replaceChild(old, newchild);
@@ -595,42 +493,6 @@ public:
     frontend = strdup(compiler);
   }
   // get, set filename ? 
-
-  chillAST_SymbolTable *global_symbol_table;  // (global) symbols defined inside this source file
-  chillAST_TypedefTable *global_typedef_table; // source file 
-  chillAST_VarDecl *findVariableNamed(const char *name); // looks in global_symbol_table;
-
-  bool hasSymbolTable() { return true; };  // "has" vs "can have"    TODO
-  bool hasTypeDefTable() { return true; };
-
-  chillAST_SymbolTable *addVariableToSymbolTable(chillAST_VarDecl *vd) {  // chillAST_SourceFile method
-    fprintf(stderr, "\nchillAST_SourceFile addVariableToSymbolTable( %s )\n", vd->varname);
-    global_symbol_table = addSymbolToTable(global_symbol_table, vd);
-    //addChild( vd ); // ?? 
-    //printSymbolTable(  global_symbol_table );
-    return global_symbol_table;
-  }
-
-  void addTypedefToTypedefTable(chillAST_TypedefDecl *tdd) {
-    //fprintf(stderr, "SOURCEFILE adding typedef %s to typedeftable\n", tdd->getStructName()); 
-    global_typedef_table = addTypedefToTable(global_typedef_table, tdd);
-    //fprintf(stderr, "now global typedef table has %d entries\n", global_typedef_table->size());
-  }
-
-  chillAST_Node *findDatatype(char *t) {
-    fprintf(stderr, "%s looking for datatype %s\n", getTypeString(), t);
-    fprintf(stderr, "%d global typedefs\n", global_typedef_table->size());
-    for (int i = 0; i < global_typedef_table->size(); i++) {
-
-      chillAST_TypedefDecl *tdd = (*global_typedef_table)[i];
-      //fprintf(stderr, "comparing to %s\n", tdd->getStructName()); 
-      if (tdd->nameis(t)) {
-        //fprintf(stderr, "found it\n"); 
-        return (chillAST_Node *) tdd;
-      }
-    }
-    return NULL;
-  }
 
   std::vector<chillAST_FunctionDecl *> functions;  // at top level, or anywhere?
   std::vector<chillAST_MacroDefinition *> macrodefinitions;
@@ -666,7 +528,6 @@ public:
 class chillAST_MacroDefinition : public chillAST_Node {
 private:
   chillAST_Node *body; // rhs      always a compound statement?
-  chillAST_SymbolTable *symbol_table;
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_MACRODEFINITION;}
   char *macroName;
@@ -684,11 +545,6 @@ public:
 
   chillAST_MacroDefinition(const char *name, const char *rhs);
 
-  void addParameter(chillAST_VarDecl *p);  // parameters have no TYPE ??
-  chillAST_VarDecl *hasParameterNamed(const char *name);
-
-  chillAST_VarDecl *findParameterNamed(const char *name) { return hasParameterNamed(name); };
-
   void addChild(chillAST_Node *node); // special because inserts into BODY
   void insertChild(int i, chillAST_Node *node); // special because inserts into BODY
 
@@ -698,19 +554,6 @@ public:
 
   void print(int indent = 0, FILE *fp = stderr); // in chill_ast.cc
   void dump(int indent = 0, FILE *fp = stderr); // in chill_ast.cc
-
-  bool hasSymbolTable() { return true; };
-
-  //const std::vector<chillAST_VarDecl *> getSymbolTable() { return symbol_table; }
-  chillAST_SymbolTable *getSymbolTable() { return symbol_table; }
-
-  chillAST_SymbolTable *addVariableToSymbolTable(chillAST_VarDecl *vd) {  // chillAST_MacroDefinition method  ??
-    //fprintf(stderr, "\nchillAST_MacroDefinition addVariableToSymbolTable( %s )\n", vd->varname);
-    symbol_table = addSymbolToTable(symbol_table, vd);
-    //printSymbolTable(  symbol_table );
-    return symbol_table;
-  }
-
 
   chillAST_Node *clone();
 
@@ -746,7 +589,6 @@ public:
   chillAST_Node *body; // always a compoundstmt?
   IR_CONDITION_TYPE conditionoperator;  // from ir_code.hh
 
-  chillAST_SymbolTable *symbol_table; // symbols defined inside this forstmt (in init but not body?) body is compound stmt 
   bool hasSymbolTable() { return true; };
 
   // constructors
@@ -845,13 +687,6 @@ public:
 
   void loseLoopWithLoopVar(char *var); // chillAST_ForStmt
   void replaceChild(chillAST_Node *old, chillAST_Node *newchild);
-
-  chillAST_SymbolTable *addVariableToSymbolTable(chillAST_VarDecl *vd) {   // chillAST_ForStmt method
-    //fprintf(stderr, "\nchillAST_ForStmt addVariableToSymbolTable( %s )\n", vd->varname);
-    symbol_table = addSymbolToTable(symbol_table, vd);
-    //printSymbolTable(  symbol_table );
-    return symbol_table;
-  }
 
   void gatherStatements(std::vector<chillAST_Node *> &statements);
 

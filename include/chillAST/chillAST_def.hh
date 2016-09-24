@@ -180,6 +180,7 @@ typedef std::vector<chillAST_TypedefDecl *> chillAST_TypedefTable;
 chillAST_VarDecl *symbolTableFindName(chillAST_SymbolTable *table, const char *name);
 chillAST_VarDecl *symbolTableFindVariableNamed(chillAST_SymbolTable *table,
                                                const char *name);
+chillAST_TypedefDecl *typedefTableFindName(chillAST_TypedefTable *table, const char *name);
 
 void printSymbolTable(chillAST_SymbolTable *st);
 void printSymbolTableMoreInfo(chillAST_SymbolTable *st);

@@ -310,8 +310,8 @@ namespace omega {
     
     //fprintf(stderr, "\nfunction is:\n"); currentfunction->print(); printf("\n\n"); fflush(stdout); 
 
-    symtab_  = &(currentfunction->parameters); // getSymbolTable();             // TODO rename 
-    symtab2_ = currentfunction->getBody()->getSymbolTable(); // TODO rename
+    symtab_  = currentfunction->getSymbolTable();
+    symtab2_ = currentfunction->getBody()->getSymbolTable();
     
     //printf("\nsymtab_:\n"); fflush(stdout); 
     //printSymbolTable( symtab_ ); 
@@ -1037,7 +1037,7 @@ namespace omega {
       // that the ident is a direct child of the current function 
       
       chillAST_VarDecl *vd = new chillAST_VarDecl( "int", _s.c_str(), "", currentfunction->getBody()); // parent not available  TODO 
-      currentfunction->addVariableToSymbolTable( vd ); // use symtab2_  ?? 
+      currentfunction->addVariableToScope( vd ); // use symtab2_  ?
     
       
       chillAST_DeclRefExpr *dre = new chillAST_DeclRefExpr( "int", _s.c_str(), (chillAST_Node*)vd); // parent not available
@@ -1049,7 +1049,7 @@ namespace omega {
     // variable was already defined as either a parameter or internal variable to the function.
 
     // NOW WHAT??  gotta return something
-    chillAST_VarDecl *vd = currentfunction->funcHasVariableNamed( _s.c_str() );
+    chillAST_VarDecl *vd = currentfunction->getVariableDeclaration( _s.c_str() );
     //fprintf(stderr, "vd %p\n", vd); 
 
     chillAST_DeclRefExpr *dre = new chillAST_DeclRefExpr( "int", _s.c_str(), (chillAST_Node*)vd); // parent not available
@@ -1704,7 +1704,7 @@ namespace omega {
       chillAST_SymbolTable *st =  currentfunction->getBody()->getSymbolTable();
       //printSymbolTable(st); 
 
-      currentfunction->getBody()->addVariableToSymbolTable( vd ); // TODO 
+      currentfunction->getBody()->addVariableToScope( vd ); // TODO
       currentfunction->getBody()->insertChild(0, vd);  // TODO 
       //printSymbolTable(st); 
       
@@ -1723,8 +1723,8 @@ namespace omega {
 
 
       // we need to add this to function ??  TODO 
-      currentfunction->getBody()->addVariableToSymbolTable( vd ); // TODO 
-      currentfunction->getBody()->insertChild(0, vd);  // TODO 
+      currentfunction->getBody()->addVariableToScope( vd );
+      currentfunction->getBody()->insertChild(0, vd);
       //printf("\nafter adding vardecl, source is:\n");
       currentfunction->getBody()->print(); fflush(stdout);
 

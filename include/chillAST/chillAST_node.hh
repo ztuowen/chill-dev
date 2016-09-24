@@ -143,15 +143,20 @@ public:
 
   virtual bool isAUnion() { return false; };
 
-  virtual bool hasSymbolTable() { return false; }; // most nodes do NOT have a symbol table
-  virtual bool hasTypedefTable() { return false; }; // most nodes do NOT have a typedef table
-  virtual chillAST_SymbolTable *getSymbolTable() { return NULL; } // most nodes do NOT have a symbol table
+  virtual chillAST_SymbolTable* getSymbolTable() { return symbolTable; }
+  virtual chillAST_TypedefTable* getTypedefTable() {return typedefTable; }
+  virtual void addVariableToScope(chillAST_VarDecl *vd);
+  virtual void addTypedefToScope(chillAST_TypedefDecl *tdd);
+  chillAST_TypedefDecl* findTypeDecleration(const char *t);
+  chillAST_VarDecl* findVariableDecleration(const char *t);
+  chillAST_VarDecl* getVariableDeclaration(const char *vn);
+  chillAST_TypedefDecl* getTypeDeclaration(const char *tn);
 
   virtual chillAST_VarDecl *findVariableNamed(const char *name); // recursive
 
   chillAST_RecordDecl *findRecordDeclNamed(const char *name); // recursive
 
-  // void addDecl( chillAST_VarDecl *vd); // recursive, adds to first  symbol table it can find 
+  // void addDecl( chillAST_VarDecl *vd); // recursive, adds to first  symbol table it can find
 
 
   int getNumChildren() { return children.size(); };
@@ -168,6 +173,7 @@ public:
   void setMetaComment(const char *c) { metacomment = strdup(c); };
 
   virtual void chillMergeChildInfo(chillAST_Node){
+    // TODO if (par) par->add to definition for vardecl/typedecl
     // TODO  if (par) par->getSourceFile()->addFunc(this); for FuncDecl
     // TODO if (par) par->getSourceFile()->addMacro(this); For MacroDecl
     // TODO if (parent) parent->addVariableToSymbolTable(this); // should percolate up until something has a symbol table
@@ -366,7 +372,7 @@ public:
   };
 
   virtual chillAST_VarDecl *findArrayDecl(const char *name) { // scoping TODO
-    if (!hasSymbolTable()) return parent->findArrayDecl(name); // most things
+    if (!getSymbolTable()) return parent->findArrayDecl(name); // most things
     else
       fprintf(stderr, "(%s) forgot to implement gatherArrayVarDecls()\n", getTypeString());
   }
@@ -426,7 +432,7 @@ public:
 
   virtual void printonly(int indent = 0, FILE *fp = stderr) { print(indent, fp); };
 
-  virtual void get_top_level_loops(std::vector<chillAST_ForStmt *> &loops) {
+  virtual void getTopLevelLoops(std::vector<chillAST_ForStmt *> &loops) {
     int n = children.size();
     //fprintf(stderr, "get_top_level_loops of a %s with %d children\n", getTypeString(), n); 
     for (int i = 0; i < n; i++) {
@@ -505,26 +511,6 @@ public:
     printf("\n\n");
     fflush(stdout);
     exit(-1);
-  }
-
-  virtual chillAST_Node *findDatatype(char *t) {
-    fprintf(stderr, "%s looking for datatype %s\n", getTypeString(), t);
-    if (parent != NULL) return parent->findDatatype(t); // most nodes do this
-    return NULL;
-  }
-
-
-  virtual chillAST_SymbolTable *addVariableToSymbolTable(chillAST_VarDecl *vd) {
-    if (!parent) {
-      fprintf(stderr, "%s with no parent addVariableToSymbolTable()\n", getTypeString());
-      exit(-1);
-    }
-    //fprintf(stderr, "%s::addVariableToSymbolTable() (default) headed up\n",  getTypeString()); 
-    return parent->addVariableToSymbolTable(vd); // default, defer to parent
-  }
-
-  virtual void addTypedefToTypedefTable(chillAST_TypedefDecl *tdd) {
-    parent->addTypedefToTypedefTable(tdd); // default, defer to parent
   }
 
   void walk_parents() {

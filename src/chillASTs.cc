@@ -127,7 +127,17 @@ chillAST_VarDecl *symbolTableFindName(chillAST_SymbolTable *table, const char *n
   int numvars = table->size();
   for (int i = 0; i < numvars; i++) {
     chillAST_VarDecl *vd = (*table)[i];
-    if (!strcmp(name, vd->varname)) return vd;
+    if (vd->nameis(name)) return vd;
+  }
+  return NULL;
+}
+
+chillAST_TypedefDecl *typedefTableFindName(chillAST_TypedefTable *table, const char *name) {
+  if (!table) return NULL;
+  int numvars = table->size();
+  for (int i = 0; i < numvars; i++) {
+    chillAST_TypedefDecl *td = (*table)[i];
+    if (td->nameis(name)) return td;
   }
   return NULL;
 }
@@ -258,7 +268,7 @@ void chillindent(int howfar, FILE *fp) { for (int i = 0; i < howfar; i++) fprint
 
 chillAST_VarDecl *chillAST_Node::findVariableNamed(const char *name) { // generic, recursive
   CHILL_DEBUG_PRINT("nodetype %s  findVariableNamed( %s )\n", getTypeString(), name);
-  if (hasSymbolTable()) { // look in my symbol table if I have one
+  if (getSymbolTable()) { // look in my symbol table if I have one
     CHILL_DEBUG_PRINT("%s has a symbol table\n", getTypeString());
     chillAST_VarDecl *vd = symbolTableFindVariableNamed(getSymbolTable(), name);
     if (vd) {
@@ -322,7 +332,6 @@ void chillAST_Node::printPreprocAFTER(int indent, FILE *fp) {
   for (int i = 0; i < preprocessinginfo.size(); i++) {
     if (preprocessinginfo[i]->position == CHILLAST_PREPROCESSING_LINEAFTER ||
         preprocessinginfo[i]->position == CHILLAST_PREPROCESSING_TOTHERIGHT) {
-      //fprintf(stderr, "after %d\n", preprocessinginfo[i]->position);
       preprocessinginfo[i]->print(indent, fp);
     }
   }
@@ -331,8 +340,8 @@ void chillAST_Node::printPreprocAFTER(int indent, FILE *fp) {
 chillAST_SourceFile::chillAST_SourceFile(const char *filename) {
   if(filename) SourceFileName = strdup(filename);
   else SourceFileName = strdup("No Source File");
-  global_symbol_table = NULL;
-  global_typedef_table = NULL;
+  symbolTable = new chillAST_SymbolTable();
+  typedefTable = new chillAST_TypedefTable();
   FileToWrite = NULL;
   frontend = strdup("unknown");
 };
@@ -422,36 +431,6 @@ chillAST_Node *chillAST_SourceFile::findCall(const char *name) {
   chillAST_FunctionDecl *func = findFunction(name);
   return func;
 }
-
-
-chillAST_VarDecl *chillAST_SourceFile::findVariableNamed(const char *name) {
-  CHILL_DEBUG_PRINT("SOURCEFILE SPECIAL %s  findVariableNamed( %s )\n", getTypeString(), name);
-  if (hasSymbolTable()) { // look in my symbol table if I have one
-    CHILL_DEBUG_PRINT("%s has a symbol table\n", getTypeString());
-    chillAST_VarDecl *vd = symbolTableFindVariableNamed(getSymbolTable(), name);
-    if (vd) {
-      CHILL_DEBUG_PRINT("found it\n");
-      return vd; // found locally
-    }
-    CHILL_DEBUG_PRINT("%s has a symbol table but couldn't find %s\n", getTypeString(), name);
-  }
-
-  CHILL_DEBUG_PRINT("looking for %s in SourceFile global_symbol_table\n", name);
-  chillAST_VarDecl *vd = symbolTableFindVariableNamed(global_symbol_table, name);
-  if (vd) {
-    CHILL_DEBUG_PRINT("found it\n");
-    return vd; // found locally
-  }
-
-  if (!parent) {
-    CHILL_DEBUG_PRINT("%s has no parent\n", getTypeString());
-    return NULL; // no more recursion available
-  }
-  // recurse upwards
-  CHILL_DEBUG_PRINT("recursing from %s up to parent\n", getTypeString());
-  return parent->findVariableNamed(name);
-}
-
 
 chillAST_TypedefDecl::chillAST_TypedefDecl() {
   underlyingtype = newtype = arraypart = NULL;
@@ -673,8 +652,8 @@ chillAST_FunctionDecl::chillAST_FunctionDecl(const char *rt, const char *fname, 
   else
     functionName = strdup("YouScrewedUp");
   forwarddecl = externfunc = builtin = false;
+  symbolTable = new chillAST_SymbolTable();
   this->setFunctionCPU();
-  typedef_table = NULL;
   body = new chillAST_CompoundStmt();
   returnType = strdup(rt);
   this->setFunctionCPU();
@@ -684,97 +663,35 @@ chillAST_FunctionDecl::chillAST_FunctionDecl(const char *rt, const char *fname, 
 
 void chillAST_FunctionDecl::addParameter(chillAST_VarDecl *p) {
   CHILL_DEBUG_PRINT("%s chillAST_FunctionDecl::addParameter( 0x%x  param %s)   total of %d parameters\n", functionName,
-                    p, p->varname, 1 + parameters.size());
+                    p, p->varname, 1 + getSymbolTable()->size());
 
-  if (symbolTableFindName(&parameters, p->varname)) { // NOT recursive. just in FunctionDecl
+  if (symbolTableFindName(getSymbolTable(), p->varname)) { // NOT recursive. just in FunctionDecl
     CHILL_DEBUG_PRINT("chillAST_FunctionDecl::addParameter( %s ), parameter already exists?\n", p->varname);
     // exit(-1); // ??
     return; // error?
   }
 
-  parameters.push_back(p);
-  //addSymbolToTable( parameters, p );
+  getSymbolTable()->push_back(p);
   CHILL_DEBUG_PRINT("setting %s isAParameter\n", p->varname);
   p->isAParameter = true;
-
-  p->setParent(this); // ??  unclear TODO
-  //p->dump(); printf("\naddparameter done\n\n"); fflush(stdout);
+  p->setParent(this); // this is a combined list!
 }
 
-
+// TODO This couldn't be more wrong!
 void chillAST_FunctionDecl::addDecl(chillAST_VarDecl *vd) { // to symbol table ONLY
   CHILL_DEBUG_PRINT("chillAST_FunctionDecl::addDecl( %s )\n", vd->varname);
-  if (!body) {
-    //fprintf(stderr, "had no body\n");
+  if (!body)
     body = new chillAST_CompoundStmt();
-
-    //body->symbol_table = symbol_table;   // probably wrong if this ever does something
-  }
-
-  //fprintf(stderr, "before body->addvar(), func symbol table had %d entries\n", symbol_table->size());
-  //fprintf(stderr, "before body->addvar(), body symbol table was %p\n", body->symbol_table);
-  //fprintf(stderr, "before body->addvar(), body symbol table had %d entries\n", body->symbol_table->size());
-  //adds to body symbol table, and makes sure function has a copy. probably dumb
-  body->symbol_table = body->addVariableToSymbolTable(vd);
-  //fprintf(stderr, "after body->addvar(), func symbol table had %d entries\n", symbol_table->size());
+  body->addVariableToScope(vd);
 }
-
-chillAST_VarDecl *chillAST_FunctionDecl::hasParameterNamed(const char *name) {
-  int numparams = parameters.size();
-  for (int i = 0; i < numparams; i++) {
-    if (!strcmp(name, parameters[i]->varname)) return parameters[i];  // need to check type?
-  }
-  return NULL;
-}
-
-
-// similar to symbolTableHasVariableNamed() but returns the variable definition
-chillAST_VarDecl *chillAST_FunctionDecl::funcHasVariableNamed(const char *name) { // NOT recursive
-  //fprintf(stderr, "chillAST_FunctionDecl::funcHasVariableNamed( %s )\n", name );
-
-  // first check the parameters
-  int numparams = parameters.size();
-  for (int i = 0; i < numparams; i++) {
-    chillAST_VarDecl *vd = parameters[i];
-    if (!strcmp(name, vd->varname)) {
-      //fprintf(stderr, "yep, it's parameter %d\n", i);
-      return vd;  // need to check type?
-    }
-  }
-  //fprintf(stderr, "no parameter named %s\n", name);
-
-  chillAST_SymbolTable *st = getSymbolTable();
-  if (!st) {
-    fprintf(stderr, "and no symbol_table, so no variable named %s\n", name);
-    return NULL; // no symbol table so no variable by that name
-  }
-
-
-  int numvars = st->size();
-  //fprintf(stderr, "checking against %d variables\n", numvars);
-  for (int i = 0; i < numvars; i++) {
-    chillAST_VarDecl *vd = (*st)[i];
-    //fprintf(stderr, "comparing '%s' to '%s'\n", name, vd->varname);
-    if (!strcmp(name, vd->varname)) {
-      //fprintf(stderr, "yep, it's variable %d\n", i);
-      CHILL_DEBUG_PRINT("%s was already defined in the function body\n", vd->varname);
-      return vd;  // need to check type?
-    }
-  }
-  CHILL_DEBUG_PRINT("not a parameter or variable named %s\n", name);
-  return NULL;
-}
-
 
 void chillAST_FunctionDecl::setBody(chillAST_Node *bod) {
-  //fprintf(stderr, "%s chillAST_FunctionDecl::setBody( 0x%x )   total of %d children\n", functionName, bod, 1+children.size());
   if (bod->isCompoundStmt()) body = (chillAST_CompoundStmt *) bod;
   else {
+    CHILL_ERROR("Should always be a compound statements");
     body = new chillAST_CompoundStmt();
     body->addChild(bod);
   }
-  //symbol_table = body->getSymbolTable();
-  //addChild(bod);
   bod->setParent(this);  // well, ...
 }
 
@@ -817,10 +734,10 @@ void chillAST_FunctionDecl::addChild(chillAST_Node *node) {
 void chillAST_FunctionDecl::printParameterTypes(FILE *fp) {  // also prints names
   //fprintf(stderr, "\n\n%s chillAST_FunctionDecl::printParameterTypes()\n", functionName);
   fprintf(fp, "( ");
-  int numparameters = parameters.size();
+  int numparameters = getSymbolTable()->size();
   for (int i = 0; i < numparameters; i++) {
     if (i != 0) fprintf(fp, ", ");
-    chillAST_VarDecl *p = parameters[i];
+    chillAST_VarDecl *p = (*getSymbolTable())[i];
     p->print(0, fp); // note: no indent, as this is in the function parens
   }
   fprintf(fp, " )"); // end of input parameters
@@ -888,12 +805,11 @@ void chillAST_FunctionDecl::dump(int indent, FILE *fp) {
   chillindent(indent, fp);
   fprintf(fp, "(FunctionDecl %s %s(", returnType, functionName);
 
-  int numparameters = parameters.size();
+  int numparameters = getSymbolTable()->size();
   for (int i = 0; i < numparameters; i++) {
     if (i != 0) fprintf(fp, ", ");
-    chillAST_VarDecl *p = parameters[i];
-    //fprintf(stderr, "param type %s  vartype %s\n", p->getTypeString(), p->vartype);
-    p->print(0, fp); // note: no indent, as this is in the function parens, ALSO print, not dump
+    chillAST_VarDecl *p = (*getSymbolTable())[i];
+    p->print(0, fp);
   }
   fprintf(fp, ")\n"); // end of input parameters
 
@@ -911,7 +827,7 @@ void chillAST_FunctionDecl::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
   //fprintf(stderr, "chillAST_FunctionDecl::gatherVarDecls()\n");
   //if (0 < children.size()) fprintf(stderr, "functiondecl has %d children\n", children.size());
   //fprintf(stderr, "functiondecl has %d parameters\n", numParameters());
-  for (int i = 0; i < numParameters(); i++) parameters[i]->gatherVarDecls(decls);
+  for (int i = 0; i < numParameters(); i++) (*getSymbolTable())[i]->gatherVarDecls(decls);
   //fprintf(stderr, "after parms, %d decls\n", decls.size());
   for (int i = 0; i < children.size(); i++) children[i]->gatherVarDecls(decls);
   //fprintf(stderr, "after children, %d decls\n", decls.size());
@@ -926,7 +842,7 @@ void chillAST_FunctionDecl::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
 void chillAST_FunctionDecl::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
   //if (0 < children.size()) fprintf(stderr, "functiondecl has %d children\n", children.size());
 
-  for (int i = 0; i < numParameters(); i++) parameters[i]->gatherScalarVarDecls(decls);
+  for (int i = 0; i < numParameters(); i++) (*getSymbolTable())[i]->gatherScalarVarDecls(decls);
   for (int i = 0; i < children.size(); i++) children[i]->gatherScalarVarDecls(decls);
   body->gatherScalarVarDecls(decls);  // todo, figure out if functiondecl has actual children
 }
@@ -935,7 +851,7 @@ void chillAST_FunctionDecl::gatherScalarVarDecls(vector<chillAST_VarDecl *> &dec
 void chillAST_FunctionDecl::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
   //if (0 < children.size()) fprintf(stderr, "functiondecl has %d children\n", children.size());
 
-  for (int i = 0; i < numParameters(); i++) parameters[i]->gatherArrayVarDecls(decls);
+  for (int i = 0; i < numParameters(); i++) (*getSymbolTable())[i]->gatherArrayVarDecls(decls);
   for (int i = 0; i < children.size(); i++) children[i]->gatherArrayVarDecls(decls);
   body->gatherArrayVarDecls(decls);  // todo, figure out if functiondecl has actual children
 }
@@ -943,11 +859,11 @@ void chillAST_FunctionDecl::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decl
 
 chillAST_VarDecl *chillAST_FunctionDecl::findArrayDecl(const char *name) {
   //fprintf(stderr, "chillAST_FunctionDecl::findArrayDecl( %s )\n", name );
-  chillAST_VarDecl *p = hasParameterNamed(name);
+  chillAST_VarDecl *p = getVariableDeclaration(name);
   //if (p) fprintf(stderr, "function %s has parameter named %s\n", functionName, name );
   if (p && p->isArray()) return p;
 
-  chillAST_VarDecl *v = funcHasVariableNamed(name);
+  chillAST_VarDecl *v = body->getVariableDeclaration(name);
   //if (v) fprintf(stderr, "function %s has symbol table variable named %s\n", functionName, name );
   if (v && v->isArray()) return v;
 
@@ -1060,12 +976,6 @@ bool chillAST_FunctionDecl::findLoopIndexesToReplace(chillAST_SymbolTable *symta
 
 
 chillAST_Node *chillAST_FunctionDecl::constantFold() {
-  //fprintf(stderr, "chillAST_FunctionDecl::constantFold()\n");
-  // parameters can't have constants?
-  int numparameters = parameters.size();
-  for (int i = 0; i < numparameters; i++) {
-    parameters[i]->constantFold();
-  }
   if (body) body = (chillAST_CompoundStmt *) body->constantFold();
   return this;
 }
@@ -1074,8 +984,7 @@ chillAST_MacroDefinition::chillAST_MacroDefinition(const char *mname = NULL, con
   if (mname) macroName = strdup(mname); else macroName = strdup("UNDEFINEDMACRO");
   if(rhs) rhsString = strdup(rhs); else rhsString = NULL;
   metacomment = NULL;
-  symbol_table = NULL;
-
+  symbolTable = new chillAST_SymbolTable();
   isFromSourceFile = true; // default
   filename = NULL;
 };
@@ -1087,7 +996,7 @@ chillAST_Node *chillAST_MacroDefinition::clone() {
   return this;
   chillAST_MacroDefinition *clo = new chillAST_MacroDefinition( macroName );
   clo->setParent(parent);
-  for (int i=0; i<parameters.size(); i++) clo->addParameter( parameters[i] );
+  for (int i=0; i<parameters.size(); i++) clo->addVariableToScope( parameters[i] );
   clo->setBody( body->clone() );
   return clo;
 
@@ -1103,27 +1012,6 @@ void chillAST_MacroDefinition::setBody(chillAST_Node *bod) {
   rhsString = body->stringRep();
   bod->setParent(this);  // well, ...
 }
-
-
-void chillAST_MacroDefinition::addParameter(chillAST_VarDecl *p) {
-  //fprintf(stderr, "%s chillAST_MacroDefinition::addParameter( 0x%x )   total of %d children\n", functionName, p, 1+children.size());
-  parameters.push_back(p);
-  fprintf(stderr, "macro setting %s isAParameter\n", p->varname);
-  p->isAParameter = true;
-  p->setParent(this);
-
-  addVariableToSymbolTable(p);
-}
-
-
-chillAST_VarDecl *chillAST_MacroDefinition::hasParameterNamed(const char *name) {
-  int numparams = parameters.size();
-  for (int i = 0; i < numparams; i++) {
-    if (!strcmp(name, parameters[i]->varname)) return parameters[i];  // need to check type?
-  }
-  return NULL;
-}
-
 
 void chillAST_MacroDefinition::insertChild(int i, chillAST_Node *node) {
   body->insertChild(i, node);
@@ -1177,7 +1065,7 @@ chillAST_ForStmt::chillAST_ForStmt() {
   body = new chillAST_CompoundStmt();
 
   conditionoperator = IR_COND_UNKNOWN;
-  symbol_table = NULL;
+  symbolTable = new chillAST_SymbolTable();
 }
 
 
@@ -1189,6 +1077,7 @@ chillAST_ForStmt::chillAST_ForStmt(chillAST_Node *ini, chillAST_Node *con, chill
   init->setParent(this);
   cond->setParent(this);
   incr->setParent(this);
+  symbolTable = new chillAST_SymbolTable();
 
   //fprintf(stderr, "chillAST_ForStmt::chillAST_ForStmt() bod %p\n", bod);
 
@@ -1618,7 +1507,7 @@ bool chillAST_ForStmt::findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bo
 
       contain->print(0, stderr);
       contain->insertChild(0, newguy); // TODO ugly order
-      contain->addVariableToSymbolTable(newguy); // adds to first enclosing symbolTable
+      contain->addVariableToScope(newguy); // adds to first enclosing symbolTable
 
       if (!symbolTableFindName(contain->getSymbolTable(), vname)) {
         fprintf(stderr, "container doesn't have a var names %s afterwards???\n", vname);
@@ -4249,8 +4138,8 @@ void chillAST_CallExpr::dump(int indent, FILE *fp) {
 
     callee->dump(indent + 1, fp);
     if (fd) {
-      int numparams = fd->parameters.size();
-      for (int i = 0; i < numparams; i++) fd->parameters[i]->dump(indent + 1, fp);
+      int numparams = fd->getSymbolTable()->size();
+      for (int i = 0; i < numparams; i++) (*(fd->getSymbolTable()))[i]->dump(indent + 1, fp);
     }
   }
   chillindent(indent, fp);
@@ -4390,12 +4279,6 @@ chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a) 
   byreference = false;
   isABuiltin = false;
   isRestrict = isDevice = isShared = false; // fprintf(stderr, "RDS = false\n");
-
-  if (parent) {
-    //fprintf(stderr, "chillAST_VarDecl::chillAST_VarDecl( %s ), adding to symbol table???\n", varname);
-    parent->addVariableToSymbolTable(this); // should percolate up until something has a symbol table
-
-  }
 };
 
 
@@ -4428,7 +4311,6 @@ chillAST_VarDecl::chillAST_VarDecl(chillAST_RecordDecl *astruct, const char *nam
   uniquePtr = NULL;
 
   knownArraySizes = false;
-  //fprintf(stderr, "arraypart len %d\n", strlen(a));
   for (int i = 0; i < strlen(array); i++) {
     if (array[i] == '[') {
       numdimensions++;
@@ -4443,13 +4325,6 @@ chillAST_VarDecl::chillAST_VarDecl(chillAST_RecordDecl *astruct, const char *nam
   isABuiltin = false;
   isRestrict = isDevice = isShared = false; // fprintf(stderr, "RDS = false\n");
   typedefinition = NULL;
-
-  //fprintf(stderr, "chillAST_VarDecl::chillAST_VarDecl( chillAST_RecordDecl *astruct, ...) MIGHT add struct to some symbol table\n");
-  //if (parent) fprintf(stderr, "yep, adding it\n");
-
-  if (parent) parent->addVariableToSymbolTable(this); // should percolate up until something has a symbol table
-
-
 };
 
 
@@ -4629,8 +4504,6 @@ chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a, 
 
   // currently this is bad, because a struct does not have a symbol table, so the
   // members of a struct are passed up to the func or sourcefile.
-  if (parent) parent->addVariableToSymbolTable(this); // should percolate up until something has a symbol table
-
   CHILL_DEBUG_PRINT("LEAVING\n");
   //parent->print(); fprintf(stderr, "\n\n");
 
@@ -4801,8 +4674,8 @@ chillAST_RecordDecl *chillAST_VarDecl::getStructDef() {
 chillAST_CompoundStmt::chillAST_CompoundStmt() {
   //fprintf(stderr, "chillAST_CompoundStmt::chillAST_CompoundStmt() %p\n", this);
   parent = NULL;
-  symbol_table = new chillAST_SymbolTable;
-  typedef_table = NULL;
+  symbolTable = new chillAST_SymbolTable;
+  typedefTable = new chillAST_TypedefTable;
 };
 
 
@@ -5670,4 +5543,36 @@ int chillAST_UnaryOperator::getPrec() {
     for (int i = 0;i<3;--i)
       if (opInSet(unaryPrec[i],op)) return INT8_MAX+i+1;
   return INT8_MAX;
+}
+
+void chillAST_Node::addVariableToScope(chillAST_VarDecl *vd) {
+  CHILL_DEBUG_PRINT("addVariableToScope( %s )\n", vd->varname);
+  if (!symbolTable) return;
+  symbolTable = addSymbolToTable(symbolTable, vd);
+  vd->parent = this;
+}
+void chillAST_Node::addTypedefToScope(chillAST_TypedefDecl *tdd) {
+  if (!typedefTable) return;
+  typedefTable = addTypedefToTable(typedefTable, tdd);
+  tdd->parent = this;
+}
+chillAST_TypedefDecl* chillAST_Node::findTypeDecleration(const char *t) {
+  fprintf(stderr, " %s \n", t);
+  chillAST_TypedefDecl* td = getTypeDeclaration(t);
+  if (!td && parent) return parent->findTypeDecleration(t);
+  return td; // should not happen
+}
+chillAST_VarDecl* chillAST_Node::findVariableDecleration(const char *t) {
+  fprintf(stderr, " %s \n", t);
+  chillAST_VarDecl* td = getVariableDeclaration(t);
+  if (!td && parent) return parent->findVariableDecleration(t);
+  return td; // should not happen
+}
+
+chillAST_VarDecl* chillAST_Node::getVariableDeclaration(const char *t) {
+  return symbolTableFindName(getSymbolTable(),t);
+}
+
+chillAST_TypedefDecl* chillAST_Node::getTypeDeclaration(const char *t){
+  return typedefTableFindName(getTypedefTable(),t);
 }
