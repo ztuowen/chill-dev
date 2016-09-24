@@ -2,6 +2,7 @@
 
 
 #include <chilldebug.h>
+#include <stack>
 #include "chillAST.h"
 
 using namespace std;
@@ -52,26 +53,27 @@ const char *ChillAST_Node_Names[] = {
     "fake3"
 };
 
-char *parseUnderlyingType(char *sometype) {
+bool streq(const char * a, const char * b) {
+  return !strcmp(a,b);
+}
+
+//! Parse to the most basic type
+char *parseUnderlyingType(const char *sometype) {
   int len = strlen(sometype);
   CHILL_DEBUG_PRINT("parseUnderlyingType( %s )\n", sometype);
   char *underlying = strdup(sometype);
   char *p;
-  char *start = underlying;
 
-  // ugly.  we want to turn "float *" into "float" but "struct abc *" into struct abc.
-  // there are probably many more cases. have an approved list?
   p = &underlying[len - 1];
 
   while (p > underlying)
     if (*p == ' ' || *p == '*')
       --p;
     else if (*p == ']')
-      // TODO This can be improved by using a stack
       while (*p != '[') --p;
     else break;
 
-  *p = '\0';
+  *(p+1) = '\0';
 
   return underlying;
 }
@@ -160,9 +162,8 @@ chillAST_VarDecl *variableDeclFindSubpart(chillAST_VarDecl *decl, const char *na
   }
 }
 
-chillAST_VarDecl *symbolTableFindVariableNamed(chillAST_SymbolTable *table,
-                                               const char *name) {  // fwd decl TODO too many similar named functions
-  if (!table) return NULL; // ??
+chillAST_VarDecl *symbolTableFindVariableNamed(chillAST_SymbolTable *table, const char *name) {
+  if (!table) return NULL;
 
   char *varname = strdup(name), *subpart;
 
@@ -178,7 +179,7 @@ chillAST_VarDecl *symbolTableFindVariableNamed(chillAST_SymbolTable *table,
 //! remove UL from numbers, MODIFIES the argument!
 char *ulhack(char *brackets)
 {
-  CHILL_DEBUG_PRINT("ulhack( \"%s\"  -> ", brackets);
+  CHILL_DEBUG_PRINT("ulhack( \"%s\"  -> \n", brackets);
   int len = strlen(brackets);
   for (int i = 0; i < len - 2; i++) {
     if (isdigit(brackets[i])) {
@@ -189,7 +190,6 @@ char *ulhack(char *brackets)
       }
     }
   }
-  CHILL_DEBUG_PRINT("%s", brackets);
   return brackets;
 }
 
@@ -197,7 +197,7 @@ char *ulhack(char *brackets)
 //! remove __restrict__ , MODIFIES the argument!
 char *restricthack(char *typeinfo)
 {
-  CHILL_DEBUG_PRINT("restricthack( \"%s\"  -> ", typeinfo);
+  CHILL_DEBUG_PRINT("restricthack( \"%s\"  -> \n", typeinfo);
   std::string r("__restrict__");
   std::string t(typeinfo);
   size_t index = t.find(r);
@@ -211,7 +211,6 @@ char *restricthack(char *typeinfo)
   while (*after != '\0') *c++ = *after++;
   *c = '\0';
 
-  CHILL_DEBUG_PRINT("%s", typeinfo);
   return typeinfo;
 
 }
@@ -240,24 +239,11 @@ char *parseArrayParts(char *sometype) {
 }
 
 
-char *splitTypeInfo(char *underlyingtype) { // return the bracketed part of a type
-  char *ap = ulhack(parseArrayParts(underlyingtype));  // return this
+//! return the bracketed part of a type, int *buh[32] to int
+char *splitTypeInfo(char *underlyingtype) {
+  char *ap = ulhack(parseArrayParts(underlyingtype));
 
-  // now need to remove all that from the underlyingtype to get
-  char *arraypart = strdup("");  // leak
-  if (index(underlyingtype, '[')) {
-    // looks like an array
-    free(arraypart);
-    char *start = index(underlyingtype, '['); // wrong.  can have int *buh[32]
-    arraypart = strdup(start);
-    if (*(start - 1) == ' ') start--;  // hack
-    *start = '\0';
-
-    // ugly. very leaky
-    strcpy(underlyingtype, parseUnderlyingType(underlyingtype));
-
-    // ulhack( arraypart );
-  }
+  strcpy(underlyingtype, parseUnderlyingType(underlyingtype));
   return ap;  // leak unless caller frees this
 }
 
@@ -268,30 +254,26 @@ bool isRestrict(const char *sometype) { // does not modify sometype
   return (std::string::npos != t.find(r));
 }
 
-
-bool streq(const char *a, const char *b) { return !strcmp(a, b); };  // slightly less ugly // TODO enums
-
 void chillindent(int howfar, FILE *fp) { for (int i = 0; i < howfar; i++) fprintf(fp, "  "); }
 
-
 chillAST_VarDecl *chillAST_Node::findVariableNamed(const char *name) { // generic, recursive
-  fprintf(stderr, "nodetype %s  findVariableNamed( %s )\n", getTypeString(), name);
+  CHILL_DEBUG_PRINT("nodetype %s  findVariableNamed( %s )\n", getTypeString(), name);
   if (hasSymbolTable()) { // look in my symbol table if I have one
-    fprintf(stderr, "%s has a symbol table\n", getTypeString());
+    CHILL_DEBUG_PRINT("%s has a symbol table\n", getTypeString());
     chillAST_VarDecl *vd = symbolTableFindVariableNamed(getSymbolTable(), name);
     if (vd) {
-      fprintf(stderr, "found it\n");
+      CHILL_DEBUG_PRINT("found it\n");
       return vd; // found locally
     }
-    fprintf(stderr, "%s has a symbol table but couldn't find %s\n", getTypeString(), name);
+    CHILL_DEBUG_PRINT("%s has a symbol table but couldn't find %s\n", getTypeString(), name);
   }
   if (!parent) {
-    fprintf(stderr, "%s has no parent\n", getTypeString());
+    CHILL_DEBUG_PRINT("%s has no parent\n", getTypeString());
     return NULL; // no more recursion available
   }
   // recurse upwards
   //fprintf(stderr, "recursing from %s up to parent %p\n", getTypeString(), parent);
-  fprintf(stderr, "recursing from %s up to parent\n", getTypeString());
+  CHILL_DEBUG_PRINT("recursing from %s up to parent\n", getTypeString());
   return parent->findVariableNamed(name);
 }
 
@@ -346,35 +328,18 @@ void chillAST_Node::printPreprocAFTER(int indent, FILE *fp) {
   }
 }
 
-
-chillAST_SourceFile::chillAST_SourceFile() {
-  SourceFileName = strdup("No Source File");
-  parent = NULL; // top node
-  metacomment = NULL;
-  global_symbol_table = NULL;
-  global_typedef_table = NULL;
-  FileToWrite = NULL;
-  frontend = strdup("unknown");
-  isFromSourceFile = true;
-  filename = NULL;
-};
-
 chillAST_SourceFile::chillAST_SourceFile(const char *filename) {
-  SourceFileName = strdup(filename);
-  parent = NULL; // top node
-  metacomment = NULL;
+  if(filename) SourceFileName = strdup(filename);
+  else SourceFileName = strdup("No Source File");
   global_symbol_table = NULL;
   global_typedef_table = NULL;
   FileToWrite = NULL;
   frontend = strdup("unknown");
-  isFromSourceFile = true;
-  filename = NULL;
 };
 
 void chillAST_SourceFile::print(int indent, FILE *fp) {
-  //fprintf(stderr, "chillAST_SourceFile::print()\n");
   fflush(fp);
-  fprintf(fp, "\n// this source derived from CHILL AST originally from file '%s' as parsed by frontend compiler %s\n\n",
+  CHILL_DEBUG_PRINT("\n// this source derived from CHILL AST originally from file '%s' as parsed by frontend compiler %s\n\n",
           SourceFileName, frontend);
   std::vector<char *> includedfiles;
   int sofar = 0;
@@ -382,67 +347,19 @@ void chillAST_SourceFile::print(int indent, FILE *fp) {
   //fprintf(fp, "#define __rose_lt(x,y) ((x)<(y)?(x):(y))\n#define __rose_gt(x,y) ((x)>(y)?(x):(y))\n"); // help diff figure out what's going on
 
   int numchildren = children.size();
-  //fprintf(stderr, "// sourcefile has %d children\n", numchildren);
-  //fprintf(stderr, "they are\n");
-  //for (int i=0; i<numchildren; i++) {
-  //  fprintf(stderr, "%s  ", children[i]->getTypeString());
-  //  if (children[i]->isFunctionDecl()) {
-  //    fprintf(stderr, "%s  ", ((chillAST_FunctionDecl *)children[i])->functionName);
-  //  }
-  //  fprintf(stderr, "\n");
-  //}
 
   for (int i = 0; i < numchildren; i++) {
-    //fprintf(fp,  "\n// child %d of type %s:\n", i, children[i]->getTypeString());
     if (children[i]->isFromSourceFile) {
       if (children[i]->isFunctionDecl()) {
         fprintf(stderr, "\nchild %d function %s\n", i, ((chillAST_FunctionDecl *) children[i])->functionName);
       }
-      //fprintf(stderr, "child %d IS from source file\n", i);
-      //if (children[i]->isMacroDefinition()) fprintf(fp, "\n"); fflush(fp);
       children[i]->print(indent, fp);
       if (children[i]->isVarDecl()) fprintf(fp, ";\n");
       fflush(fp);  // top level vardecl\n");
-    } else {
-      //fprintf(stderr, "child %d is not from source file\n", i);
-      // this should all go away
-
-#ifdef NOPE
-                                                                                                                              if (children[i]->filename // not null and not empty string
-          //&&  0 != strlen(children[i]->filename)
-          ) { // should not be necessary
-        //fprintf(fp, "// need an include for %s\n", children[i]->filename);
-        bool rddid = false;
-        sofar = includedfiles.size();
-
-        for (int j=0; j<sofar; j++) {
-          //fprintf(stderr, "comparing %s and %s\n",  includedfiles[j], children[i]->filename );
-          if (!strcmp( includedfiles[j], children[i]->filename) ) { // this file has already been included
-            rddid = true;
-            //fprintf(stderr, "already did that one\n");
-          }
-        }
-
-        if (false == rddid) { // we need to include it now
-          fprintf(fp, "#include \"%s\"\n", children[i]->filename);
-          includedfiles.push_back(strdup(  children[i]->filename ));
-        }
-        //else {
-        //  fprintf(fp, "already did\n");
-        //}
-      }
-#endif // NOPE
-
-
     }
   }
 
   fflush(fp);
-
-  //fprintf(fp, "\n\n// functions??\n");
-  //for (int i=0; i<functions.size(); i++) {
-  //  fprintf(fp, "\n\n"); functions[i]->print(0,fp); fflush(fp);
-  //}
 };
 
 
@@ -464,9 +381,6 @@ void chillAST_SourceFile::printToFile(char *filename) {
     fprintf(stderr, "can't open file '%s' for writing\n", fn);
     exit(-1);
   }
-
-  //fprintf(fp, "\n\n");
-  //dump(0, fp);
   fprintf(fp, "\n\n");
   print(0, fp);
 
@@ -485,8 +399,6 @@ void chillAST_SourceFile::dump(int indent, FILE *fp) {
 
 
 chillAST_MacroDefinition *chillAST_SourceFile::findMacro(const char *name) {
-  //fprintf(stderr, "chillAST_SourceFile::findMacro( %s )\n", name );
-
   int numMacros = macrodefinitions.size();
   for (int i = 0; i < numMacros; i++) {
     if (!strcmp(macrodefinitions[i]->macroName, name)) return macrodefinitions[i];
@@ -496,8 +408,6 @@ chillAST_MacroDefinition *chillAST_SourceFile::findMacro(const char *name) {
 
 
 chillAST_FunctionDecl *chillAST_SourceFile::findFunction(const char *name) {
-  //fprintf(stderr, "chillAST_SourceFile::findMacro( %s )\n", name );
-
   int numFuncs = functions.size();
   for (int i = 0; i < numFuncs; i++) {
     if (!strcmp(functions[i]->functionName, name)) return functions[i];
@@ -515,31 +425,30 @@ chillAST_Node *chillAST_SourceFile::findCall(const char *name) {
 
 
 chillAST_VarDecl *chillAST_SourceFile::findVariableNamed(const char *name) {
-  fprintf(stderr, "SOURCEFILE SPECIAL %s  findVariableNamed( %s )\n", getTypeString(), name);
+  CHILL_DEBUG_PRINT("SOURCEFILE SPECIAL %s  findVariableNamed( %s )\n", getTypeString(), name);
   if (hasSymbolTable()) { // look in my symbol table if I have one
-    fprintf(stderr, "%s has a symbol table\n", getTypeString());
+    CHILL_DEBUG_PRINT("%s has a symbol table\n", getTypeString());
     chillAST_VarDecl *vd = symbolTableFindVariableNamed(getSymbolTable(), name);
     if (vd) {
-      fprintf(stderr, "found it\n");
+      CHILL_DEBUG_PRINT("found it\n");
       return vd; // found locally
     }
-    fprintf(stderr, "%s has a symbol table but couldn't find %s\n", getTypeString(), name);
+    CHILL_DEBUG_PRINT("%s has a symbol table but couldn't find %s\n", getTypeString(), name);
   }
 
-  fprintf(stderr, "looking for %s in SourceFile global_symbol_table\n", name);
+  CHILL_DEBUG_PRINT("looking for %s in SourceFile global_symbol_table\n", name);
   chillAST_VarDecl *vd = symbolTableFindVariableNamed(global_symbol_table, name);
   if (vd) {
-    fprintf(stderr, "found it\n");
+    CHILL_DEBUG_PRINT("found it\n");
     return vd; // found locally
   }
 
   if (!parent) {
-    fprintf(stderr, "%s has no parent\n", getTypeString());
+    CHILL_DEBUG_PRINT("%s has no parent\n", getTypeString());
     return NULL; // no more recursion available
   }
   // recurse upwards
-  //fprintf(stderr, "recursing from %s up to parent %p\n", getTypeString(), parent);
-  fprintf(stderr, "recursing from %s up to parent\n", getTypeString());
+  CHILL_DEBUG_PRINT("recursing from %s up to parent\n", getTypeString());
   return parent->findVariableNamed(name);
 }
 
@@ -556,12 +465,10 @@ chillAST_TypedefDecl::chillAST_TypedefDecl() {
 };
 
 
-chillAST_TypedefDecl::chillAST_TypedefDecl(char *t, const char *nt, chillAST_Node *par) {
-  //fprintf(stderr, "chillAST_TypedefDecl::chillAST_TypedefDecl( underlying type %s, newtype %s )\n", t, nt);
+chillAST_TypedefDecl::chillAST_TypedefDecl(char *t, const char *nt) {
   underlyingtype = strdup(t);
   newtype = strdup(nt);
   arraypart = NULL;
-  parent = NULL;
   metacomment = NULL;
   isStruct = isUnion = false;
   structname = NULL;
@@ -571,15 +478,13 @@ chillAST_TypedefDecl::chillAST_TypedefDecl(char *t, const char *nt, chillAST_Nod
 };
 
 
-chillAST_TypedefDecl::chillAST_TypedefDecl(char *t, const char *a, char *p, chillAST_Node *par) {
+chillAST_TypedefDecl::chillAST_TypedefDecl(char *t, const char *a, char *p) {
   underlyingtype = strdup(t);
-  //fprintf(stderr, "chillAST_TypedefDecl::chillAST_TypedefDecl( underlying type %s )\n", underlyingtype);
-  newtype = strdup(a);  // the new named type ??
+  newtype = strdup(a);
 
-  arraypart = strdup(p);  // array (p)art?
+  arraypart = strdup(p);
   // splitarraypart(); // TODO
 
-  parent = par;
   metacomment = NULL;
   isStruct = isUnion = false;
   structname = NULL;
@@ -590,8 +495,6 @@ chillAST_TypedefDecl::chillAST_TypedefDecl(char *t, const char *a, char *p, chil
 
 
 void chillAST_TypedefDecl::print(int indent, FILE *fp) {
-  //fprintf(fp, "typedefdecl->print()\n");
-
   printPreprocBEFORE(indent, fp);
 
   if (isStruct) {
@@ -661,32 +564,7 @@ chillAST_RecordDecl *chillAST_TypedefDecl::getStructDef() {
   return NULL;
 }
 
-
-chillAST_RecordDecl::chillAST_RecordDecl() {
-  name = strdup("unknown"); // ??
-  originalname = NULL;      // ??
-  isStruct = isUnion = false;
-  parent = NULL;
-  isFromSourceFile = true; // default
-  filename = NULL;
-}
-
-chillAST_RecordDecl::chillAST_RecordDecl(const char *nam, chillAST_Node *p) {
-  //fprintf(stderr, "chillAST_RecordDecl::chillAST_RecordDecl()\n");
-  parent = p;
-  if (nam) name = strdup(nam);
-  else name = strdup("unknown"); // ??
-  originalname = NULL;      // ??   // make them do it manually?
-  isStruct = isUnion = false;
-  isFromSourceFile = true; // default
-  filename = NULL;
-}
-
-chillAST_RecordDecl::chillAST_RecordDecl(const char *nam, const char *orig, chillAST_Node *p) {
-  fprintf(stderr, "chillAST_RecordDecl::chillAST_RecordDecl( %s, ( AKA %s ) )\n", nam, orig);
-  parent = p;
-  if (p) p->addChild(this);
-
+chillAST_RecordDecl::chillAST_RecordDecl(const char *nam, const char *orig) {
   if (nam) name = strdup(nam);
   else name = strdup("unknown"); // ??
 
@@ -731,30 +609,27 @@ chillAST_VarDecl *chillAST_RecordDecl::findSubpartByType(const char *typ) {
 
 
 void chillAST_RecordDecl::print(int indent, FILE *fp) {
-  //fprintf(fp, "chillAST_RecordDecl::print()\n");
+  CHILL_DEBUG_PRINT("chillAST_RecordDecl::print()\n");
   if (isUnnamed) return;
 
   printPreprocBEFORE(indent, fp);
 
   chillindent(indent, fp);
   if (isStruct) {
-    //fprintf(fp, "\n/* A Record Decl STRUCT */\n"); chillindent(indent, fp);
     fprintf(fp, "struct ");
     if (strncmp("unnamed", name, 7)) fprintf(fp, "%s\n", name);
 
     chillindent(indent, fp);
     fprintf(fp, "{\n");
     for (int i = 0; i < subparts.size(); i++) {
-      //fprintf(fp, "a %s\n", subparts[i]->getTypeString());
       subparts[i]->print(indent + 1, fp);
       fprintf(fp, ";\n");
     }
     fprintf(fp, "} ");
     fprintf(fp,
-            "\n");  // TODO need semicolon when defining struct. can't have it when part of a typedef. One of the following lines is correct in each case.
-    //fprintf(fp, ";\n");
+            "\n");  // ?? need semicolon when defining struct. can't have it when part of a typedef.
   } else {
-    fprintf(fp, "/* UNKNOWN RECORDDECL print() */  ");
+    CHILL_ERROR("/* UNKNOWN RECORDDECL print() */  ");
     exit(-1);
   }
   printPreprocAFTER(indent, fp);
@@ -791,57 +666,19 @@ void chillAST_RecordDecl::dump(int indent, FILE *fp) {
 
 }
 
-
-chillAST_FunctionDecl::chillAST_FunctionDecl() {
-  functionName = strdup("YouScrewedUp");
-  forwarddecl = externfunc = builtin = false;
-  uniquePtr = (void *) NULL;
-  this->setFunctionCPU();
-  parent = NULL;
-  metacomment = NULL;
-  //symbol_table = NULL;   // eventually, pointing to body's symbol table
-  typedef_table = NULL;
-  body = new chillAST_CompoundStmt();
-  isFromSourceFile = true; // default
-  filename = NULL;
-};
-
-
-chillAST_FunctionDecl::chillAST_FunctionDecl(const char *rt, const char *fname, chillAST_Node *par) {
-  returnType = strdup(rt);
-  functionName = strdup(fname);
-  this->setFunctionCPU();
-  //fprintf(stderr, "functionName %s\n", functionName);
-  forwarddecl = externfunc = builtin = false;
-
-  parent = par;
-  metacomment = NULL;
-  if (par) par->getSourceFile()->addFunc(this);
-  // symbol_table = NULL; //use body's instead
-  typedef_table = NULL;
-  body = new chillAST_CompoundStmt();
-  isFromSourceFile = true; // default
-  filename = NULL;
-};
-
-
-chillAST_FunctionDecl::chillAST_FunctionDecl(const char *rt, const char *fname, chillAST_Node *par, void *unique) {
+chillAST_FunctionDecl::chillAST_FunctionDecl(const char *rt, const char *fname, void *unique) {
   CHILL_DEBUG_PRINT("chillAST_FunctionDecl::chillAST_FunctionDecl with unique %p\n", unique);
-  returnType = strdup(rt);
-  functionName = strdup(fname);
-  this->setFunctionCPU();
-  //fprintf(stderr, "functionName %s\n", functionName);
+  if (fname)
+    functionName = strdup(fname);
+  else
+    functionName = strdup("YouScrewedUp");
   forwarddecl = externfunc = builtin = false;
-
-  body = new chillAST_CompoundStmt();
-  uniquePtr = unique; // a quick way to check equivalence. DO NOT ACCESS THROUGH THIS
-  parent = par;
-  metacomment = NULL;
-  if (par) par->getSourceFile()->addFunc(this);
-  //symbol_table = NULL; // use body's
+  this->setFunctionCPU();
   typedef_table = NULL;
-  isFromSourceFile = true; // default
-  filename = NULL;
+  body = new chillAST_CompoundStmt();
+  returnType = strdup(rt);
+  this->setFunctionCPU();
+  uniquePtr = unique; // a quick way to check equivalence. DO NOT ACCESS THROUGH THIS
 };
 
 
@@ -973,7 +810,7 @@ void chillAST_FunctionDecl::addChild(chillAST_Node *node) {
   }
 
   body->addChild(node);
-  node->parent = this; // this, or body??
+  node->setParent(this); // this, or body??
 }
 
 
@@ -1233,49 +1070,12 @@ chillAST_Node *chillAST_FunctionDecl::constantFold() {
   return this;
 }
 
-
-chillAST_MacroDefinition::chillAST_MacroDefinition() {
-  macroName = strdup("UNDEFINEDMACRO");
-  rhsString = NULL;
-  parent = NULL;
-  metacomment = NULL;
-  symbol_table = NULL;
-  //rhsideString = NULL;
-  isFromSourceFile = true; // default
-  filename = NULL;
-};
-
-
-chillAST_MacroDefinition::chillAST_MacroDefinition(const char *mname, chillAST_Node *par) {
-  macroName = strdup(mname);
-  rhsString = NULL;
-  parent = par;
-  metacomment = NULL;
-  symbol_table = NULL;
-  //rhsideString = NULL;
-
-  if (par) par->getSourceFile()->addMacro(this);
-
-  //fprintf(stderr, "chillAST_MacroDefinition::chillAST_MacroDefinition( %s, ", mname);
-  //if (par) fprintf(stderr, " parent NOT NULL);\n");
-  //else fprintf(stderr, " parent NULL);\n");
-  isFromSourceFile = true; // default
-  filename = NULL;
-};
-
-
-chillAST_MacroDefinition::chillAST_MacroDefinition(const char *mname, const char *rhs, chillAST_Node *par) {
-  macroName = strdup(mname);
-  rhsString = strdup(rhs);
-  parent = par;
+chillAST_MacroDefinition::chillAST_MacroDefinition(const char *mname = NULL, const char *rhs = NULL) {
+  if (mname) macroName = strdup(mname); else macroName = strdup("UNDEFINEDMACRO");
+  if(rhs) rhsString = strdup(rhs); else rhsString = NULL;
   metacomment = NULL;
   symbol_table = NULL;
 
-  if (par) par->getSourceFile()->addMacro(this);
-
-  //fprintf(stderr, "chillAST_MacroDefinition::chillAST_MacroDefinition( %s, ", mname);
-  //if (par) fprintf(stderr, " parent NOT NULL);\n");
-  //else fprintf(stderr, " parent NULL);\n");
   isFromSourceFile = true; // default
   filename = NULL;
 };
@@ -1283,16 +1083,13 @@ chillAST_MacroDefinition::chillAST_MacroDefinition(const char *mname, const char
 
 chillAST_Node *chillAST_MacroDefinition::clone() {
 
-  // TODO ?? cloning a macro makes no sense
+  CHILL_ERROR("cloning a macro makes no sense\n");
   return this;
-#ifdef CONFUSED
-
-                                                                                                                          //fprintf(stderr, "chillAST_MacroDefinition::clone() for %s\n", macroName);
-  chillAST_MacroDefinition *clo = new chillAST_MacroDefinition( macroName, parent);
+  chillAST_MacroDefinition *clo = new chillAST_MacroDefinition( macroName );
+  clo->setParent(parent);
   for (int i=0; i<parameters.size(); i++) clo->addParameter( parameters[i] );
   clo->setBody( body->clone() );
   return clo;
-#endif
 
 }
 
@@ -1334,7 +1131,7 @@ void chillAST_MacroDefinition::insertChild(int i, chillAST_Node *node) {
 
 void chillAST_MacroDefinition::addChild(chillAST_Node *node) {
   body->addChild(node);
-  node->parent = this; // this, or body??
+  node->setParent(this); // this, or body??
 }
 
 
@@ -1356,8 +1153,7 @@ void chillAST_MacroDefinition::dump(int indent, FILE *fp) {
 
 
 void chillAST_MacroDefinition::print(int indent, FILE *fp) {  // UHOH   TODO
-  //fprintf(fp, "\n"); // ignore indentation
-  //fprintf(stderr, "macro has %d parameters\n", numParameters());
+  CHILL_DEBUG_PRINT("macro has %d parameters\n", numParameters());
 
   printPreprocBEFORE(indent, fp);
 
@@ -1381,18 +1177,11 @@ chillAST_ForStmt::chillAST_ForStmt() {
   body = new chillAST_CompoundStmt();
 
   conditionoperator = IR_COND_UNKNOWN;
-  parent = NULL;
-  metacomment = NULL;
   symbol_table = NULL;
-  isFromSourceFile = true; // default
-  filename = NULL;
 }
 
 
-chillAST_ForStmt::chillAST_ForStmt(chillAST_Node *ini, chillAST_Node *con, chillAST_Node *inc, chillAST_Node *bod,
-                                   chillAST_Node *par) {
-  parent = par;
-  metacomment = NULL;
+chillAST_ForStmt::chillAST_ForStmt(chillAST_Node *ini, chillAST_Node *con, chillAST_Node *inc, chillAST_Node *bod) {
   init = ini;
   cond = con;
   incr = inc;
@@ -1406,7 +1195,7 @@ chillAST_ForStmt::chillAST_ForStmt(chillAST_Node *ini, chillAST_Node *con, chill
   if (body) body->setParent(this);  // not sure this should be legal
 
   if (!cond->isBinaryOperator()) {
-    fprintf(stderr, "ForStmt conditional is of type %s. Expecting a BinaryOperator\n", cond->getTypeString());
+    CHILL_ERROR("ForStmt conditional is of type %s. Expecting a BinaryOperator\n", cond->getTypeString());
     exit(-1);
   }
   chillAST_BinaryOperator *bo = (chillAST_BinaryOperator *) cond;
@@ -1416,12 +1205,10 @@ chillAST_ForStmt::chillAST_ForStmt(chillAST_Node *ini, chillAST_Node *con, chill
   else if (!strcmp(condstring, ">")) conditionoperator = IR_COND_GT;
   else if (!strcmp(condstring, ">=")) conditionoperator = IR_COND_GE;
   else {
-    fprintf(stderr, "ForStmt, illegal/unhandled end condition \"%s\"\n", condstring);
-    fprintf(stderr, "currently can only handle <, >, <=, >=\n");
+    CHILL_ERROR("ForStmt, illegal/unhandled end condition \"%s\"\n", condstring);
+    CHILL_ERROR("currently can only handle <, >, <=, >=\n");
     exit(1);
   }
-  isFromSourceFile = true; // default
-  filename = NULL;
 }
 
 
@@ -1598,9 +1385,10 @@ chillAST_Node *chillAST_ForStmt::constantFold() {
 
 
 chillAST_Node *chillAST_ForStmt::clone() {
-  chillAST_ForStmt *fs = new chillAST_ForStmt(init->clone(), cond->clone(), incr->clone(), body->clone(), parent);
+  chillAST_ForStmt *fs = new chillAST_ForStmt(init->clone(), cond->clone(), incr->clone(), body->clone());
   fs->isFromSourceFile = isFromSourceFile;
   if (filename) fs->filename = strdup(filename);
+  fs->setParent(getParent());
   return fs;
 }
 
@@ -1731,7 +1519,7 @@ void chillAST_ForStmt::removeSyncComment() {
 
 
 bool chillAST_ForStmt::findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bool forcesync) {
-  fprintf(stderr, "\nchillAST_ForStmt::findLoopIndexesToReplace( force = %d )\n", forcesync);
+  CHILL_DEBUG_PRINT("\nchillAST_ForStmt::findLoopIndexesToReplace( force = %d )\n", forcesync);
   //if (metacomment) fprintf(stderr, "metacomment '%s'\n", metacomment);
 
   bool force = forcesync;
@@ -1829,7 +1617,7 @@ bool chillAST_ForStmt::findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bo
       fprintf(stderr, "containing non-loop is a %s\n", contain->getTypeString());
 
       contain->print(0, stderr);
-      contain->insertChild(0, newguy); // ugly order TODO
+      contain->insertChild(0, newguy); // TODO ugly order
       contain->addVariableToSymbolTable(newguy); // adds to first enclosing symbolTable
 
       if (!symbolTableFindName(contain->getSymbolTable(), vname)) {
@@ -2040,7 +1828,7 @@ void chillAST_ForStmt::loseLoopWithLoopVar(char *var) {
         // wrap the loop body in an if
         chillAST_DeclRefExpr *DRE = new chillAST_DeclRefExpr(decls[0]);
         chillAST_BinaryOperator *ifcond = new chillAST_BinaryOperator(DRE, "<=", ifcondrhs);
-        chillAST_IfStmt *ifstmt = new chillAST_IfStmt(ifcond, body, NULL, NULL);
+        chillAST_IfStmt *ifstmt = new chillAST_IfStmt(ifcond, body, NULL);
 
         newstmt = ifstmt;
       }
@@ -2057,18 +1845,7 @@ void chillAST_ForStmt::loseLoopWithLoopVar(char *var) {
 }
 
 
-chillAST_BinaryOperator::chillAST_BinaryOperator() {
-  //fprintf(stderr, "chillAST_BinaryOperator::chillAST_BinaryOperator()  %p   no parent\n", this);
-  CHILL_DEBUG_PRINT("no parent\n");
-  lhs = rhs = NULL;
-  op = NULL;
-  isFromSourceFile = true; // default
-  filename = NULL;
-}
-
-
-chillAST_BinaryOperator::chillAST_BinaryOperator(chillAST_Node *l, const char *oper, chillAST_Node *r,
-                                                 chillAST_Node *par) {
+chillAST_BinaryOperator::chillAST_BinaryOperator(chillAST_Node *l, const char *oper, chillAST_Node *r) {
   //fprintf(stderr, "chillAST_BinaryOperator::chillAST_BinaryOperator( l %p  %s  r %p,   parent %p)  this %p\n", l, oper, r, par, this);
   CHILL_DEBUG_PRINT("( l  %s  r )\n", oper);
 
@@ -2078,11 +1855,10 @@ chillAST_BinaryOperator::chillAST_BinaryOperator(chillAST_Node *l, const char *o
 
   lhs = l;
   rhs = r;
-  parent = par;
 
   if (lhs) lhs->setParent(this);
   if (rhs) rhs->setParent(this);  // may only have part of the lhs and rhs when binop is created
-  op = strdup(oper);
+  if (oper) op = strdup(oper);
 
   // if this writes to lhs and lhs type has an 'imwrittento' concept, set that up
   if (isAssignmentOp()) {
@@ -2151,30 +1927,7 @@ void chillAST_BinaryOperator::print(int indent, FILE *fp) {   // TODO this needp
   printPreprocBEFORE(indent, fp);
 
   chillindent(indent, fp);
-  bool needparens = false;
-  if (lhs) {
-    if (lhs->isImplicitCastExpr()) {
-      //  fprintf(stderr, "\nlhs 0x%x isImplicitCastExpr()\n", lhs);
-      //  fprintf(stderr, "lhs subexpr 0x%x\n", ((chillAST_ImplicitCastExpr*)lhs)->subexpr);
-      //  fprintf(stderr, "lhs subexpr type %s\n", ((chillAST_ImplicitCastExpr*)lhs)->subexpr->getTypeString());
-      //
-      if (((chillAST_ImplicitCastExpr *) lhs)->subexpr->isNotLeaf()) needparens = true;
-    } else if (lhs->isNotLeaf()) {
-      if (isMinusOp() && lhs->isPlusOp()) needparens = false;
-      else if (isPlusMinusOp() && lhs->isMultDivOp()) needparens = false;
-      else needparens = true;
-    }
-  }
-
-  //fprintf(stderr, "\n\nbinop    ");
-  //lhs->printonly(0,stderr);
-  //fprintf(stderr," %s ",op);
-  //rhs->printonly(0,stderr);
-  //fprintf(stderr,"\n");
-  //fprintf(stderr, "op is %s   lhs %s   rhs %s\n", op, lhs->getTypeString(), rhs->getTypeString());
-  //fprintf(stderr, "lhs "); lhs->printonly(0, stderr); fprintf(stderr, "    ");
-  //fprintf(stderr, "lhs needparens = %d\n", needparens);
-
+  bool needparens = getPrec()<=lhs->getPrec();
 
   if (needparens) fprintf(fp, "(");
   if (lhs) lhs->print(0, fp);
@@ -2183,23 +1936,7 @@ void chillAST_BinaryOperator::print(int indent, FILE *fp) {   // TODO this needp
 
   fprintf(fp, " %s ", op);
 
-  needparens = false;
-  //fprintf(stderr, "binop rhs is of type %s\n", rhs->getTypeString());
-  if (rhs) {
-    if (rhs->isImplicitCastExpr()) {
-      if (((chillAST_ImplicitCastExpr *) rhs)->subexpr->isNotLeaf()) needparens = true;
-    }
-      //else if (rhs->isNotLeaf()) needparens = true; // too many parens. test too simple
-    else if (rhs->isNotLeaf()) {
-      // really need the precedence ordering, and check relative of op and rhs op
-      if (isMinusOp()) needparens = true;    // safer.  perhaps complicated thing on rhs of a minus
-      else if (isPlusMinusOp() && rhs->isMultDivOp()) needparens = false;
-      else needparens = true;
-    }
-  }
-  //fprintf(stderr, "rhs "); rhs->printonly(0, stderr); fprintf(stderr, "    ");
-  //fprintf(stderr, "rhs needparens = %d\n\n", needparens);
-  //if (!needparens) fprintf(stderr, "rhs isNotLeaf() = %d\n", rhs->isNotLeaf());
+  needparens = getPrec()<=rhs->getPrec();
 
   if (needparens) fprintf(fp, "(");
   if (rhs) rhs->print(0, fp);
@@ -2240,15 +1977,15 @@ class chillAST_Node *chillAST_BinaryOperator::constantFold() {
   if (lhs->isConstant() && rhs->isConstant()) {
     //fprintf(stderr, "binop folding constants\n"); print(0,stderr); fprintf(stderr, "\n");
 
-    if (streq(op, "+") || streq(op, "-") || streq(op, "*")) {
+    if (!strcmp(op, "+") || !strcmp(op, "-") || !strcmp(op, "*")) {
       if (lhs->isIntegerLiteral() && rhs->isIntegerLiteral()) {
         chillAST_IntegerLiteral *l = (chillAST_IntegerLiteral *) lhs;
         chillAST_IntegerLiteral *r = (chillAST_IntegerLiteral *) rhs;
         chillAST_IntegerLiteral *I;
 
-        if (streq(op, "+")) I = new chillAST_IntegerLiteral(l->value + r->value, parent);
-        if (streq(op, "-")) I = new chillAST_IntegerLiteral(l->value - r->value, parent);
-        if (streq(op, "*")) I = new chillAST_IntegerLiteral(l->value * r->value, parent);
+        if (!strcmp(op, "+")) I = new chillAST_IntegerLiteral(l->value + r->value);
+        if (!strcmp(op, "-")) I = new chillAST_IntegerLiteral(l->value - r->value);
+        if (!strcmp(op, "*")) I = new chillAST_IntegerLiteral(l->value * r->value);
 
         returnval = I;
         //fprintf(stderr, "%d %s %d becomes %d\n", l->value,op, r->value, I->value);
@@ -2257,7 +1994,7 @@ class chillAST_Node *chillAST_BinaryOperator::constantFold() {
         // usually don't want to do this for floats or doubles
         // could probably check for special cases like 0.0/30.0  or X/X  or X/1.0
 #ifdef FOLDFLOATS
-                                                                                                                                float lval, rval;
+        float lval, rval;
         if (lhs->isIntegerLiteral()) {
           lval = (float) ((chillAST_IntegerLiteral *)lhs)->value;
         }
@@ -2295,7 +2032,7 @@ class chillAST_Node *chillAST_BinaryOperator::clone() {
 
   chillAST_Node *l = lhs->clone();
   chillAST_Node *r = rhs->clone();
-  chillAST_BinaryOperator *bo = new chillAST_BinaryOperator(l, op, r, parent);
+  chillAST_BinaryOperator *bo = new chillAST_BinaryOperator(l, op, r);
   l->setParent(bo);
   r->setParent(bo);
   bo->isFromSourceFile = isFromSourceFile;
@@ -2434,26 +2171,18 @@ bool chillAST_BinaryOperator::isSameAs(chillAST_Node *other) {
   return lhs->isSameAs(o->lhs) && rhs->isSameAs(o->rhs); // recurse
 }
 
-
-chillAST_TernaryOperator::chillAST_TernaryOperator() {
-  op = strdup("?"); // the only one so far
-  condition = lhs = rhs = NULL;
-  isFromSourceFile = true; // default
-  filename = NULL;
-}
-
 chillAST_TernaryOperator::chillAST_TernaryOperator(const char *oper, chillAST_Node *c, chillAST_Node *l,
-                                                   chillAST_Node *r, chillAST_Node *par) {
-
-  op = strdup(oper);
+                                                   chillAST_Node *r) {
+  if (op)
+    op = strdup(oper);
+  else
+    op = strdup("?"); // the only one so far
   condition = c;
-  condition->setParent(this);
   lhs = l;
-  lhs->setParent(this);
   rhs = r;
-  rhs->setParent(this);
-  isFromSourceFile = true; // default
-  filename = NULL;
+  if (condition) condition->setParent(this);
+  if (lhs) lhs->setParent(this);
+  if (rhs) rhs->setParent(this);
 }
 
 void chillAST_TernaryOperator::dump(int indent, FILE *fp) {
@@ -2557,52 +2286,7 @@ class chillAST_Node *chillAST_TernaryOperator::constantFold() {
   chillAST_Node *returnval = this;
 
   if (condition->isConstant()) {
-    //fprintf(stderr, "ternop folding constants\n");
-    //print(0,stderr);
-    //fprintf(stderr, "\n");
-
-    // assume op is "?"
     // TODO
-    /*
-
-    if (streq(op, "+") || streq(op, "-") || streq(op, "*")) {
-      if (lhs->isIntegerLiteral() && rhs->isIntegerLiteral()) {
-        chillAST_IntegerLiteral *l = (chillAST_IntegerLiteral *)lhs;
-        chillAST_IntegerLiteral *r = (chillAST_IntegerLiteral *)rhs;
-        chillAST_IntegerLiteral *I;
-
-        if (streq(op, "+")) I = new chillAST_IntegerLiteral(l->value+r->value, parent);
-        if (streq(op, "-")) I = new chillAST_IntegerLiteral(l->value-r->value, parent);
-        if (streq(op, "*")) I = new chillAST_IntegerLiteral(l->value*r->value, parent);
-
-        returnval = I;
-        //fprintf(stderr, "%d %s %d becomes %d\n", l->value,op, r->value, I->value);
-      }
-      else { // at least one is a float
-        float lval, rval;
-        if (lhs->isIntegerLiteral()) {
-          lval = (float) ((chillAST_IntegerLiteral *)lhs)->value;
-        }
-        else {
-          lval = ((chillAST_FloatingLiteral *)lhs)->value;
-        }
-        if (rhs->isIntegerLiteral()) {
-          rval = (float) ((chillAST_IntegerLiteral *)rhs)->value;
-        }
-        else {
-          rval = ((chillAST_FloatingLiteral *)rhs)->value;
-        }
-
-        chillAST_FloatingLiteral *F;
-        if (streq(op, "+")) F = new chillAST_FloatingLiteral(lval + rval, parent);
-        if (streq(op, "-")) F = new chillAST_FloatingLiteral(lval - rval, parent);
-        if (streq(op, "*")) F = new chillAST_FloatingLiteral(lval * rval, parent);
-
-        returnval = F;
-      }
-    }
-    else fprintf(stderr, "can't fold op '%s' yet\n", op);
-    */
   }
 
   return returnval;
@@ -2633,96 +2317,30 @@ void chillAST_TernaryOperator::gatherScalarRefs(std::vector<chillAST_DeclRefExpr
   rhs->gatherScalarRefs(refs, 0);
 }
 
-
-chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr() {
-  //fprintf(stderr, "\n%p chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr() 0\n", this);
+chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr(chillAST_Node *bas, chillAST_Node *indx, bool writtento, void *unique) {
   base = index = NULL;
   basedecl = NULL; //fprintf(stderr, "setting basedecl NULL for ASE %p\n", this);
-  imwrittento = false; // ??
+  imwrittento = writtento; // ??
   imreadfrom = false; // ??
   parent = NULL;
   metacomment = NULL;
-  //fprintf(stderr, "chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr()  NEED TO FAKE A LOCATION\n");
-  isFromSourceFile = true; // default
-  filename = NULL;
-  //fprintf(stderr, "\nASE %p is empty\n", this);
+  if (bas) {
+    if (bas->isImplicitCastExpr()) base = ((chillAST_ImplicitCastExpr *) bas)->subexpr; // probably wrong
+    else base = bas;
+    base->setParent(this);
+    basedecl = multibase();
+  }
+  if (indx) {
+    if (indx->isImplicitCastExpr()) index = ((chillAST_ImplicitCastExpr *) indx)->subexpr; // probably wrong
+    else index = indx;
+    index->setParent(this);
+  }
+  uniquePtr = unique;
 }
 
-
-chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr(chillAST_Node *bas, chillAST_Node *indx, chillAST_Node *par,
-                                                         void *unique) {
-
-  //fprintf(stderr, "\nchillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr() 1\n");
-  //fprintf(stderr, "ASE index %p ", indx); indx->print(0,stderr); fprintf(stderr, "\n");
-  bas->setParent(this);
-  if (bas->isImplicitCastExpr()) base = ((chillAST_ImplicitCastExpr *) bas)->subexpr; // probably wrong
-  else base = bas;
-  if (indx->isImplicitCastExpr()) index = ((chillAST_ImplicitCastExpr *) indx)->subexpr; // probably wrong
-  else index = indx;
-
-  base->setParent(this);
-  index->setParent(this);
-
-  imwrittento = false; // ??
-  imreadfrom = false; // ??
-  uniquePtr = (void *) unique;
-  //fprintf(stderr,"chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr() original = 0x%x\n", uniquePtr);
-  //fprintf(stderr, "chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr() 1 calling multibase()\n");
-  basedecl = multibase();//fprintf(stderr, "%p  ASE 1 basedecl = %p\n",this,basedecl);
-  //basedecl->print(); printf("\n");
-  //basedecl->dump(); printf("\n"); fflush(stdout);
-  //fprintf(stderr, "basedecl varname %s\n", basedecl->varname);
-  isFromSourceFile = true; // default
-  filename = NULL;
-
-  //fprintf(stderr, "\nASE %p   parent %p  ", this, parent); print(0,stderr); fprintf(stderr, "\n\n");
-}
-
-
-chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr(chillAST_Node *bas, chillAST_Node *indx, bool writtento,
-                                                         chillAST_Node *par, void *unique) {
-  //fprintf(stderr, "\nchillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr() 2  parent %p\n", par );
-  //fprintf(stderr, "ASE %p   index %p ", this, indx); indx->print(0,stderr); fprintf(stderr, "\n");
-
-  bas->setParent(this);
-  if (bas->isImplicitCastExpr()) base = ((chillAST_ImplicitCastExpr *) bas)->subexpr; // probably wrong
-  else base = bas;
-
-  if (indx->isImplicitCastExpr()) index = ((chillAST_ImplicitCastExpr *) indx)->subexpr; // probably wrong
-  else index = indx;
-
-  //fprintf(stderr, "setting parent of base  %p to %p\n", base, this);
-  //fprintf(stderr, "setting parent of index %p to %p\n", index, this);
-  base->setParent(this);
-  index->setParent(this);
-
-  imwrittento = writtento; // ??
-  //fprintf(stderr, "ASE %p   imwrittento %d\n", this, imwrittento);
-  imreadfrom = false; // ??
-
-  uniquePtr = (void *) unique;
-  //fprintf(stderr,"chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr() original = 0x%x\n", uniquePtr);
-
-  basedecl = multibase();
-
-  //fprintf(stderr, "%p  ASE 2 basedecl = %p\n", this, basedecl);
-  //printf("basedecl is  "); fflush(stdout); basedecl->print(); printf("\n"); fflush(stdout);
-  //basedecl->dump(); printf("\n"); fflush(stdout);
-  //fprintf(stderr, "basedecl varname %s\n", basedecl->varname);
-  isFromSourceFile = true; // default
-  filename = NULL;
-
-  //fprintf(stderr, "chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr() 2 DONE\n");
-  //print(0,stderr); fprintf(stderr, "\n\n");
-  //fprintf(stderr, "\nASE %p   parent %p  ", this, parent); print(0,stderr); fprintf(stderr, "\n\n");
-}
-
-
-chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr(chillAST_VarDecl *v, std::vector<chillAST_Node *> indeces,
-                                                         chillAST_Node *par) {
+chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr(chillAST_VarDecl *v, std::vector<chillAST_Node *> indeces) {
   //fprintf(stderr, "\nchillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr() 4\n");
   //fprintf(stderr,"chillAST_ArraySubscriptExpr( chillAST_VarDecl *v, std::vector<int> indeces)\n");
-  parent = par;
   //if (parent == NULL) {
   //  fprintf(stderr, "dammit.  ASE %p has no parent\n", this);
   //}
@@ -2740,7 +2358,7 @@ chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr(chillAST_VarDecl *v, st
   //fflush(stdout);
   //fprintf(stderr, "\n");
 
-  chillAST_DeclRefExpr *DRE = new chillAST_DeclRefExpr(v->vartype, v->varname, v, NULL);
+  chillAST_DeclRefExpr *DRE = new chillAST_DeclRefExpr(v->vartype, v->varname, v);
   basedecl = v; // ??
   //fprintf(stderr, "%p  ASE 3 basedecl = %p   ", this, basedecl);
   //fprintf(stderr, "of type %s\n", basedecl->getTypeString());
@@ -2800,7 +2418,7 @@ chillAST_Node *chillAST_Node::getEnclosingStatement(int level) {  // TODO do for
     return NULL;
   }
 
-  fprintf(stderr, "getEnclosingStatement() level %d type %s, returning NULL\n", level, getTypeString());
+  CHILL_ERROR("level %d type %s, returning NULL\n", level, getTypeString());
   exit(-1);
 
   return NULL;
@@ -2865,12 +2483,9 @@ char *chillAST_ArraySubscriptExpr::stringRep(int indent) {
   char *blurb;
   char *b = base->stringRep(0);
   char *i = index->stringRep(0);
-  // combine.  shoudl be using strings. much cleaner  TODO
   std::string s = string(b) + "[" + string(i) + "]";
   fprintf(stderr, "ASE stringrep %s\n", s.c_str());
   return strdup(s.c_str());
-
-
 }
 
 
@@ -2893,116 +2508,13 @@ void chillAST_ArraySubscriptExpr::print(int indent, FILE *fp) const {
 
 
 chillAST_VarDecl *chillAST_ArraySubscriptExpr::multibase() {
-  // return the VARDECL of the thing the subscript is an index into
   //this should probably be a chillAST_Node function instead of having all these ifs
-  //print(); printf("\n"); fflush(stdout);
-  //base->print();  printf("\n"); fflush(stdout);
-  //fprintf(stderr, "chillAST_ArraySubscriptExpr::multibase()  base of type %s\n", base->getTypeString());
-
   return base->multibase();
-
-  // this will be used to SET basedecl
-  //basedecl = NULL; // do this so we don't confuse ourselves looking at uninitialized basedecl
-
-  chillAST_Node *b = base;
-  //fprintf(stderr, "base is of type %s\n", b->getTypeString());
-
-  if (!b) return NULL; // just in case ??
-
-  if (base->getType() == CHILLAST_NODE_IMPLICITCASTEXPR) { // bad coding
-    b = ((chillAST_ImplicitCastExpr *) b)->subexpr;
-  }
-
-  if (b->getType() == CHILLAST_NODE_ARRAYSUBSCRIPTEXPR) { // multidimensional array!
-    // recurse
-    return ((chillAST_ArraySubscriptExpr *) b)->multibase();
-  }
-
-  if (b->getType() == CHILLAST_NODE_DECLREFEXPR) return (((chillAST_DeclRefExpr *) b)->getVarDecl());
-
-
-  if (b->isBinaryOperator()) {
-    // presumably a dot or pointer ref that resolves to an array
-    chillAST_BinaryOperator *BO = (chillAST_BinaryOperator *) b;
-    if (strcmp(BO->op, ".")) {
-      fprintf(stderr, "chillAST_ArraySubscriptExpr::multibase(), UNHANDLED case:\n");
-      fprintf(stderr, "base is binary operator, of type %s\n", BO->op);
-      exit(-1);
-    }
-
-    chillAST_Node *l = BO->lhs;
-    chillAST_Node *r = BO->rhs;
-    printf("L %s\nR %s\n", l->getTypeString(), r->getTypeString());
-    exit(-1);
-
-    return NULL; // TODO do checks?
-  }
-
-  if (b->isMemberExpr()) {
-    //c.i[c.count]    we want i member of inspector
-
-    chillAST_MemberExpr *ME = (chillAST_MemberExpr *) b;
-    //fprintf(stderr, "multibase() Member Expression "); ME->print(); printf("\n"); fflush(stdout);
-
-    chillAST_Node *n = ME->base; //  WRONG   want the MEMBER
-    //fprintf(stderr, "chillAST_ArraySubscriptExpr::multibase()  Member Expression base of type %s\n", n->getTypeString());
-    //fprintf(stderr, "base is "); ME->base->dump();
-
-    // NEED to be able to get lowest level recorddecl or typedef from this base
-
-    fprintf(stderr, "chillast.cc, L2315, bailing??\n");
-    exit(0);
-
-    if (!n->isDeclRefExpr()) {
-      fprintf(stderr, "MemberExpr member is not chillAST_DeclRefExpr\n");
-      exit(-1);
-    }
-    chillAST_DeclRefExpr *DRE = (chillAST_DeclRefExpr *) n;
-    n = DRE->decl;
-    //fprintf(stderr, "DRE decl is of type %s\n", n->getTypeString());
-    assert(n->isVarDecl());
-    chillAST_VarDecl *vd = (chillAST_VarDecl *) n;
-    vd->print();
-    printf("\n");
-    fflush(stdout);
-
-    chillAST_TypedefDecl *tdd = vd->typedefinition;
-    chillAST_RecordDecl *rd = vd->vardef;
-    //fprintf(stderr, "tdd %p    rd %p\n", tdd, rd);
-
-    print();
-    printf("\n");
-    dump();
-    printf("\n");
-    fflush(stdout);
-
-    assert(tdd != NULL || rd != NULL);
-
-    chillAST_VarDecl *sub;
-    if (tdd) sub = tdd->findSubpart(ME->member);
-    if (rd) sub = rd->findSubpart(ME->member);
-
-    //fprintf(stderr, "subpart is "); sub->print(); printf("\n"); fflush(stdout);
-
-    return sub; // what if the sub is an array ??  TODO
-  }
-
-
-  fprintf(stderr, "chillAST_ArraySubscriptExpr::multibase(), UNHANDLED case %s\n",
-          b->getTypeString());
-  print();
-  printf("\n");
-  fflush(stdout);
-  fprintf(stderr, "base is: ");
-  b->print();
-  printf("\n");
-  fflush(stdout);
-  exit(-1);
 }
 
 
 chillAST_Node *chillAST_ArraySubscriptExpr::getIndex(int dim) {
-  //fprintf(stderr, "chillAST_ArraySubscriptExpr::getIndex( %d )\n", dim);
+  CHILL_DEBUG_PRINT("chillAST_ArraySubscriptExpr::getIndex( %d )\n", dim);
 
   chillAST_Node *b = base;
 
@@ -3010,93 +2522,41 @@ chillAST_Node *chillAST_ArraySubscriptExpr::getIndex(int dim) {
   std::vector<chillAST_Node *> ind;
   chillAST_Node *curindex = index;
   for (;;) {
-    if (b->getType() == CHILLAST_NODE_IMPLICITCASTEXPR) b = ((chillAST_ImplicitCastExpr *) b)->subexpr;
+    if (b->getType() == CHILLAST_NODE_IMPLICITCASTEXPR)
+      b = ((chillAST_ImplicitCastExpr *) b)->subexpr;
     else if (b->getType() == CHILLAST_NODE_ARRAYSUBSCRIPTEXPR) {
-      //fprintf(stderr, "base  "); b->print(); fprintf(stderr, "\n");
-      //fprintf(stderr, "index "); curindex->print(); fprintf(stderr, "\n");
       ind.push_back(curindex);
       curindex = ((chillAST_ArraySubscriptExpr *) b)->index;
       b = ((chillAST_ArraySubscriptExpr *) b)->base;
       depth++;
     } else {
-      //fprintf(stderr, "base  "); b->print(); fprintf(stderr, "\n");
-      //fprintf(stderr, "index "); curindex->print(); fprintf(stderr, "\n");
-      //fprintf(stderr, "stopping at base type %s\n", b->getTypeString());
       ind.push_back(curindex);
       break;
     }
   }
-  //fprintf(stderr, "depth %d\n", depth );
-  //for (int i=0; i<ind.size(); i++) { ind[i]->print(); fprintf(stderr, "\n"); }
-
   return ind[depth - dim];
-  /*
-  if (dim == 0) return index; // single dimension
-  fprintf(stderr, "DIM NOT 0\n");
-  // multidimension
-  chillAST_Node *b = base;
-  if (base->getType() == CHILLAST_NODE_IMPLICITCASTEXPR) { // bad coding
-    b = ((chillAST_ImplicitCastExpr*)b)->subexpr;
-  }
-  if (b->getType() == CHILLAST_NODE_IMPLICITCASTEXPR) { // bad coding
-    b = ((chillAST_ImplicitCastExpr*)b)->subexpr;
-  }
-
-  b->print(); printf("\n"); fflush(stdout);
-  if (b->getType() == CHILLAST_NODE_ARRAYSUBSCRIPTEXPR) {
-    return ((chillAST_ArraySubscriptExpr *)b)->getIndex(dim-1);
-  }
-
-  fprintf(stderr, "chillAST_ArraySubscriptExpr::getIndex() failed\n");
-  */
-  exit(-1);
 }
 
 
 class chillAST_Node *chillAST_ArraySubscriptExpr::constantFold() {
-  //fprintf(stderr, "chillAST_ArraySubscriptExpr::constantFold()\n");
   base = base->constantFold();
   index = index->constantFold();
   return this;
 }
 
 class chillAST_Node *chillAST_ArraySubscriptExpr::clone() {
-  //fprintf(stderr,"chillAST_ArraySubscriptExpr::clone() old imwrittento %d\n", imwrittento);
-  //fprintf(stderr, "cloning ASE %p ", this); print(0,stderr); printf(" with parent %p\n", parent); fflush(stdout);
-  //fprintf(stderr, "base %p  base->parent %p     index %p  index->parent %p\n", base, base->parent, index, index->parent);
-
-  //fprintf(stderr, "old base   "); base->print();  printf("\n"); fflush(stdout);
-  //fprintf(stderr, "old base   "); base->dump();  printf("\n"); fflush(stdout);
   if (base->isDeclRefExpr()) {
     chillAST_VarDecl *vd = (chillAST_VarDecl *) (((chillAST_DeclRefExpr *) base)->decl);
-    //fprintf(stderr, "old decl   "); vd->print();  printf("\n");fflush(stdout);
-    //fprintf(stderr, "old decl   "); vd->dump();   printf("\n");fflush(stdout);
   }
   chillAST_Node *b = base->clone();
-  //fprintf(stderr, "new base   "); b->print();  printf("\n"); fflush(stdout);
-  //fprintf(stderr, "new base   "); b->dump();  printf("\n"); fflush(stdout);
 
   chillAST_Node *i = index->clone();
-  //fprintf(stderr, "new index  "); i->print();  printf("\n"); fflush(stdout);
 
-
-  //if (!index->parent) {
-  //  fprintf(stderr, "ASE %p SOURCE OF CLONE INDEX %p of type %s HAS NO PARENT\n", this, index, index->getTypeString());
-  //  fprintf(stderr, "ASE SOURCE IS  "); print(0,stderr); fprintf(stderr, "\n\n");
-  //}
-  //fprintf(stderr, "cloning AST %p, after cloning base and index, creating a new ASE\n", this);
-  chillAST_ArraySubscriptExpr *ASE = new chillAST_ArraySubscriptExpr(b, i, imwrittento, parent, uniquePtr /* ?? */ );
-  //fprintf(stderr, "cloned AST will be %p with parent %p and base %p  index %p\n", ASE, parent, b, i);
+  chillAST_ArraySubscriptExpr *ASE = new chillAST_ArraySubscriptExpr(b, i, imwrittento, uniquePtr);
+  ASE->setParent(parent);
 
   ASE->imreadfrom = false; // don't know this yet
-  //ASE->imreadfrom = imreadfrom; // ??
-  //if (ASE->imreadfrom) {
-  //  fprintf(stderr, "in chillAST_ArraySubscriptExpr::clone(), imreadfrom is being set. \n");
-  //  ASE->print(); fflush(stdout); fprintf(stderr, "\n");
-  //}
 
-  //fprintf(stderr, "cloned result "); ASE->print(); printf("\n\n\n"); fflush(stdout);
-  //fprintf(stderr, "ASE clone()  this 0x%x    clone 0x%x\n", this, ASE);
   ASE->isFromSourceFile = isFromSourceFile;
   if (filename) ASE->filename = strdup(filename);
   return ASE;
@@ -3168,33 +2628,29 @@ void chillAST_ArraySubscriptExpr::replaceVarDecls(chillAST_VarDecl *olddecl, chi
 
 
 void chillAST_ArraySubscriptExpr::replaceChild(chillAST_Node *old, chillAST_Node *newchild) {
-  //fprintf(stderr,"chillAST_ArraySubscriptExpr::replaceChild()\n");
 
-  // arraysubscriptexpression doesn t really have children (should it?)
-  // try index ???
   if (old == index) {
-    //fprintf(stderr, "old is index\n");
     index = newchild;
     index->parent = this;
     return;
   }
 
-  // try base ??? unclear if this makes sense  TODO
   if (old == base) {
-    //fprintf(stderr, "old is base\n");
     base = newchild;
     base->parent = this;
     return;
   }
 
-  fprintf(stderr, "chillAST_ArraySubscriptExpr::replaceChild() old is not base or index\n");
-  print(0, stderr);
-  fprintf(stderr, "\nchild: ");
-  if (!old) fprintf(stderr, "oldchild NULL!\n");
-  old->print(0, stderr);
-  fprintf(stderr, "\nnew: ");
-  newchild->print(0, stderr);
-  fprintf(stderr, "\n");
+  CHILL_DEBUG_BEGIN
+    fprintf(stderr, "chillAST_ArraySubscriptExpr::replaceChild() old is not base or index\n");
+    print(0, stderr);
+    fprintf(stderr, "\nchild: ");
+    if (!old) fprintf(stderr, "oldchild NULL!\n");
+    old->print(0, stderr);
+    fprintf(stderr, "\nnew: ");
+    newchild->print(0, stderr);
+    fprintf(stderr, "\n");
+  CHILL_DEBUG_END
   exit(-1); // make easier for gdb
 };
 
@@ -3206,39 +2662,20 @@ bool chillAST_ArraySubscriptExpr::operator!=(const chillAST_ArraySubscriptExpr &
 
 
 bool chillAST_ArraySubscriptExpr::operator==(const chillAST_ArraySubscriptExpr &other) {
-  //fprintf(stderr, "chillAST_ArraySubscriptExpr::operator==\n");
-  //fprintf(stderr, "this->basedecl 0x%x     other.basedecl 0x%x\n", this->basedecl, other.basedecl);
-  //this->basedecl->print(); printf("\n\n");
-  //other.basedecl->print(); printf("\n"); fflush(stdout);
-
-  //this->print(); printf(" 0x%x  == 0x%x ",this->uniquePtr, other.uniquePtr ); other.print(); printf(" ??  "); fflush(stdout);
-  //if ( this->uniquePtr == other.uniquePtr) fprintf(stderr, "t\n");
-  //else fprintf(stderr, "f\n");
   return this->uniquePtr == other.uniquePtr;
 }
 
 
-chillAST_MemberExpr::chillAST_MemberExpr() {
-  base = NULL;
-  member = NULL;
-  parent = NULL;
-  metacomment = NULL;
-  exptype = CHILLAST_MEMBER_EXP_DOT;
-  isFromSourceFile = true; // default
-  filename = NULL;
-}
-
-chillAST_MemberExpr::chillAST_MemberExpr(chillAST_Node *bas, const char *mem, chillAST_Node *p, void *unique,
+chillAST_MemberExpr::chillAST_MemberExpr(chillAST_Node *bas, const char *mem, void *unique,
                                          CHILLAST_MEMBER_EXP_TYPE t) {
   base = bas;
-  if (base) base->setParent(this);
+  if (bas)
+    base->setParent(this);
   if (mem) member = strdup(mem);
-  parent = p;
-  metacomment = NULL;
+  else
+    member = NULL;
   uniquePtr = unique;
   exptype = t;
-  isFromSourceFile = true; // default
-  filename = NULL;
 
   return;  // ignore tests below ?? TODO ??
 
@@ -3329,7 +2766,7 @@ class chillAST_Node *chillAST_MemberExpr::constantFold() {
 class chillAST_Node *chillAST_MemberExpr::clone() {
   chillAST_Node *b = base->clone();
   char *m = strdup(member); // ??
-  chillAST_MemberExpr *ME = new chillAST_MemberExpr(b, m, parent, uniquePtr /* ?? */ );
+  chillAST_MemberExpr *ME = new chillAST_MemberExpr(b, m, uniquePtr /* ?? */ );
   ME->isFromSourceFile = isFromSourceFile;
   if (filename) ME->filename = strdup(filename);
   return ME;
@@ -3461,72 +2898,38 @@ chillAST_VarDecl *chillAST_MemberExpr::multibase() {
 
 }
 
-
-chillAST_DeclRefExpr::chillAST_DeclRefExpr() {
-  declarationType = strdup("UNKNOWN");
-  declarationName = strdup("NONE");
-  decl = NULL;
-  parent = NULL;
-  metacomment = NULL;
-  isFromSourceFile = true; // default
-  filename = NULL;
-}
-
-chillAST_DeclRefExpr::chillAST_DeclRefExpr(const char *varname, chillAST_Node *par) {
-  declarationType = strdup("UNKNOWN");
-  declarationName = strdup(varname);
-  decl = NULL;
-  parent = par;
-  isFromSourceFile = true; // default
-  filename = NULL;
-}
-
-chillAST_DeclRefExpr::chillAST_DeclRefExpr(const char *vartype, const char *varname, chillAST_Node *par) {
-  //fprintf(stderr, "DRE::DRE 0x%x   %s %s\n", this, vartype, varname );
-  declarationType = strdup(vartype);
-  declarationName = strdup(varname);
-  decl = NULL;
-  parent = par;
-  isFromSourceFile = true; // default
-  filename = NULL;
-}
-
-chillAST_DeclRefExpr::chillAST_DeclRefExpr(const char *vartype, const char *varname, chillAST_Node *d,
-                                           chillAST_Node *par) {
+chillAST_DeclRefExpr::chillAST_DeclRefExpr(const char *vartype, const char *varname, chillAST_Node *d) {
   //fprintf(stderr, "DRE::DRE2 0x%x   %s %s  0x%x\n", this, vartype, varname, d );
-  declarationType = strdup(vartype);
-  declarationName = strdup(varname);
+  if (vartype) declarationType = strdup(vartype);
+  else declarationType = strdup("UNKNOWN");
+  if (varname) declarationName = strdup(varname);
+  else declarationName = strdup("NONE");
   decl = d;
-  parent = par;
-  isFromSourceFile = true; // default
-  filename = NULL;
 }
 
-chillAST_DeclRefExpr::chillAST_DeclRefExpr(chillAST_VarDecl *vd, chillAST_Node *par) { // variable def
+chillAST_DeclRefExpr::chillAST_DeclRefExpr(chillAST_VarDecl *vd) { // variable def
   //fprintf(stderr, "DRE::DRE3 (VD)  0x%x   %s %s  0x%x\n", this, vd->vartype, vd->varname, vd );
 
   declarationType = strdup(vd->vartype);
   declarationName = strdup(vd->varname);
   decl = vd;
-  parent = par;
   isFromSourceFile = true; // default
   filename = NULL;
 }
 
 
-chillAST_DeclRefExpr::chillAST_DeclRefExpr(chillAST_FunctionDecl *fd, chillAST_Node *par) { // function def
+chillAST_DeclRefExpr::chillAST_DeclRefExpr(chillAST_FunctionDecl *fd) { // function def
   declarationType = strdup(fd->returnType);
   declarationName = strdup(fd->functionName);
   decl = fd;
-  parent = par;
   isFromSourceFile = true; // default
   filename = NULL;
 }
 
 
 chillAST_DeclRefExpr *buildDeclRefExpr(chillAST_VarDecl *vd) {
-  chillAST_DeclRefExpr *dre = new chillAST_DeclRefExpr(vd, NULL);
-
+  chillAST_DeclRefExpr *dre = new chillAST_DeclRefExpr(vd);
+  return dre;
 }
 
 void chillAST_DeclRefExpr::print(int indent, FILE *fp) {
@@ -3567,7 +2970,8 @@ class chillAST_Node *chillAST_DeclRefExpr::constantFold() {  // can never do any
 
 class chillAST_Node *chillAST_DeclRefExpr::clone() {
   //fprintf(stderr, "chillAST_DeclRefExpr::clone()\n");
-  chillAST_DeclRefExpr *DRE = new chillAST_DeclRefExpr(declarationType, declarationName, decl, parent);
+  chillAST_DeclRefExpr *DRE = new chillAST_DeclRefExpr(declarationType, declarationName, decl);
+  DRE->setParent(parent);
   DRE->isFromSourceFile = isFromSourceFile;
   if (filename) DRE->filename = strdup(filename);
   return DRE;
@@ -3811,9 +3215,8 @@ void chillAST_VarDecl::splitarraypart() {
 }
 
 
-chillAST_IntegerLiteral::chillAST_IntegerLiteral(int val, chillAST_Node *par) {
+chillAST_IntegerLiteral::chillAST_IntegerLiteral(int val) {
   value = val;
-  parent = par;
   isFromSourceFile = true; // default
   filename = NULL;
 }
@@ -3836,67 +3239,61 @@ class chillAST_Node *chillAST_IntegerLiteral::constantFold() { return this; } //
 
 class chillAST_Node *chillAST_IntegerLiteral::clone() {
 
-  chillAST_IntegerLiteral *IL = new chillAST_IntegerLiteral(value, parent);
+  chillAST_IntegerLiteral *IL = new chillAST_IntegerLiteral(value);
   IL->isFromSourceFile = isFromSourceFile;
   if (filename) IL->filename = strdup(filename);
   return IL;
 
 }
 
-chillAST_FloatingLiteral::chillAST_FloatingLiteral(float val, chillAST_Node *par) {
+chillAST_FloatingLiteral::chillAST_FloatingLiteral(float val) {
   value = val;
   precision = 1;
   float0double1 = 0; // which is live!
   allthedigits = NULL;
-  parent = par;
   isFromSourceFile = true; // default
   filename = NULL;
 }
 
-chillAST_FloatingLiteral::chillAST_FloatingLiteral(double val, chillAST_Node *par) {
+chillAST_FloatingLiteral::chillAST_FloatingLiteral(double val) {
   doublevalue = val;
   precision = 2;
   float0double1 = 1; // which is live!
   allthedigits = NULL;
-  parent = par;
   isFromSourceFile = true; // default
   filename = NULL;
 }
 
-chillAST_FloatingLiteral::chillAST_FloatingLiteral(float val, int precis, chillAST_Node *par) {
+chillAST_FloatingLiteral::chillAST_FloatingLiteral(float val, int precis) {
   value = val;
-  precision = 1;
   float0double1 = 0; // which is live!
   precision = precis; //
   allthedigits = NULL;
-  parent = par;
   isFromSourceFile = true; // default
   filename = NULL;
 }
 
-chillAST_FloatingLiteral::chillAST_FloatingLiteral(double val, int precis, chillAST_Node *par) {
+chillAST_FloatingLiteral::chillAST_FloatingLiteral(double val, int precis) {
   doublevalue = val;
   float0double1 = 1; // which is live!
   precision = precis; //
   allthedigits = NULL;
-  parent = par;
   isFromSourceFile = true; // default
   filename = NULL;
 }
 
-chillAST_FloatingLiteral::chillAST_FloatingLiteral(float val, const char *printthis, chillAST_Node *par) {
+chillAST_FloatingLiteral::chillAST_FloatingLiteral(float val, const char *printthis) {
   value = val;
   float0double1 = 0; // which is live!
   precision = 1;
   allthedigits = NULL;
   if (printthis) allthedigits = strdup(printthis);
   //fprintf(stderr, "\nfloatingliteral allthedigits = '%s'\n", allthedigits);
-  parent = par;
   isFromSourceFile = true; // default
   filename = NULL;
 }
 
-chillAST_FloatingLiteral::chillAST_FloatingLiteral(float val, int precis, const char *printthis, chillAST_Node *par) {
+chillAST_FloatingLiteral::chillAST_FloatingLiteral(float val, int precis, const char *printthis) {
   value = val;
   float0double1 = 0; // which is live!
   precision = precis; // but value is a float??  TODO
@@ -3907,7 +3304,6 @@ chillAST_FloatingLiteral::chillAST_FloatingLiteral(float val, int precis, const 
     allthedigits = strdup(printthis);
   }
   //fprintf(stderr, "\nfloatingliteral allthedigits = '%s'\n", allthedigits);
-  parent = par;
   isFromSourceFile = true; // default
   filename = NULL;
 }
@@ -4003,12 +3399,11 @@ bool chillAST_FloatingLiteral::isSameAs(chillAST_Node *other) {
 }
 
 
-chillAST_UnaryOperator::chillAST_UnaryOperator(const char *oper, bool pre, chillAST_Node *sub, chillAST_Node *par) {
+chillAST_UnaryOperator::chillAST_UnaryOperator(const char *oper, bool pre, chillAST_Node *sub) {
   op = strdup(oper);
   prefix = pre;
   subexpr = sub;
   subexpr->setParent(this);
-  parent = par;
   isFromSourceFile = true; // default
   filename = NULL;
 }
@@ -4065,7 +3460,8 @@ chillAST_Node *chillAST_UnaryOperator::constantFold() {
     if (streq(op, "-")) {
       if (subexpr->isIntegerLiteral()) {
         int intval = ((chillAST_IntegerLiteral *) subexpr)->value;
-        chillAST_IntegerLiteral *I = new chillAST_IntegerLiteral(-intval, parent);
+        chillAST_IntegerLiteral *I = new chillAST_IntegerLiteral(-intval);
+        I->setParent(parent);
         returnval = I;
         //fprintf(stderr, "integer -%d becomes %d\n", intval, I->value);
       } else {
@@ -4088,7 +3484,8 @@ chillAST_Node *chillAST_UnaryOperator::constantFold() {
 
 
 class chillAST_Node *chillAST_UnaryOperator::clone() {
-  chillAST_UnaryOperator *UO = new chillAST_UnaryOperator(op, prefix, subexpr->clone(), parent);
+  chillAST_UnaryOperator *UO = new chillAST_UnaryOperator(op, prefix, subexpr->clone());
+  UO->setParent(parent);
   UO->isFromSourceFile = isFromSourceFile;
   if (filename) UO->filename = strdup(filename);
   return UO;
@@ -4143,14 +3540,11 @@ bool chillAST_UnaryOperator::isSameAs(chillAST_Node *other) {
 }
 
 
-chillAST_ImplicitCastExpr::chillAST_ImplicitCastExpr(chillAST_Node *sub, chillAST_Node *par) {
+chillAST_ImplicitCastExpr::chillAST_ImplicitCastExpr(chillAST_Node *sub) {
   subexpr = sub;
   subexpr->setParent(this);
-  parent = par;
   //fprintf(stderr, "ImplicitCastExpr 0x%x  has subexpr 0x%x", this, subexpr);
   //fprintf(stderr, " of type %s\n", subexpr->getTypeString());
-  isFromSourceFile = true; // default
-  filename = NULL;
 }
 
 void chillAST_ImplicitCastExpr::print(int indent, FILE *fp) {
@@ -4185,7 +3579,8 @@ class chillAST_Node *chillAST_ImplicitCastExpr::constantFold() {
 
 
 class chillAST_Node *chillAST_ImplicitCastExpr::clone() {
-  chillAST_ImplicitCastExpr *ICE = new chillAST_ImplicitCastExpr(subexpr->clone(), parent);
+  chillAST_ImplicitCastExpr *ICE = new chillAST_ImplicitCastExpr(subexpr->clone());
+  ICE->setParent(getParent());
   ICE->isFromSourceFile = isFromSourceFile;
   if (filename) ICE->filename = strdup(filename);
   return ICE;
@@ -4225,16 +3620,13 @@ void chillAST_ImplicitCastExpr::gatherVarUsage(vector<chillAST_VarDecl *> &decls
 }
 
 
-chillAST_CStyleCastExpr::chillAST_CStyleCastExpr(const char *to, chillAST_Node *sub, chillAST_Node *par) {
+chillAST_CStyleCastExpr::chillAST_CStyleCastExpr(const char *to, chillAST_Node *sub) {
 
   //fprintf(stderr, "chillAST_CStyleCastExpr::chillAST_CStyleCastExpr( %s, ...)\n", to);
   towhat = strdup(to);
   subexpr = sub;
   if (subexpr) subexpr->setParent(this);
-  parent = par;
   //fprintf(stderr, "chillAST_CStyleCastExpr (%s)   sub 0x%x\n", towhat, sub );
-  isFromSourceFile = true; // default
-  filename = NULL;
 }
 
 void chillAST_CStyleCastExpr::replaceChild(chillAST_Node *old, chillAST_Node *newchild) {
@@ -4296,7 +3688,8 @@ class chillAST_Node *chillAST_CStyleCastExpr::constantFold() {
 
 
 class chillAST_Node *chillAST_CStyleCastExpr::clone() {
-  chillAST_CStyleCastExpr *CSCE = new chillAST_CStyleCastExpr(towhat, subexpr->clone(), parent);
+  chillAST_CStyleCastExpr *CSCE = new chillAST_CStyleCastExpr(towhat, subexpr->clone());
+  CSCE->setParent(getParent());
   CSCE->isFromSourceFile = isFromSourceFile;
   if (filename) CSCE->filename = strdup(filename);
   return CSCE;
@@ -4336,13 +3729,10 @@ void chillAST_CStyleCastExpr::gatherVarUsage(vector<chillAST_VarDecl *> &decls) 
 }
 
 
-chillAST_CStyleAddressOf::chillAST_CStyleAddressOf(chillAST_Node *sub, chillAST_Node *par) {
+chillAST_CStyleAddressOf::chillAST_CStyleAddressOf(chillAST_Node *sub) {
   subexpr = sub;
   subexpr->setParent(this);
-  parent = par;
   //fprintf(stderr, "chillAST_CStyleCastExpr (%s)   sub 0x%x\n", towhat, sub );
-  isFromSourceFile = true; // default
-  filename = NULL;
 }
 
 void chillAST_CStyleAddressOf::print(int indent, FILE *fp) {
@@ -4369,7 +3759,8 @@ class chillAST_Node *chillAST_CStyleAddressOf::constantFold() {
 }
 
 class chillAST_Node *chillAST_CStyleAddressOf::clone() {
-  chillAST_CStyleAddressOf *CSAO = new chillAST_CStyleAddressOf(subexpr->clone(), parent);
+  chillAST_CStyleAddressOf *CSAO = new chillAST_CStyleAddressOf(subexpr->clone());
+  CSAO->setParent(getParent());
   CSAO->isFromSourceFile = isFromSourceFile;
   if (filename) CSAO->filename = strdup(filename);
   return CSAO;
@@ -4407,18 +3798,11 @@ void chillAST_CStyleAddressOf::gatherVarUsage(vector<chillAST_VarDecl *> &decls)
 }
 
 
-chillAST_Malloc::chillAST_Malloc(chillAST_Node *size, chillAST_Node *p) {
+chillAST_Malloc::chillAST_Malloc(char *thething, chillAST_Node *numthings) {
   thing = NULL;
-  sizeexpr = size;  // probably a multiply like   sizeof(int) * 1024
-  parent = p;
-  isFromSourceFile = true; // default
-  filename = NULL;
-};
-
-chillAST_Malloc::chillAST_Malloc(char *thething, chillAST_Node *numthings, chillAST_Node *p) {
+  if (thething)
   thing = strdup(thething);   // "int" or "float" or "struct widget"
   sizeexpr = numthings;
-  parent = p;
   isFromSourceFile = true; // default
   filename = NULL;
 };
@@ -4428,7 +3812,8 @@ chillAST_Node *chillAST_Malloc::constantFold() {
 }
 
 chillAST_Node *chillAST_Malloc::clone() {
-  chillAST_Malloc *M = new chillAST_Malloc(thing, sizeexpr, parent); // the general version
+  chillAST_Malloc *M = new chillAST_Malloc(thing, sizeexpr); // the general version
+  M->setParent(getParent());
   M->isFromSourceFile = isFromSourceFile;
   if (filename) M->filename = strdup(filename);
   return M;
@@ -4483,12 +3868,9 @@ void chillAST_Malloc::dump(int indent, FILE *fp) {
 };
 
 
-chillAST_CudaMalloc::chillAST_CudaMalloc(chillAST_Node *devmemptr, chillAST_Node *size, chillAST_Node *p) {
+chillAST_CudaMalloc::chillAST_CudaMalloc(chillAST_Node *devmemptr, chillAST_Node *size) {
   devPtr = devmemptr;
   sizeinbytes = size;  // probably a multiply like   sizeof(int) * 1024
-  parent = p;
-  isFromSourceFile = true; // default
-  filename = NULL;
 };
 
 void chillAST_CudaMalloc::print(int indent, FILE *fp) {
@@ -4517,7 +3899,8 @@ class chillAST_Node *chillAST_CudaMalloc::constantFold() {
 }
 
 class chillAST_Node *chillAST_CudaMalloc::clone() {
-  chillAST_CudaMalloc *CM = new chillAST_CudaMalloc(devPtr->clone(), sizeinbytes->clone(), parent);
+  chillAST_CudaMalloc *CM = new chillAST_CudaMalloc(devPtr->clone(), sizeinbytes->clone());
+  CM->setParent(getParent());
   CM->isFromSourceFile = isFromSourceFile;
   if (filename) CM->filename = strdup(filename);
   return CM;
@@ -4557,11 +3940,8 @@ void chillAST_CudaMalloc::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
 }
 
 
-chillAST_CudaFree::chillAST_CudaFree(chillAST_VarDecl *var, chillAST_Node *p) {
+chillAST_CudaFree::chillAST_CudaFree(chillAST_VarDecl *var) {
   variable = var;
-  parent = p;
-  isFromSourceFile = true; // default
-  filename = NULL;
 };
 
 void chillAST_CudaFree::print(int indent, FILE *fp) {
@@ -4581,7 +3961,8 @@ class chillAST_Node *chillAST_CudaFree::constantFold() {
 }
 
 class chillAST_Node *chillAST_CudaFree::clone() {
-  chillAST_CudaFree *CF = new chillAST_CudaFree(variable, parent);
+  chillAST_CudaFree *CF = new chillAST_CudaFree(variable);
+  CF->setParent(getParent());
   CF->isFromSourceFile = isFromSourceFile;
   if (filename) CF->filename = strdup(filename);
   return CF;
@@ -4611,16 +3992,12 @@ void chillAST_CudaFree::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
 }
 
 
-chillAST_CudaMemcpy::chillAST_CudaMemcpy(chillAST_VarDecl *d, chillAST_VarDecl *s, chillAST_Node *siz, char *kind,
-                                         chillAST_Node *par) {
+chillAST_CudaMemcpy::chillAST_CudaMemcpy(chillAST_VarDecl *d, chillAST_VarDecl *s, chillAST_Node *siz, char *kind) {
   dest = d;
   src = s;
   //fprintf(stderr, "chillAST_CudaMemcpy::chillAST_CudaMemcpy( dest %s, src %s, ...)\n", d->varname, s->varname );
   size = siz;
   cudaMemcpyKind = kind;
-  isFromSourceFile = true; // default
-  filename = NULL;
-  parent = par;
 };
 
 void chillAST_CudaMemcpy::print(int indent, FILE *fp) {
@@ -4656,7 +4033,8 @@ class chillAST_Node *chillAST_CudaMemcpy::constantFold() {
 class chillAST_Node *chillAST_CudaMemcpy::clone() {
   chillAST_CudaMemcpy *CMCPY = new chillAST_CudaMemcpy((chillAST_VarDecl *) (dest->clone()),
                                                        (chillAST_VarDecl *) (src->clone()), size->clone(),
-                                                       strdup(cudaMemcpyKind), parent);
+                                                       strdup(cudaMemcpyKind));
+  CMCPY->setParent(getParent());
   CMCPY->isFromSourceFile = isFromSourceFile;
   if (filename) CMCPY->filename = strdup(filename);
   return CMCPY;
@@ -4702,10 +4080,7 @@ void chillAST_CudaMemcpy::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
 }
 
 
-chillAST_CudaSyncthreads::chillAST_CudaSyncthreads(chillAST_Node *par) {
-  parent = par;
-  isFromSourceFile = true; // default
-  filename = NULL;
+chillAST_CudaSyncthreads::chillAST_CudaSyncthreads() {
 }
 
 void chillAST_CudaSyncthreads::print(int indent, FILE *fp) {
@@ -4721,12 +4096,9 @@ void chillAST_CudaSyncthreads::dump(int indent, FILE *fp) {
 }
 
 
-chillAST_ReturnStmt::chillAST_ReturnStmt(chillAST_Node *retval, chillAST_Node *par) {
+chillAST_ReturnStmt::chillAST_ReturnStmt(chillAST_Node *retval) {
   returnvalue = retval;
   if (returnvalue) returnvalue->setParent(this);
-  parent = par;
-  isFromSourceFile = true; // default
-  filename = NULL;
 }
 
 
@@ -4765,7 +4137,8 @@ class chillAST_Node *chillAST_ReturnStmt::constantFold() {
 class chillAST_Node *chillAST_ReturnStmt::clone() {
   chillAST_Node *val = NULL;
   if (returnvalue) val = returnvalue->clone();
-  chillAST_ReturnStmt *RS = new chillAST_ReturnStmt(val, parent);
+  chillAST_ReturnStmt *RS = new chillAST_ReturnStmt(val);
+  RS->setParent(getParent());
   RS->isFromSourceFile = isFromSourceFile;
   if (filename) RS->filename = strdup(filename);
   return RS;
@@ -4797,17 +4170,13 @@ void chillAST_ReturnStmt::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
 }
 
 
-chillAST_CallExpr::chillAST_CallExpr(chillAST_Node *c,
-                                     chillAST_Node *par) { //, int numofargs, chillAST_Node **theargs ) {
+chillAST_CallExpr::chillAST_CallExpr(chillAST_Node *c) { //, int numofargs, chillAST_Node **theargs ) {
 
   //fprintf(stderr, "chillAST_CallExpr::chillAST_CallExpr  callee type %s\n", c->getTypeString());
   callee = c;
   //callee->setParent( this ); // ??
   numargs = 0;
-  parent = par;
   grid = block = NULL;
-  isFromSourceFile = true; // default
-  filename = NULL;
 }
 
 
@@ -4953,7 +4322,7 @@ chillAST_Node *chillAST_CallExpr::clone() {
   //fprintf(stderr, "chillAST_CallExpr::clone()\n");
   //print(0, stderr); fprintf(stderr, "\n");
 
-  chillAST_CallExpr *CE = new chillAST_CallExpr(callee->clone(), NULL);
+  chillAST_CallExpr *CE = new chillAST_CallExpr(callee->clone());
   for (int i = 0; i < args.size(); i++) CE->addArg(args[i]->clone());
   CE->isFromSourceFile = isFromSourceFile;
   if (filename) CE->filename = strdup(filename);
@@ -4983,12 +4352,10 @@ chillAST_VarDecl::chillAST_VarDecl() {
   isABuiltin = false;
   isRestrict = isDevice = isShared = false; // fprintf(stderr, "RDS = false\n");
   knownArraySizes = false;
-  isFromSourceFile = true; // default
-  filename = NULL;
 };
 
 
-chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a, chillAST_Node *par) {
+chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a) {
   //fprintf(stderr, "1chillAST_VarDecl::chillAST_VarDecl( type %s, name %s, arraypart %s,  parent %p)  %p\n", t, n, a, par, this);
   fprintf(stderr, "1chillAST_VarDecl::chillAST_VarDecl( type %s, name %s, arraypart %s)\n", t, n, a);
   vartype = strdup(t);
@@ -5006,8 +4373,6 @@ chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a, 
   numdimensions = 0;
   arraysizes = NULL;
   uniquePtr = NULL;
-  parent = par;
-
 
   knownArraySizes = false;
   //fprintf(stderr, "arraypart len %d\n", strlen(a));
@@ -5033,13 +4398,10 @@ chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a, 
     parent->addVariableToSymbolTable(this); // should percolate up until something has a symbol table
 
   }
-  isFromSourceFile = true; // default
-  filename = NULL;
 };
 
 
-chillAST_VarDecl::chillAST_VarDecl(chillAST_RecordDecl *astruct, const char *nam, const char *array,
-                                   chillAST_Node *par) {
+chillAST_VarDecl::chillAST_VarDecl(chillAST_RecordDecl *astruct, const char *nam, const char *array) {
   // define a variable whose type is a struct!
 
   fprintf(stderr, "3chillAST_VarDecl::chillAST_VarDecl( %s  %p struct ", nam, this);
@@ -5066,7 +4428,6 @@ chillAST_VarDecl::chillAST_VarDecl(chillAST_RecordDecl *astruct, const char *nam
   numdimensions = 0;
   arraysizes = NULL;
   uniquePtr = NULL;
-  parent = par;
 
   knownArraySizes = false;
   //fprintf(stderr, "arraypart len %d\n", strlen(a));
@@ -5090,13 +4451,11 @@ chillAST_VarDecl::chillAST_VarDecl(chillAST_RecordDecl *astruct, const char *nam
 
   if (parent) parent->addVariableToSymbolTable(this); // should percolate up until something has a symbol table
 
-  isFromSourceFile = true; // default
-  filename = NULL;
 
 };
 
 
-chillAST_VarDecl::chillAST_VarDecl(chillAST_TypedefDecl *tdd, const char *n, const char *a, chillAST_Node *par) {
+chillAST_VarDecl::chillAST_VarDecl(chillAST_TypedefDecl *tdd, const char *n, const char *a) {
   fprintf(stderr, "4chillAST_VarDecl::chillAST_VarDecl( %s  typedef ", n);
   const char *type = tdd->getStructName();
   //fprintf (stderr, "%s, name %s, arraypart %s parent ) %p\n", type, n, a,this); // , par);
@@ -5113,7 +4472,6 @@ chillAST_VarDecl::chillAST_VarDecl(chillAST_TypedefDecl *tdd, const char *n, con
   numdimensions = 0;
   arraysizes = NULL;
   uniquePtr = NULL;
-  parent = par;
 
   knownArraySizes = false;
   //fprintf(stderr, "arraypart len %d\n", strlen(a));
@@ -5136,15 +4494,11 @@ chillAST_VarDecl::chillAST_VarDecl(chillAST_TypedefDecl *tdd, const char *n, con
   byreference = false;
   isABuiltin = false;
   isRestrict = isDevice = isShared = false; // //fprintf(stderr, "RDS = false\n");
-  if (parent) parent->addVariableToSymbolTable(this); // should percolate up until something has a symbol table
-  isFromSourceFile = true; // default
-  filename = NULL;
 };
 
 
-chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a, void *ptr, chillAST_Node *par) {
+chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a, void *ptr) {
   CHILL_DEBUG_PRINT("chillAST_VarDecl::chillAST_VarDecl( type %s, name %s, arraypart '%s' ) %p\n", t, n, a, this);
-
 
   vartype = strdup(t);
   typedefinition = NULL;
@@ -5165,10 +4519,7 @@ chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a, 
   numdimensions = 0;
   arraysizes = NULL;
   uniquePtr = ptr;
-  parent = par;
   knownArraySizes = false;
-
-  if (par) par->addChild(this); // ??
 
   //fprintf(stderr, "name arraypart len %d\n", strlen(a));
   //fprintf(stderr, "arraypart '%s'\n", arraypart);
@@ -5281,10 +4632,6 @@ chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a, 
   // currently this is bad, because a struct does not have a symbol table, so the
   // members of a struct are passed up to the func or sourcefile.
   if (parent) parent->addVariableToSymbolTable(this); // should percolate up until something has a symbol table
-
-
-  isFromSourceFile = true; // default
-  filename = NULL;
 
   CHILL_DEBUG_PRINT("LEAVING\n");
   //parent->print(); fprintf(stderr, "\n\n");
@@ -5458,8 +4805,6 @@ chillAST_CompoundStmt::chillAST_CompoundStmt() {
   parent = NULL;
   symbol_table = new chillAST_SymbolTable;
   typedef_table = NULL;
-  isFromSourceFile = true; // default
-  filename = NULL;
 };
 
 
@@ -5601,7 +4946,7 @@ chillAST_Node *chillAST_CompoundStmt::constantFold() {
 chillAST_Node *chillAST_CompoundStmt::clone() {
   chillAST_CompoundStmt *cs = new chillAST_CompoundStmt();
   for (int i = 0; i < children.size(); i++) cs->addChild(children[i]->clone());
-  cs->setParent(parent);
+  cs->setParent(getParent());
   cs->isFromSourceFile = isFromSourceFile;
   if (filename) cs->filename = strdup(filename);
   return cs;
@@ -5708,12 +5053,9 @@ bool chillAST_CompoundStmt::findLoopIndexesToReplace(chillAST_SymbolTable *symta
 }
 
 
-chillAST_ParenExpr::chillAST_ParenExpr(chillAST_Node *sub, chillAST_Node *par) {
+chillAST_ParenExpr::chillAST_ParenExpr(chillAST_Node *sub) {
   subexpr = sub;
   subexpr->setParent(this);
-  parent = par;
-  isFromSourceFile = true; // default
-  filename = NULL;
 }
 
 void chillAST_ParenExpr::print(int indent, FILE *fp) {
@@ -5750,7 +5092,8 @@ chillAST_Node *chillAST_ParenExpr::constantFold() {
 
 
 chillAST_Node *chillAST_ParenExpr::clone() {
-  chillAST_ParenExpr *PE = new chillAST_ParenExpr(subexpr->clone(), NULL);
+  chillAST_ParenExpr *PE = new chillAST_ParenExpr(subexpr->clone());
+  PE->setParent(getParent());
   PE->isFromSourceFile = isFromSourceFile;
   if (filename) PE->filename = strdup(filename);
   return PE;
@@ -5784,11 +5127,8 @@ void chillAST_ParenExpr::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
 }
 
 
-chillAST_Sizeof::chillAST_Sizeof(char *athing, chillAST_Node *par) {
+chillAST_Sizeof::chillAST_Sizeof(char *athing) {
   thing = strdup(athing); // memory leak
-  parent = par;
-  isFromSourceFile = true; // default
-  filename = NULL;
 }
 
 void chillAST_Sizeof::print(int indent, FILE *fp) {
@@ -5814,7 +5154,8 @@ chillAST_Node *chillAST_Sizeof::constantFold() {
 }
 
 chillAST_Node *chillAST_Sizeof::clone() {
-  chillAST_Sizeof *SO = new chillAST_Sizeof(thing, NULL);
+  chillAST_Sizeof *SO = new chillAST_Sizeof(thing);
+  SO->setParent(getParent());
   SO->isFromSourceFile = isFromSourceFile;
   if (filename) SO->filename = strdup(filename);
   return SO;
@@ -5935,16 +5276,13 @@ chillAST_IfStmt::chillAST_IfStmt() {
   filename = NULL;
 }
 
-chillAST_IfStmt::chillAST_IfStmt(chillAST_Node *c, chillAST_Node *t, chillAST_Node *e, chillAST_Node *p) {
+chillAST_IfStmt::chillAST_IfStmt(chillAST_Node *c, chillAST_Node *t, chillAST_Node *e) {
   cond = c;
   if (cond) cond->setParent(this);
   thenpart = t;
   if (thenpart) thenpart->setParent(this);
   elsepart = e;
   if (elsepart) elsepart->setParent(this);
-  parent = p;
-  isFromSourceFile = true; // default
-  filename = NULL;
 }
 
 void chillAST_IfStmt::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
@@ -6022,7 +5360,8 @@ chillAST_Node *chillAST_IfStmt::clone() {
   if (thenpart) t = thenpart->clone();
   if (elsepart) e = elsepart->clone();
 
-  chillAST_IfStmt *IS = new chillAST_IfStmt(c, t, e, parent);
+  chillAST_IfStmt *IS = new chillAST_IfStmt(c, t, e);
+  IS->setParent(getParent());
   IS->isFromSourceFile = isFromSourceFile;
   if (filename) IS->filename = strdup(filename);
   return IS;
@@ -6244,10 +5583,7 @@ chillAST_TypedefTable *addTypedefToTable(chillAST_TypedefTable *tdt, chillAST_Ty
 }
 
 
-chillAST_NoOp::chillAST_NoOp(chillAST_Node *p) {
-  parent = p;
-  isFromSourceFile = true; // default
-  filename = NULL;
+chillAST_NoOp::chillAST_NoOp() {
 }; // so we have SOMETHING for NoOp in the cc file ???
 
 

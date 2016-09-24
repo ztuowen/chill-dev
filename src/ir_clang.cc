@@ -647,7 +647,7 @@ chillAST_NodeList* ConvertVarDecl(VarDecl *D) {
   char *varname = strdup(D->getName().str().c_str());
   //fprintf(stderr, "VarDecl (clang 0x%x) for %s %s%s\n", D, vartype,  varname, arraypart);
 
-  chillAST_VarDecl *chillVD = new chillAST_VarDecl(vartype, varname, arraypart, (void *) D, NULL);
+  chillAST_VarDecl *chillVD = new chillAST_VarDecl(vartype, varname, arraypart, (void *) D);
 
   chillVD->isAParameter = isParm;
   //fprintf(stderr, "\nthis is the vardecl\n"); 
@@ -805,7 +805,7 @@ chillAST_NodeList* ConvertTypeDefDecl(TypedefDecl *TDD) {
   char *alias = strdup(TDD->getName().str().c_str());
 
   //fprintf(stderr, "underlying type %s  arraypart '%s'  name %s\n", under, arraypart, TDD->getName().str().c_str() ); 
-  chillAST_TypedefDecl *CTDD = new chillAST_TypedefDecl(under, alias, arraypart, NULL);
+  chillAST_TypedefDecl *CTDD = new chillAST_TypedefDecl(under, alias, arraypart);
 
   free(under);
   free(arraypart);
@@ -820,16 +820,11 @@ chillAST_NodeList* ConvertDeclStmt(DeclStmt *clangDS) {
   chillAST_VarDecl *chillvardecl; // the thing we'll return if this is a single declaration
 
   bool multiples = !clangDS->isSingleDecl();
-  if (multiples) {
-    // TODO unhandled case
-    CHILL_ERROR("multiple declarations in a single CLANG DeclStmt  not really handled! (??)\n");
-    // for now, try to make the multiple decls into a compoundstmt with them inside.
-    // if we don't get scoping problems, this might work
-  }
 
   DeclGroupRef dgr = clangDS->getDeclGroup();
   clang::DeclGroupRef::iterator DI = dgr.begin();
   clang::DeclGroupRef::iterator DE = dgr.end();
+  chillAST_NodeList* decls = new chillAST_NodeList();
 
   for (; DI != DE; ++DI) {
     Decl *D = *DI;
@@ -847,14 +842,15 @@ chillAST_NodeList* ConvertDeclStmt(DeclStmt *clangDS) {
       string TypeStr = T.getAsString();
       char *vartype = strdup(TypeStr.c_str());
 
-      //fprintf(stderr, "%s %s\n", td, varname); 
+      CHILL_DEBUG_PRINT("DeclStmt (clang 0x%x) for %s %s\n", D, vartype,  varname);
+      //fprintf(stderr, "%s %s\n", td, varname);
       char *arraypart = splitTypeInfo(vartype);
 
-      chillvardecl = new chillAST_VarDecl(vartype, varname, arraypart, (void *) D, NULL);
-      //fprintf(stderr, "DeclStmt (clang 0x%x) for %s %s%s\n", D, vartype,  varname, arraypart);
+      chillvardecl = new chillAST_VarDecl(vartype, varname, arraypart, (void *) D);
 
       // store this away for declrefexpr that references it! 
       VariableDeclarations.push_back(chillvardecl);
+      decls->push_back(chillvardecl);
 
       // TODO
       if (V->hasInit()) {
@@ -864,7 +860,7 @@ chillAST_NodeList* ConvertDeclStmt(DeclStmt *clangDS) {
     }
   }  // for each of possibly multiple decls 
 
-  NL_RET(chillvardecl);  // OR a single decl
+  return decls;
 }
 
 
@@ -902,7 +898,7 @@ chillAST_NodeList* ConvertFunctionDecl(FunctionDecl *D) {
   //fprintf(stderr, "function %s has type %s ", FuncName.c_str(),  ReturnTypeStr.c_str()); 
   //fprintf(stderr, "\n%s %s()\n", ReturnTypeStr.c_str(), FuncName.c_str());
 
-  chillAST_FunctionDecl *chillFD = new chillAST_FunctionDecl(ReturnTypeStr.c_str(), FuncName.c_str(), NULL, D);
+  chillAST_FunctionDecl *chillFD = new chillAST_FunctionDecl(ReturnTypeStr.c_str(), FuncName.c_str(), D);
 
 
   int numparams = D->getNumParams();
@@ -962,7 +958,7 @@ chillAST_NodeList* ConvertForStmt(ForStmt *clangFS) {
     cs->addChild(body);
     body = cs;
   }
-  chillAST_ForStmt *chill_loop = new chillAST_ForStmt(init, cond, incr, body, NULL);
+  chillAST_ForStmt *chill_loop = new chillAST_ForStmt(init, cond, incr, body);
   NL_RET(chill_loop);
 }
 
@@ -978,7 +974,7 @@ chillAST_NodeList* ConvertIfStmt(IfStmt *clangIS) {
   chillAST_Node *els = NULL;
   if (elsepart) els = unwrap(ConvertGenericClangAST(elsepart));
 
-  chillAST_IfStmt *ifstmt = new chillAST_IfStmt(con, thn, els, NULL);
+  chillAST_IfStmt *ifstmt = new chillAST_IfStmt(con, thn, els);
   NL_RET(ifstmt);
 }
 
@@ -988,7 +984,7 @@ chillAST_NodeList* ConvertUnaryOperator(UnaryOperator *clangUO) {
   bool pre = clangUO->isPrefix();
   chillAST_Node *sub = unwrap(ConvertGenericClangAST(clangUO->getSubExpr()));
 
-  chillAST_UnaryOperator *chillUO = new chillAST_UnaryOperator(op, pre, sub, NULL);
+  chillAST_UnaryOperator *chillUO = new chillAST_UnaryOperator(op, pre, sub);
   NL_RET(chillUO);
 }
 
@@ -1008,7 +1004,7 @@ chillAST_NodeList* ConvertBinaryOperator(BinaryOperator *clangBO) {
   // TODO chill equivalent for numeric op. 
 
   // build up the chill Binary Op AST node
-  chillAST_BinaryOperator *binop = new chillAST_BinaryOperator(l, opstring, r, NULL);
+  chillAST_BinaryOperator *binop = new chillAST_BinaryOperator(l, opstring, r);
 
   NL_RET(binop);
 }
@@ -1109,7 +1105,7 @@ chillAST_NodeList* ConvertIntegerLiteral(IntegerLiteral *clangIL) {
   const char *printable = clangIL->getValue().toString(10, isSigned).c_str();
   int val = atoi(printable);
   //fprintf(stderr, "int value %s  (%d)\n", printable, val); 
-  chillAST_IntegerLiteral *chillIL = new chillAST_IntegerLiteral(val, NULL);
+  chillAST_IntegerLiteral *chillIL = new chillAST_IntegerLiteral(val);
   NL_RET(chillIL);
 }
 
@@ -1178,7 +1174,7 @@ chillAST_NodeList* ConvertFloatingLiteral(FloatingLiteral *clangFL) {
   buf[len] = '\0';
   //fprintf(stderr, "'%s'\n", buf);
 
-  chillAST_FloatingLiteral *chillFL = new chillAST_FloatingLiteral(val, buf, NULL);
+  chillAST_FloatingLiteral *chillFL = new chillAST_FloatingLiteral(val, buf);
 
   //chillFL->print(); printf("\n"); fflush(stdout);
   NL_RET(chillFL);
@@ -1190,7 +1186,7 @@ chillAST_NodeList* ConvertImplicitCastExpr(ImplicitCastExpr *clangICE) {
   CastExpr *CE = dyn_cast<ImplicitCastExpr>(clangICE);
   //fprintf(stderr, "implicit cast of type %s\n", CE->getCastKindName());
   chillAST_Node *sub = unwrap(ConvertGenericClangAST(clangICE->getSubExpr()));
-  chillAST_ImplicitCastExpr *chillICE = new chillAST_ImplicitCastExpr(sub, NULL);
+  chillAST_ImplicitCastExpr *chillICE = new chillAST_ImplicitCastExpr(sub);
 
   //sub->setParent( chillICE ); // these 2 lines work
   //return chillICE; 
@@ -1212,7 +1208,7 @@ chillAST_NodeList* ConvertCStyleCastExpr(CStyleCastExpr *clangCSCE) {
 
   chillAST_Node *sub = unwrap(ConvertGenericClangAST(clangCSCE->getSubExprAsWritten()));
   //fprintf(stderr, "after sub towhat (%s)\n", towhat);
-  chillAST_CStyleCastExpr *chillCSCE = new chillAST_CStyleCastExpr(towhat, sub, NULL);
+  chillAST_CStyleCastExpr *chillCSCE = new chillAST_CStyleCastExpr(towhat, sub);
   //fprintf(stderr, "after CSCE towhat (%s)\n", towhat);
   NL_RET(chillCSCE);
 }
@@ -1222,7 +1218,7 @@ chillAST_NodeList* ConvertReturnStmt(ReturnStmt *clangRS) {
   chillAST_Node *retval = unwrap(ConvertGenericClangAST(clangRS->getRetValue())); // NULL is handled
   //if (retval == NULL) fprintf(stderr, "return stmt returns nothing\n");
 
-  chillAST_ReturnStmt *chillRS = new chillAST_ReturnStmt(retval, NULL);
+  chillAST_ReturnStmt *chillRS = new chillAST_ReturnStmt(retval);
   NL_RET(chillRS);
 }
 
@@ -1236,7 +1232,7 @@ chillAST_NodeList* ConvertCallExpr(CallExpr *clangCE) {
   //chillAST_Node *next = ((chillAST_ImplicitCastExpr *)callee)->subexpr;
   //fprintf(stderr, "callee is of type %s\n", next->getTypeString()); 
 
-  chillAST_CallExpr *chillCE = new chillAST_CallExpr(callee, NULL);
+  chillAST_CallExpr *chillCE = new chillAST_CallExpr(callee);
 
   int numargs = clangCE->getNumArgs();
   //fprintf(stderr, "CallExpr has %d args\n", numargs);
@@ -1251,7 +1247,7 @@ chillAST_NodeList* ConvertCallExpr(CallExpr *clangCE) {
 
 chillAST_NodeList* ConvertParenExpr(ParenExpr *clangPE) {
   chillAST_Node *sub = unwrap(ConvertGenericClangAST(clangPE->getSubExpr()));
-  chillAST_ParenExpr *chillPE = new chillAST_ParenExpr(sub, NULL);
+  chillAST_ParenExpr *chillPE = new chillAST_ParenExpr(sub);
 
   NL_RET(chillPE);
 }
@@ -1730,13 +1726,13 @@ IR_chillLoop::IR_chillLoop(const IR_Code *ir, chillAST_ForStmt *achillforstmt) {
 
       char *assop = bop->getOp();
       //fprintf(stderr, "'%s' is an assignment op\n", bop->getOp()); 
-      if (streq(assop, "+=") || streq(assop, "-=")) {
+      if (!strcmp(assop, "+=") || !strcmp(assop, "-=")) {
         chillAST_Node *stride = rhs;
         //fprintf(stderr, "stride is of type %s\n", stride->getTypeString());
         if (stride->isIntegerLiteral()) {
           int val = ((chillAST_IntegerLiteral *) stride)->value;
-          if (streq(assop, "+=")) step_size_ = val;
-          else if (streq(assop, "-=")) step_size_ = -val;
+          if (!strcmp(assop, "+=")) step_size_ = val;
+          else if (!strcmp(assop, "-=")) step_size_ = -val;
           else beets = true;
         } else beets = true;  // += or -= but not constant stride
       } else if (rhs->isBinaryOperator()) {
@@ -2470,7 +2466,7 @@ IR_ArrayRef *IR_clangCode::CreateArrayRef(const IR_ArraySymbol *sym, std::vector
   // now we've got the vardecl AND the indeces to make a chillAST that represents the array reference
   // TODO Passing NULL for chillAST node?
   CHILL_DEBUG_PRINT("Passed NULL as chillAST node");
-  chillAST_ArraySubscriptExpr *ASE = new chillAST_ArraySubscriptExpr(vd, inds, NULL);
+  chillAST_ArraySubscriptExpr *ASE = new chillAST_ArraySubscriptExpr(vd, inds);
 
   auto ref = new IR_chillArrayRef(this, ASE, 0);
 
@@ -2828,8 +2824,8 @@ void IR_clangCode::ReplaceCode(IR_Control *old, omega::CG_outputRepr *repr) {
         //fprintf(stderr, "it's in the olddecls (exactly)\n");
         inthere = 1;
       }
-      if (streq(decls[i]->varname, olddecls[j]->varname)) {
-        if (streq(decls[i]->arraypart, olddecls[j]->arraypart)) {
+      if (!strcmp(decls[i]->varname, olddecls[j]->varname)) {
+        if (!strcmp(decls[i]->arraypart, olddecls[j]->arraypart)) {
           //fprintf(stderr, "it's in the olddecls (INEXACTLY)\n");
           inthere = 1;
         }
@@ -3110,9 +3106,9 @@ std::vector<omega::CG_outputRepr *> IR_clangCode::QueryExpOperand(const omega::C
     //fprintf(stderr, "ir_clang.cc BOP TODO\n"); exit(-1); // 
     chillAST_BinaryOperator *bop = (chillAST_BinaryOperator *) e;
     char *op = bop->op;  // TODO enum for operator types
-    if (streq(op, "=")) {
+    if (!strcmp(op, "=")) {
       v.push_back(new omega::CG_chillRepr(bop->rhs));  // for assign, return RHS
-    } else if (streq(op, "+") || streq(op, "-") || streq(op, "*") || streq(op, "/")) {
+    } else if (!strcmp(op, "+") || !strcmp(op, "-") || !strcmp(op, "*") || !strcmp(op, "/")) {
       v.push_back(new omega::CG_chillRepr(bop->lhs));  // for +*-/ return both lhs and rhs
       v.push_back(new omega::CG_chillRepr(bop->rhs));
     } else {
@@ -3124,7 +3120,7 @@ std::vector<omega::CG_outputRepr *> IR_clangCode::QueryExpOperand(const omega::C
     omega::CG_chillRepr *repr;
     chillAST_UnaryOperator *uop = (chillAST_UnaryOperator *) e;
     char *op = uop->op; // TODO enum
-    if (streq(op, "+") || streq(op, "-")) {
+    if (!strcmp(op, "+") || !strcmp(op, "-")) {
       v.push_back(new omega::CG_chillRepr(uop->subexpr));
     } else {
       CHILL_ERROR("ir_clang.cc  IR_clangCode::QueryExpOperand() Unary Operator  UNHANDLED op (%s)\n", op);
@@ -3221,7 +3217,7 @@ chillAST_NodeList* ConvertMemberExpr(clang::MemberExpr *clangME) {
   const char *member = DN.getAsString().c_str();
   //fprintf(stderr, "%s\n", DN.getAsString().c_str());  
 
-  chillAST_MemberExpr *ME = new chillAST_MemberExpr(base, member, NULL, clangME);
+  chillAST_MemberExpr *ME = new chillAST_MemberExpr(base, member, clangME);
 
   fprintf(stderr, "this is the Member Expresion\n");
   ME->print();

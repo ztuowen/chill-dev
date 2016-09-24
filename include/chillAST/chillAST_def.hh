@@ -16,12 +16,10 @@
 
 #include <ir_enums.hh> // for IR_CONDITION_* 
 
-#define CHILLAST_NODE_FORSTMT CHILLAST_NODE_LOOP
-#define CHILLAST_NODE_TRANSLATIONUNIT CHILLAST_NODE_SOURCEFILE
-
 enum CHILLAST_NODE_TYPE {
   CHILLAST_NODE_UNKNOWN = 0,
-  CHILLAST_NODE_SOURCEFILE,
+  CHILLAST_NODE_TRANSLATIONUNIT = 1,
+  CHILLAST_NODE_SOURCEFILE = 1,
   CHILLAST_NODE_TYPEDEFDECL,
   CHILLAST_NODE_VARDECL,
   //  CHILLAST_NODE_PARMVARDECL,   not used any more
@@ -29,7 +27,8 @@ enum CHILLAST_NODE_TYPE {
   CHILLAST_NODE_RECORDDECL,     // struct or union (or class)
   CHILLAST_NODE_MACRODEFINITION,
   CHILLAST_NODE_COMPOUNDSTMT,
-  CHILLAST_NODE_LOOP,               // AKA ForStmt
+  CHILLAST_NODE_LOOP = 8,
+  CHILLAST_NODE_FORSTMT = 8,
   CHILLAST_NODE_TERNARYOPERATOR,
   CHILLAST_NODE_BINARYOPERATOR,
   CHILLAST_NODE_UNARYOPERATOR,
@@ -88,7 +87,7 @@ enum CHILLAST_PREPROCESSING_POSITION { // when tied to another statement
   CHILLAST_PREPROCESSING_IMMEDIATELYBEFORE // on same line
 };
 
-char *parseUnderlyingType(char *sometype);
+char *parseUnderlyingType(const char *sometype);
 
 char *parseArrayParts(char *sometype);
 
@@ -175,24 +174,23 @@ class chillAST_CudaSyncthreads;
 class chillAST_Preprocessing;
 
 typedef std::vector<chillAST_Node *> chillAST_NodeList;
-typedef std::vector<chillAST_VarDecl *> chillAST_SymbolTable;  // typedef
-typedef std::vector<chillAST_TypedefDecl *> chillAST_TypedefTable;  // typedef
+typedef std::vector<chillAST_VarDecl *> chillAST_SymbolTable;
+typedef std::vector<chillAST_TypedefDecl *> chillAST_TypedefTable;
 
-chillAST_VarDecl *symbolTableFindName(chillAST_SymbolTable *table, const char *name); // fwd decl
+chillAST_VarDecl *symbolTableFindName(chillAST_SymbolTable *table, const char *name);
 chillAST_VarDecl *symbolTableFindVariableNamed(chillAST_SymbolTable *table,
-                                               const char *name); // fwd decl TODO too many similar named functions
+                                               const char *name);
 
-void printSymbolTable(chillAST_SymbolTable *st); // fwd decl
-void printSymbolTableMoreInfo(chillAST_SymbolTable *st); // fwd decl
-
-
-chillAST_Node *lessthanmacro(chillAST_Node *left, chillAST_Node *right);  // fwd declaration
-chillAST_SymbolTable *addSymbolToTable(chillAST_SymbolTable *st, chillAST_VarDecl *vd); // fwd decl
-chillAST_TypedefTable *addTypedefToTable(chillAST_TypedefTable *tt, chillAST_TypedefDecl *td); // fwd decl
+void printSymbolTable(chillAST_SymbolTable *st);
+void printSymbolTableMoreInfo(chillAST_SymbolTable *st);
 
 
-bool streq(const char *a, const char *b); // fwd decl
-void chillindent(int i, FILE *fp);  // fwd declaration
+chillAST_Node *lessthanmacro(chillAST_Node *left, chillAST_Node *right);
+chillAST_SymbolTable *addSymbolToTable(chillAST_SymbolTable *st, chillAST_VarDecl *vd);
+chillAST_TypedefTable *addTypedefToTable(chillAST_TypedefTable *tt, chillAST_TypedefDecl *td);
+
+
+void chillindent(int i, FILE *fp);
 void insertNewDeclAtLocationOfOldIfNeeded(chillAST_VarDecl *newdecl, chillAST_VarDecl *olddecl);
 
 chillAST_DeclRefExpr *buildDeclRefExpr(chillAST_VarDecl *);

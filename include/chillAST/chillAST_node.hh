@@ -8,6 +8,7 @@
 //! generic node of the actual chillAST, a multiway tree node.
 class chillAST_Node {
 public:
+  // TODO decide how to hide some data
   //! this Node's parent
   chillAST_Node *parent;
   //! this node's children
@@ -26,8 +27,18 @@ public:
   static int chill_array_counter;
   //! for manufactured pointer
   static int chill_pointer_counter;
+
+  //! Base constructor for all inherited class
+  chillAST_Node() {
+    parent = NULL;
+    metacomment = NULL;
+    isFromSourceFile = true;
+    filename = NULL;
+  }
   //! the type of this current node
   virtual CHILLAST_NODE_TYPE getType() {return CHILLAST_NODE_UNKNOWN;};
+  //! the precedence of the current node, 0 being the highest
+  virtual int getPrec() {return INT16_MAX;}
 
   bool isSourceFile() { return (getType() == CHILLAST_NODE_SOURCEFILE); };
 
@@ -136,7 +147,6 @@ public:
 
   // void addDecl( chillAST_VarDecl *vd); // recursive, adds to first  symbol table it can find 
 
-  // TODO decide how to hide some data
 
   int getNumChildren() { return children.size(); };
 
@@ -151,6 +161,11 @@ public:
 
   void setMetaComment(const char *c) { metacomment = strdup(c); };
 
+  virtual void chillMergeChildInfo(chillAST_Node){
+    // TODO  if (par) par->getSourceFile()->addFunc(this); for FuncDecl
+    // TODO if (par) par->getSourceFile()->addMacro(this); For MacroDecl
+    // TODO if (parent) parent->addVariableToSymbolTable(this); // should percolate up until something has a symbol table
+  }
 
   virtual void addChild(chillAST_Node *c) {
     c->parent = this;
