@@ -7,7 +7,7 @@
 ### Build
 
 1. checkout repo, cd
-2. `cmake -DROSEHOME=<ROSEHOME> -DBOOSTHOME=<BOOSTHOME> -H. -Bbuild`
+2. `cmake -H. -Bbuild`
 3. `cmake --build build -- -j10`
 4. If no errors during build, executables are in `build`
 
@@ -28,7 +28,7 @@
 * `lib` - Included modules, each as its own `src` and `include`
     * `omega` - omega, LICENSE.omega
     * `codegen` - codegen+, without rose dependence, LICENSE.omega
-    * `rosecg` - codegen with rose, LICENSE.omega
+    * `chillcg` - codegen with chill, LICENSE.omega
     * `parserel` - parse Relation vectors, for adding knowns
 * `example` - CHiLL example scripts
 * `doc` - manual & doxygen
@@ -36,3 +36,4 @@
 ## Debug
 
 * pass `-DDEBUGCHILL` will enable debug output
+* or set `-DCMAKE_BUILD_TYPE=DEBUG`
