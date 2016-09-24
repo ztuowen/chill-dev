@@ -874,6 +874,7 @@ public:
 
 class chillAST_TernaryOperator : public chillAST_Node {
 public:
+  virtual int getPrec() {return INT8_MAX+15;}
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_TERNARYOPERATOR;}
   // variables that are special for this type of node
   char *op;            // TODO need enum  so far, only "?" conditional operator
@@ -955,6 +956,7 @@ public:
 
 class chillAST_BinaryOperator : public chillAST_Node {
 public:
+  virtual int getPrec();
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_BINARYOPERATOR;}
   // variables that are special for this type of node
   char *op;            // TODO need enum

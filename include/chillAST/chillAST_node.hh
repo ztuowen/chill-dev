@@ -38,7 +38,7 @@ public:
   //! the type of this current node
   virtual CHILLAST_NODE_TYPE getType() {return CHILLAST_NODE_UNKNOWN;};
   //! the precedence of the current node, 0 being the highest
-  virtual int getPrec() {return INT16_MAX;}
+  virtual int getPrec() {return INT8_MAX;}
 
   bool isSourceFile() { return (getType() == CHILLAST_NODE_SOURCEFILE); };
 

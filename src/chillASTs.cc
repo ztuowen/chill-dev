@@ -1923,11 +1923,11 @@ void chillAST_BinaryOperator::dump(int indent, FILE *fp) {
   fflush(fp);
 }
 
-void chillAST_BinaryOperator::print(int indent, FILE *fp) {   // TODO this needparens logic is wrong
+void chillAST_BinaryOperator::print(int indent, FILE *fp) {
   printPreprocBEFORE(indent, fp);
 
   chillindent(indent, fp);
-  bool needparens = getPrec()<=lhs->getPrec();
+  bool needparens = getPrec()<lhs->getPrec();
 
   if (needparens) fprintf(fp, "(");
   if (lhs) lhs->print(0, fp);
@@ -5620,11 +5620,42 @@ void chillAST_Preprocessing::print(int indent, FILE *fp) {  // probably very wro
 
 
   if (position == CHILLAST_PREPROCESSING_LINEBEFORE) {
-    //fprintf(fp, "\n"); // comment seems to have \n at the end already
-    //chillindent(indent, fp);
   }
 
 
-  //if (pptype != CHILLAST_PREPROCESSING_IMMEDIATELYBEFORE && pptype != CHILLAST_PREPROCESSING_UNKNOWN) fprint(fp, "\n");
 
 }
+
+//! I'm just a bit lazy to write ifs ...
+const char* binaryPrec[] = {
+    " :: ",
+    " . -> ",
+    "",
+    " .* ->* ",
+    " * / % ",
+    " + - ",
+    " << >> ",
+    " < <= > >=",
+    " == != ",
+    " & ",
+    " ^ ",
+    " | ",
+    " && ",
+    " || ",
+    " = += -= *= /= %= <<= >>= &= ^= |= ",
+    " , "
+};
+
+bool opInSet(const char* set,char* op) {
+  string tmp = op;
+  tmp=" "+tmp+" ";
+  return strstr(set, tmp.c_str()) != NULL;
+}
+
+int chillAST_BinaryOperator::getPrec() {
+  for (int i = 0; i< 15;++i)
+    if (opInSet(binaryPrec[i],op)) return INT8_MAX+i;
+  return INT8_MAX;
+}
+
+// TODO add unary
