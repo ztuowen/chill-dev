@@ -11,8 +11,12 @@ public:
   // TODO decide how to hide some data
   //! this Node's parent
   chillAST_Node *parent;
-  //! this node's children
+  //! this node's children the only entity that holds childs/subexpressions
   chillAST_NodeList children;
+  //! Symbol Scoping
+  chillAST_SymbolTable *symbolTable;
+  //! typedef Scoping
+  chillAST_TypedefTable *typedefTable;
   //! whether it is from a source file, when false it is from included files
   bool isFromSourceFile;
   //! the name of file this node from
@@ -34,6 +38,8 @@ public:
     metacomment = NULL;
     isFromSourceFile = true;
     filename = NULL;
+    symbolTable = NULL;
+    typedefTable = NULL;
   }
   //! the type of this current node
   virtual CHILLAST_NODE_TYPE getType() {return CHILLAST_NODE_UNKNOWN;};
@@ -420,11 +426,6 @@ public:
 
   virtual void printonly(int indent = 0, FILE *fp = stderr) { print(indent, fp); };
 
-  //virtual void printString( std::string &s ) {
-  //  fprintf(stderr,"(%s) forgot to implement printString()\n" ,getTypeString());
-  //}
-
-
   virtual void get_top_level_loops(std::vector<chillAST_ForStmt *> &loops) {
     int n = children.size();
     //fprintf(stderr, "get_top_level_loops of a %s with %d children\n", getTypeString(), n); 
@@ -494,6 +495,7 @@ public:
 
   chillAST_Node *getParent() { return parent; };
 
+  //! This will be ideally replaced by call at to the top level
   chillAST_SourceFile *getSourceFile() {
     if (isSourceFile()) return ((chillAST_SourceFile *) this);
     if (parent != NULL) return parent->getSourceFile();

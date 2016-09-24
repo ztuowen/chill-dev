@@ -25,7 +25,6 @@ public:
   }
 };
 
-
 class chillAST_Preprocessing : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_PREPROCESSING;}
@@ -44,7 +43,6 @@ public:
   void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
   //void dump(  int indent=0,  FILE *fp = stderr );  // print ast    in chill_ast.cc
 };
-
 
 //typedef is a keyword in the C and C++ programming languages. The purpose of typedef is to assign alternative names to existing types, most often those whose standard declaration is cumbersome, potentially confusing, or likely to vary from one implementation to another. 
 class chillAST_TypedefDecl : public chillAST_Node {
@@ -107,7 +105,6 @@ public:
   void print(int indent = 0, FILE *fp = stderr);
 
 };
-
 
 class chillAST_VarDecl : public chillAST_Node {
 public:
@@ -215,7 +212,6 @@ public:
 
 };
 
-
 class chillAST_DeclRefExpr : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_DECLREFEXPR;}
@@ -296,7 +292,6 @@ public:
   chillAST_Node *multibase2() { return (chillAST_Node *) multibase(); }
 };
 
-
 class chillAST_CompoundStmt : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_COMPOUNDSTMT;}
@@ -375,7 +370,6 @@ public:
   void gatherStatements(std::vector<chillAST_Node *> &statements);
 };
 
-
 class chillAST_RecordDecl : public chillAST_Node {  // declaration of the shape of a struct or union
 private:
   char *name;  // could be NULL? for unnamed structs?
@@ -422,7 +416,6 @@ public:
 
   void printStructure(int indent = 0, FILE *fp = stderr);
 };
-
 
 class chillAST_FunctionDecl : public chillAST_Node {
 private:
@@ -579,9 +572,6 @@ public:
     body->replaceChild(old, newchild);
   }
 };  // end FunctionDecl 
-
-
-
 
 class chillAST_SourceFile : public chillAST_Node {
 public:
@@ -871,7 +861,6 @@ public:
 
 };
 
-
 class chillAST_TernaryOperator : public chillAST_Node {
 public:
   virtual int getPrec() {return INT8_MAX+15;}
@@ -952,7 +941,6 @@ public:
                                 bool forcesync = false) { return false; }; // no loops under here
   void loseLoopWithLoopVar(char *var) {}; // ternop can't have loop as child?
 };
-
 
 class chillAST_BinaryOperator : public chillAST_Node {
 public:
@@ -1070,7 +1058,6 @@ public:
 
 };
 
-
 class chillAST_ArraySubscriptExpr : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_ARRAYSUBSCRIPTEXPR;}
@@ -1148,7 +1135,6 @@ public:
 
 };
 
-
 class chillAST_MemberExpr : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_MEMBEREXPR;}
@@ -1217,7 +1203,6 @@ public:
   chillAST_Node *multibase2();  // this one will return the member expression
 };
 
-
 class chillAST_IntegerLiteral : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_INTEGERLITERAL;}
@@ -1255,7 +1240,6 @@ public:
 
   chillAST_Node *findref() { return this; }// find the SINGLE constant or data reference at this node or below
 };
-
 
 class chillAST_FloatingLiteral : public chillAST_Node {
 public:
@@ -1316,13 +1300,13 @@ public:
   bool isSameAs(chillAST_Node *other);
 };
 
-
 class chillAST_UnaryOperator : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_UNARYOPERATOR;}
+  virtual int getPrec();
   // variables that are special for this type of node
   //! String representing the operator
-  char *op; // TODO enum
+  char *op;
   //! true for prefix unary operator
   bool prefix;
   chillAST_Node *subexpr;
@@ -1371,7 +1355,6 @@ public:
 
 };
 
-
 class chillAST_ImplicitCastExpr : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_IMPLICITCASTEXPR;}
@@ -1419,10 +1402,10 @@ public:
 
 };
 
-
 class chillAST_CStyleCastExpr : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_CSTYLECASTEXPR;}
+  virtual int getPrec() {return INT8_MAX+3;}
   // variables that are special for this type of node
   //! String representing the type it casts to
   char *towhat;
@@ -1467,10 +1450,10 @@ public:
 
 };
 
-
 class chillAST_CStyleAddressOf : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_CSTYLEADDRESSOF;}
+  virtual int getPrec() {return INT8_MAX+3;}
   // variables that are special for this type of node
   chillAST_Node *subexpr;
 
@@ -1509,7 +1492,6 @@ public:
 
 
 };
-
 
 class chillAST_CudaMalloc : public chillAST_Node {
 public:
@@ -1552,7 +1534,6 @@ public:
 
 };
 
-
 class chillAST_CudaFree : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_CUDAFREE;}
@@ -1592,7 +1573,6 @@ public:
                                 bool forcesync = false) { return false; }; // no loops under here
 
 };
-
 
 class chillAST_Malloc : public chillAST_Node {   // malloc( sizeof(int) * 2048 );
 public:
@@ -1637,13 +1617,11 @@ public:
 
 };
 
-
 class chillAST_Free : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_FREE;}
 
 };
-
 
 class chillAST_CudaMemcpy : public chillAST_Node {
 public:
@@ -1688,7 +1666,6 @@ public:
 
 };
 
-
 class chillAST_CudaSyncthreads : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_CUDASYNCTHREADS;}
@@ -1720,7 +1697,6 @@ public:
   //bool findLoopIndexesToReplace(  chillAST_SymbolTable *symtab, bool forcesync=false ){ return false; }; 
 
 };
-
 
 class chillAST_ReturnStmt : public chillAST_Node {
 public:
@@ -1759,7 +1735,6 @@ public:
                                 bool forcesync = false) { return false; }; // no loops under here
 
 };
-
 
 class chillAST_CallExpr : public chillAST_Node {  // a function call
 public:
@@ -1807,7 +1782,6 @@ public:
   chillAST_Node *clone();
 };
 
-
 class chillAST_ParenExpr : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_PARENEXPR;}
@@ -1850,10 +1824,10 @@ public:
 
 };
 
-
 class chillAST_Sizeof : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_SIZEOF;}
+  virtual int getPrec() {return INT8_MAX+3;}
   // variables that are special for this type of node
   //! the object of sizeof function
   char *thing;
@@ -1894,7 +1868,6 @@ public:
 
 };
 
-
 class chillAST_NoOp : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_NOOP;}
@@ -1928,7 +1901,6 @@ public:
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab,
                                 bool forcesync = false) { return false; };//no loops under here
 };
-
 
 class chillAST_IfStmt : public chillAST_Node {
 public:
@@ -1997,7 +1969,6 @@ public:
   void gatherStatements(std::vector<chillAST_Node *> &statements);
 
 };
-
 
 class chillAST_something : public chillAST_Node {
 public:

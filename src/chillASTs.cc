@@ -3660,13 +3660,11 @@ void chillAST_CStyleCastExpr::print(int indent, FILE *fp) {
     subexpr->print(0, fp);
     fprintf(fp, "f");
   } else { // general case
-    fprintf(fp, "((%s) ", towhat);
-    //fprintf(fp, "\ntowhat '%s'\n", towhat );
-
+    fprintf(fp, "(%s) ", towhat);
+    if (subexpr->getPrec()<getPrec()) fprintf(fp,"(");
     if (subexpr->isVarDecl()) fprintf(fp, "%s", ((chillAST_VarDecl *) subexpr)->varname);
     else subexpr->print(indent, fp);
-    //fprintf(fp, "subexpr '%s' ", subexpr->getTypeString());
-    fprintf(fp, ")");
+    if (subexpr->getPrec()<getPrec()) fprintf(fp,")");
   }
   fflush(fp);
 };
@@ -5653,9 +5651,23 @@ bool opInSet(const char* set,char* op) {
 }
 
 int chillAST_BinaryOperator::getPrec() {
-  for (int i = 0; i< 15;++i)
-    if (opInSet(binaryPrec[i],op)) return INT8_MAX+i;
+  for (int i = 0; i< 16;++i)
+    if (opInSet(binaryPrec[i],op)) return INT8_MAX+i+1;
   return INT8_MAX;
 }
 
-// TODO add unary
+const char* unaryPrec[] = {
+    "",
+    " -- ++ ",
+    " -- ++ + - ! ~ * & ",
+};
+
+int chillAST_UnaryOperator::getPrec() {
+  if (prefix)
+    for (int i = 2;i>=0;--i)
+      if (opInSet(unaryPrec[i],op)) return INT8_MAX+i+1;
+  else
+    for (int i = 0;i<3;--i)
+      if (opInSet(unaryPrec[i],op)) return INT8_MAX+i+1;
+  return INT8_MAX;
+}
