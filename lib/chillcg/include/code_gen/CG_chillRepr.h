@@ -28,10 +28,8 @@ namespace omega {
     //
     std::vector<chillAST_Node *> chillnodes;  // TODO make private
     void printChillNodes() const {
-      for (int i = 0; i < chillnodes.size(); i++) {
+      for (int i = 0; i < chillnodes.size(); i++)
         chillnodes[i]->print();
-        printf("\n");
-      }
       fflush(stdout);
     };
 

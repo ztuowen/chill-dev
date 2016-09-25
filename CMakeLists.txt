@@ -36,6 +36,7 @@ set(PYTHON_SRC
 set(PRINTER_SRC
         src/printer/generic.cpp
         src/printer/dump.cpp
+        src/printer/cfamily.cpp
         )
 
 llvm_map_components_to_libnames(llvm_libs all)

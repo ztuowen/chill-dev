@@ -198,3 +198,6 @@ int GenericPrinter::getPrec(chillAST_Node *n) {
   }
 }
 
+void GenericPrinter::errorPrintS(std::string ident, chillAST_Node *n, std::ostream &o) {
+  CHILL_ERROR("Unhandled case in printer: %s\n", n->getTypeString());
+}

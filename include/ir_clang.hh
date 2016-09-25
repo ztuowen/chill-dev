@@ -256,7 +256,8 @@ struct IR_chillArrayRef : public IR_ArrayRef {
 
   IR_Ref *clone() const;
 
-  virtual void Dump() const;
+  // Not implemented
+  // virtual void Dump() const;
 };
 
 

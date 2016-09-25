@@ -8,14 +8,16 @@
 
 class chillAST_NULL : public chillAST_Node {  // NOOP?
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_NULL;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_NULL; }
+
   chillAST_NULL() {
   };
 };
 
 class chillAST_Preprocessing : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_PREPROCESSING;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_PREPROCESSING; }
+
   // variables that are special for this type of node
   CHILLAST_PREPROCESSING_POSITION position;
   CHILLAST_PREPROCESSING_TYPE pptype;
@@ -28,8 +30,6 @@ public:
   // other methods particular to this type of node
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
-  //void dump(  int indent=0,  FILE *fp = stderr );  // print ast    in chill_ast.cc
 };
 
 //typedef is a keyword in the C and C++ programming languages. The purpose of typedef is to assign alternative names to existing types, most often those whose standard declaration is cumbersome, potentially confusing, or likely to vary from one implementation to another. 
@@ -40,7 +40,8 @@ private:
   char *structname;  // get rid of this? 
 
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_TYPEDEFDECL;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_TYPEDEFDECL; }
+
   char *newtype; // the new type name  ??
   char *underlyingtype;  // float, int, "struct bubba" ? 
   char *arraypart;  // string like "[1234][56]"  ?? 
@@ -87,7 +88,8 @@ public:
 
 class chillAST_VarDecl : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_VARDECL;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_VARDECL; }
+
   char *vartype; // should probably be an enum, except it's used for unnamed structs too
 
   chillAST_RecordDecl *vardef;// the thing that says what the struct looks like
@@ -190,7 +192,8 @@ public:
 
 class chillAST_DeclRefExpr : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_DECLREFEXPR;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_DECLREFEXPR; }
+
   // variables that are special for this type of node
   char *declarationType;
   char *declarationName;
@@ -224,7 +227,6 @@ public:
   };
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE
   char *stringRep(int indent = 0);
 
   chillAST_Node *constantFold();
@@ -269,7 +271,8 @@ public:
 
 class chillAST_CompoundStmt : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_COMPOUNDSTMT;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_COMPOUNDSTMT; }
+
   // variables that are special for this type of node
   // constructors
   chillAST_CompoundStmt(); // never has any args ???
@@ -279,8 +282,6 @@ public:
 
   // required methods 
   void replaceChild(chillAST_Node *old, chillAST_Node *newchild);
-
-  void print(int indent = 0, FILE *fp = stderr);
 
   chillAST_Node *constantFold();
 
@@ -321,8 +322,13 @@ private:
   std::vector<chillAST_VarDecl *> subparts;
 
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_RECORDDECL;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_RECORDDECL; }
+
   chillAST_RecordDecl(const char *nam, const char *orig);
+
+  chillAST_SymbolTable *getSubparts() {
+    return &subparts;
+  }
 
   void setName(const char *newname) { name = strdup(newname); };
 
@@ -351,8 +357,6 @@ public:
 
   chillAST_VarDecl *findSubpartByType(const char *typ);
 
-  void print(int indent = 0, FILE *fp = stderr);
-
   void printStructure(int indent = 0, FILE *fp = stderr);
 };
 
@@ -365,11 +369,14 @@ private:
   bool forwarddecl;
 
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_FUNCTIONDECL;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_FUNCTIONDECL; }
+
   char *returnType;
   char *functionName;
 
   void printParameterTypes(FILE *fp);
+
+  CHILLAST_FUNCTION_TYPE getFunctionType() { return function_type; }
 
   void setName(char *n) { functionName = strdup(n); /* probable memory leak */ };
 
@@ -403,8 +410,6 @@ public:
 
   chillAST_CompoundStmt *getBody() { return (body); }
 
-  void print(int indent = 0, FILE *fp = stderr); // in chill_ast.cc
-
   void gatherVarDecls(std::vector<chillAST_VarDecl *> &decls);
 
   void gatherVarDeclsMore(std::vector<chillAST_VarDecl *> &decls) { gatherVarDecls(decls); };
@@ -436,7 +441,7 @@ public:
 class chillAST_SourceFile : public chillAST_Node {
   // TODO included source file
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_SOURCEFILE;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_SOURCEFILE; }
 
   // constructors
   chillAST_SourceFile(const char *filename);  //  defined in chill_ast.cc
@@ -490,7 +495,8 @@ class chillAST_MacroDefinition : public chillAST_Node {
 private:
   chillAST_Node *body; // rhs      always a compound statement?
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_MACRODEFINITION;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_MACRODEFINITION; }
+
   char *macroName;
   char *rhsString;
 
@@ -536,7 +542,8 @@ public:
 
 class chillAST_ForStmt : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_FORSTMT;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_FORSTMT; }
+
   // variables that are special for this type of node
   chillAST_Node *init;
   chillAST_Node *cond;
@@ -651,8 +658,8 @@ public:
 
 class chillAST_TernaryOperator : public chillAST_Node {
 public:
-  virtual int getPrec() {return INT8_MAX+15;}
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_TERNARYOPERATOR;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_TERNARYOPERATOR; }
+
   // variables that are special for this type of node
   char *op;            // TODO need enum  so far, only "?" conditional operator
   chillAST_Node *condition;
@@ -695,8 +702,6 @@ public:
 
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
-
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
@@ -730,8 +735,8 @@ public:
 
 class chillAST_BinaryOperator : public chillAST_Node {
 public:
-  virtual int getPrec();
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_BINARYOPERATOR;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_BINARYOPERATOR; }
+
   // variables that are special for this type of node
   char *op;            // TODO need enum
   chillAST_Node *lhs;
@@ -803,8 +808,6 @@ public:
 
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
-
   char *stringRep(int indent = 0);
 
   chillAST_Node *constantFold();
@@ -842,7 +845,7 @@ public:
 
 class chillAST_ArraySubscriptExpr : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_ARRAYSUBSCRIPTEXPR;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_ARRAYSUBSCRIPTEXPR; }
   // variables that are special for this type of node
 
   //! always a decl ref expr? No, for multidimensional array, is another ASE
@@ -866,6 +869,7 @@ public:
 
   //! Method for finding the basedecl, retursn the VARDECL of the thing the subscript is an index into
   chillAST_VarDecl *multibase();
+
   chillAST_Node *multibase2() { return base->multibase2(); }
 
   chillAST_Node *getIndex(int dim);
@@ -875,7 +879,6 @@ public:
   void replaceChild(chillAST_Node *old, chillAST_Node *newchild); // will examine index
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr) const;  // print CODE   in chill_ast.cc
   char *stringRep(int indent = 0);
 
   chillAST_Node *constantFold();
@@ -915,7 +918,8 @@ public:
 
 class chillAST_MemberExpr : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_MEMBEREXPR;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_MEMBEREXPR; }
+
   // variables that are special for this type of node
   chillAST_Node *base;  // always a decl ref expr? No, can be Array Subscript Expr
   char *member;
@@ -978,7 +982,8 @@ public:
 
 class chillAST_IntegerLiteral : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_INTEGERLITERAL;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_INTEGERLITERAL; }
+
   // variables that are special for this type of node
   int value;
 
@@ -1014,7 +1019,8 @@ public:
 
 class chillAST_FloatingLiteral : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_FLOATINGLITERAL;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_FLOATINGLITERAL; }
+
   // variables that are special for this type of node
   double value;
 
@@ -1033,7 +1039,6 @@ public:
   int getPrecision() { return precision; }
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
@@ -1059,8 +1064,8 @@ public:
 
 class chillAST_UnaryOperator : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_UNARYOPERATOR;}
-  virtual int getPrec();
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_UNARYOPERATOR; }
+
   // variables that are special for this type of node
   //! String representing the operator
   char *op;
@@ -1078,7 +1083,6 @@ public:
   }
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
@@ -1111,7 +1115,8 @@ public:
 
 class chillAST_ImplicitCastExpr : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_IMPLICITCASTEXPR;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_IMPLICITCASTEXPR; }
+
   // variables that are special for this type of node
   chillAST_Node *subexpr;
 
@@ -1155,8 +1160,8 @@ public:
 
 class chillAST_CStyleCastExpr : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_CSTYLECASTEXPR;}
-  virtual int getPrec() {return INT8_MAX+3;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_CSTYLECASTEXPR; }
+
   // variables that are special for this type of node
   //! String representing the type it casts to
   char *towhat;
@@ -1171,7 +1176,6 @@ public:
   // required methods that I can't seem to get to inherit
   void replaceChild(chillAST_Node *old, chillAST_Node *newchild);
 
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
@@ -1202,8 +1206,8 @@ public:
 
 class chillAST_CStyleAddressOf : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_CSTYLEADDRESSOF;}
-  virtual int getPrec() {return INT8_MAX+3;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_CSTYLEADDRESSOF; }
+
   // variables that are special for this type of node
   chillAST_Node *subexpr;
 
@@ -1214,7 +1218,6 @@ public:
 
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
@@ -1244,7 +1247,8 @@ public:
 
 class chillAST_CudaMalloc : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_CUDAMALLOC;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_CUDAMALLOC; }
+
   // variables that are special for this type of node
   chillAST_Node *devPtr;  // Pointer to allocated device memory
   chillAST_Node *sizeinbytes;
@@ -1256,7 +1260,6 @@ public:
 
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
@@ -1284,7 +1287,8 @@ public:
 
 class chillAST_CudaFree : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_CUDAFREE;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_CUDAFREE; }
+
   // variables that are special for this type of node
   chillAST_VarDecl *variable;
 
@@ -1295,7 +1299,6 @@ public:
 
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
@@ -1323,7 +1326,8 @@ public:
 
 class chillAST_Malloc : public chillAST_Node {   // malloc( sizeof(int) * 2048 );
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_MALLOC;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_MALLOC; }
+
   // variables that are special for this type of node
   //! The subexpression calculating bytes
   chillAST_Node *sizeexpr; // bytes
@@ -1361,13 +1365,14 @@ public:
 
 class chillAST_Free : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_FREE;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_FREE; }
 
 };
 
 class chillAST_CudaMemcpy : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_CUDAMEMCPY;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_CUDAMEMCPY; }
+
   // variables that are special for this type of node
   chillAST_VarDecl *dest;  // Pointer to allocated device memory 
   chillAST_VarDecl *src;
@@ -1408,7 +1413,7 @@ public:
 
 class chillAST_CudaSyncthreads : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_CUDASYNCTHREADS;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_CUDASYNCTHREADS; }
   // variables that are special for this type of node
 
   // constructors
@@ -1418,7 +1423,6 @@ public:
 
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
   //chillAST_Node* constantFold() {};
   //chillAST_Node* clone();
   //void gatherArrayRefs( std::vector<chillAST_ArraySubscriptExpr*> &refs, bool writtento ){};
@@ -1439,7 +1443,8 @@ public:
 
 class chillAST_ReturnStmt : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_RETURNSTMT;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_RETURNSTMT; }
+
   // variables that are special for this type of node
   //! expression to return
   chillAST_Node *returnvalue;
@@ -1451,7 +1456,6 @@ public:
 
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
@@ -1475,8 +1479,10 @@ public:
 };
 
 class chillAST_CallExpr : public chillAST_Node {  // a function call
+  // Is macro call without pointer a part of this
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_CALLEXPR;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_CALLEXPR; }
+
   // variables that are special for this type of node
   chillAST_Node *callee;   // the function declaration (what about builtins?)
   int numargs;
@@ -1495,7 +1501,6 @@ public:
   // required methods that I can't seem to get to inherit
   chillAST_Node *constantFold();
 
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
   void gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento);
 
   void gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento);
@@ -1521,7 +1526,8 @@ public:
 
 class chillAST_ParenExpr : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_PARENEXPR;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_PARENEXPR; }
+
   // variables that are special for this type of node
   chillAST_Node *subexpr;
 
@@ -1532,7 +1538,6 @@ public:
 
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
@@ -1562,8 +1567,8 @@ public:
 
 class chillAST_Sizeof : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_SIZEOF;}
-  virtual int getPrec() {return INT8_MAX+3;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_SIZEOF; }
+
   // variables that are special for this type of node
   //! the object of sizeof function
   char *thing;
@@ -1604,13 +1609,18 @@ public:
 
 class chillAST_NoOp : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_NOOP;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_NOOP; }
+
   chillAST_NoOp(); //  { parent = p; };
 
   // required methods that I can't seem to get to inherit
   chillAST_Node *constantFold() {};
 
-  chillAST_Node *clone() { chillAST_Node* n = new chillAST_NoOp(); n->setParent(parent); return n; }; // ??
+  chillAST_Node *clone() {
+    chillAST_Node *n = new chillAST_NoOp();
+    n->setParent(parent);
+    return n;
+  }; // ??
 
   void gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento) {};
 
@@ -1636,7 +1646,8 @@ public:
 
 class chillAST_IfStmt : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_IFSTMT;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_IFSTMT; }
+
   // variables that are special for this type of node
   chillAST_Node *cond;
   chillAST_Node *thenpart;
@@ -1671,8 +1682,6 @@ public:
   };
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);
-
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
@@ -1702,7 +1711,7 @@ public:
 
 class chillAST_something : public chillAST_Node {
 public:
-  virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_UNKNOWN;}
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_UNKNOWN; }
   // variables that are special for this type of node
 
   // constructors

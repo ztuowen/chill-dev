@@ -10,15 +10,17 @@ using namespace std;
 
 void dumpVector(GenericPrinter *p, string ident, chillAST_NodeList *n, ostream &o) {
   for (int i = 0; i < n->size(); ++i)
-    p->print("", (*n)[i], o);
+    p->print(ident, (*n)[i], o);
 }
+
 void dumpVector(GenericPrinter *p, string ident, chillAST_SymbolTable *n, ostream &o) {
   for (int i = 0; i < n->size(); ++i)
-    p->print("", (*n)[i], o);
+    p->print(ident, (*n)[i], o);
 }
+
 void dumpVector(GenericPrinter *p, string ident, chillAST_TypedefTable *n, ostream &o) {
   for (int i = 0; i < n->size(); ++i)
-    p->print("", (*n)[i], o);
+    p->print(ident, (*n)[i], o);
 }
 
 void Dump::print(string ident, chillAST_Node *n, ostream &o) {

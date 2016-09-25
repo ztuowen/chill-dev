@@ -43,12 +43,12 @@ public:
     typedefTable = NULL;
     parameters = NULL;
   }
+
   //! the type of this current node
-  virtual CHILLAST_NODE_TYPE getType() {return CHILLAST_NODE_UNKNOWN;};
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_UNKNOWN; };
+
   //! Get the human readable type name
   const char *getTypeString() { return ChillAST_Node_Names[getType()]; };
-  //! the precedence of the current node, 0 being the highest
-  virtual int getPrec() {return INT8_MAX;}
 
   bool isSourceFile() { return (getType() == CHILLAST_NODE_SOURCEFILE); };
 
@@ -145,14 +145,21 @@ public:
 
   virtual bool isAUnion() { return false; };
 
-  virtual chillAST_SymbolTable* getSymbolTable() { return symbolTable; }
-  virtual chillAST_TypedefTable* getTypedefTable() {return typedefTable; }
+  virtual chillAST_SymbolTable *getSymbolTable() { return symbolTable; }
+
+  virtual chillAST_TypedefTable *getTypedefTable() { return typedefTable; }
+
   virtual void addVariableToScope(chillAST_VarDecl *vd);
+
   virtual void addTypedefToScope(chillAST_TypedefDecl *tdd);
-  chillAST_TypedefDecl* findTypeDecleration(const char *t);
-  chillAST_VarDecl* findVariableDecleration(const char *t);
-  chillAST_VarDecl* getVariableDeclaration(const char *vn);
-  chillAST_TypedefDecl* getTypeDeclaration(const char *tn);
+
+  chillAST_TypedefDecl *findTypeDecleration(const char *t);
+
+  chillAST_VarDecl *findVariableDecleration(const char *t);
+
+  chillAST_VarDecl *getVariableDeclaration(const char *vn);
+
+  chillAST_TypedefDecl *getTypeDeclaration(const char *tn);
 
   virtual chillAST_VarDecl *findVariableNamed(const char *name); // recursive
 
@@ -163,7 +170,7 @@ public:
 
   int getNumChildren() { return children.size(); };
 
-  chillAST_NodeList* getChildren() { return &children; };  // not usually useful
+  chillAST_NodeList *getChildren() { return &children; };  // not usually useful
   void setChildren(chillAST_NodeList &c) { children = c; }; // does not set parent. probably should
   chillAST_Node *getChild(int which) { return children[which]; };
 
@@ -174,7 +181,7 @@ public:
 
   void setMetaComment(const char *c) { metacomment = strdup(c); };
 
-  virtual void chillMergeChildInfo(chillAST_Node){
+  virtual void chillMergeChildInfo(chillAST_Node) {
     // TODO if (par) par->add to definition for vardecl/typedecl
     // TODO  if (par) par->getSourceFile()->addFunc(this); for FuncDecl
     // TODO if (par) par->getSourceFile()->addMacro(this); For MacroDecl
@@ -193,8 +200,8 @@ public:
     children.push_back(c);
   };  // not usually useful
 
-  virtual void addChildren(const chillAST_NodeList &c){
-    for (int i =0;i<c.size();++i){
+  virtual void addChildren(const chillAST_NodeList &c) {
+    for (int i = 0; i < c.size(); ++i) {
       addChild(c[i]);
     }
   }
@@ -227,7 +234,7 @@ public:
       }
     }
     CHILL_ERROR("%s %p generic replaceChild called with oldchild that was not a child\n",
-            getTypeString(), this);
+                getTypeString(), this);
     CHILL_DEBUG_BEGIN
       fprintf(stderr, "printing\n");
       print();
@@ -401,15 +408,6 @@ public:
     exit(-1);;
   };
 
-  // TODO We might want to print the code a bit differently, This can be only a generic dump
-  //! Print CODE
-  virtual void print(int indent = 0, FILE *fp = stderr) {
-    fflush(fp);
-    fprintf(fp, "\n");
-    chillindent(indent, fp);
-    fprintf(fp, "(%s) forgot to implement print()\n", getTypeString());
-  };
-
   virtual void printName(int indent = 0, FILE *fp = stderr) {
     fflush(fp);
     fprintf(fp, "\n");
@@ -485,7 +483,6 @@ public:
   }
 
 
-
   void setParent(chillAST_Node *p) { parent = p; };
 
   chillAST_Node *getParent() { return parent; };
@@ -494,7 +491,8 @@ public:
   chillAST_SourceFile *getSourceFile() {
     if (isSourceFile()) return ((chillAST_SourceFile *) this);
     if (parent != NULL) return parent->getSourceFile();
-    CHILL_ERROR("UHOH, getSourceFile() called on node %p %s that does not have a parent and is not a source file\n", this, this->getTypeString());
+    CHILL_ERROR("UHOH, getSourceFile() called on node %p %s that does not have a parent and is not a source file\n",
+                this, this->getTypeString());
     this->print();
     exit(-1);
   }
@@ -524,12 +522,17 @@ public:
     fprintf(stderr, "\n\n");
   }
 
-  virtual chillAST_SymbolTable* getParameters() {return parameters;}
-  virtual chillAST_VarDecl* getParameter(const char * name);
-  virtual void addParameter(chillAST_VarDecl* name);
+  virtual chillAST_SymbolTable *getParameters() { return parameters; }
+
+  virtual chillAST_VarDecl *getParameter(const char *name);
+
+  virtual void addParameter(chillAST_VarDecl *name);
 
   //! Emulation of the old dump function but using printer instead of hardcoded heuritics
-  void dump(int indent=0,FILE *fp = stderr);
+  void dump(int indent = 0, FILE *fp = stderr);
+
+  //! Emulation of the old print function to print C-family like syntax but using printer
+  void print(int ident = 0, FILE *fp = stderr);
 
 };
 

@@ -1636,14 +1636,6 @@ bool IR_chillArrayRef::operator!=(const IR_Ref &that) const {
   return !op;
 }
 
-void IR_chillArrayRef::Dump() const {
-  //fprintf(stderr, "IR_chillArrayRef::Dump()  this 0x%x  chillASE 0x%x\n", this, chillASE); 
-  chillASE->print();
-  printf("\n");
-  fflush(stdout);
-}
-
-
 bool IR_chillArrayRef::operator==(const IR_Ref &that) const {
   //fprintf(stderr, "IR_xxxxArrayRef::operator==\n"); 
   //printf("I am\n"); chillASE->print(); printf("\n"); 
