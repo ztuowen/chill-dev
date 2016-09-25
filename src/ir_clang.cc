@@ -1174,7 +1174,7 @@ chillAST_NodeList* ConvertFloatingLiteral(FloatingLiteral *clangFL) {
   buf[len] = '\0';
   //fprintf(stderr, "'%s'\n", buf);
 
-  chillAST_FloatingLiteral *chillFL = new chillAST_FloatingLiteral(val, buf);
+  chillAST_FloatingLiteral *chillFL = new chillAST_FloatingLiteral(val,1, buf);
 
   //chillFL->print(); printf("\n"); fflush(stdout);
   NL_RET(chillFL);

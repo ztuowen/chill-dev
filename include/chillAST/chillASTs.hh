@@ -1041,26 +1041,14 @@ class chillAST_FloatingLiteral : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_FLOATINGLITERAL;}
   // variables that are special for this type of node
-  float value;
-  double doublevalue;
-  int float0double1;
+  double value;
 
   char *allthedigits; // if not NULL, use this as printable representation
   //! Control the precision, float == 1, double == 2
   int precision;
 
   // constructors
-  chillAST_FloatingLiteral(float val);
-
-  chillAST_FloatingLiteral(double val);
-
-  chillAST_FloatingLiteral(float val, int pre);
-
-  chillAST_FloatingLiteral(double val, int pre);
-
-  chillAST_FloatingLiteral(float val, const char *printable);
-
-  chillAST_FloatingLiteral(float val, int pre, const char *printable);
+  chillAST_FloatingLiteral(double val, int pre, const char *printable);
 
   chillAST_FloatingLiteral(chillAST_FloatingLiteral *old);
 

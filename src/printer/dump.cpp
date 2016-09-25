@@ -119,8 +119,7 @@ void Dump::printS(std::string ident, chillAST_DeclRefExpr *n, std::ostream &o) {
 void Dump::printS(std::string ident, chillAST_FloatingLiteral *n, std::ostream &o) {
   if (n->precision == 1) o << "float ";
   else o << "double ";
-  if (n->float0double1) o << n->value;
-  else o << n->doublevalue;
+  o << n->value;
 }
 
 void Dump::printS(std::string ident, chillAST_ForStmt *n, std::ostream &o) {

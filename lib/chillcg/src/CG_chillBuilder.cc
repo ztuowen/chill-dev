@@ -992,12 +992,12 @@ namespace omega {
   }
   CG_outputRepr* CG_chillBuilder::CreateFloat(float f) const {
     //fprintf(stderr, "CG_chillBuilder::CreateFloat( %f )\n", f); 
-    chillAST_FloatingLiteral *fl = new chillAST_FloatingLiteral(f); // parent not available
+    chillAST_FloatingLiteral *fl = new chillAST_FloatingLiteral(f, 1, NULL); // parent not available
     return new CG_chillRepr(fl);
   }
   CG_outputRepr* CG_chillBuilder::CreateDouble(double d) const {
     //fprintf(stderr, "CG_chillBuilder::CreateInt( %f )\n",d); 
-    chillAST_FloatingLiteral *dl = new chillAST_FloatingLiteral(d); // parent not available
+    chillAST_FloatingLiteral *dl = new chillAST_FloatingLiteral(d, 1, NULL); // parent not available
     return new CG_chillRepr(dl);
   }
   

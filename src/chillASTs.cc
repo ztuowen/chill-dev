@@ -2868,8 +2868,6 @@ void chillAST_VarDecl::splitarraypart() {
   char *ptr = arraypart;
   for (int i = 0; i < asteriskcount; i++) arraypointerpart[i] = *ptr++;
   for (int i = 0; i < fixedcount; i++) arraysetpart[i] = *ptr++;
-
-  //fprintf(stderr, "%s = %s + %s\n", arraypart, arraypointerpart, arraysetpart);
 }
 
 
@@ -2897,75 +2895,19 @@ class chillAST_Node *chillAST_IntegerLiteral::clone() {
 
 }
 
-chillAST_FloatingLiteral::chillAST_FloatingLiteral(float val) {
+chillAST_FloatingLiteral::chillAST_FloatingLiteral(double val, int precis, const char *printthis) {
   value = val;
-  precision = 1;
-  float0double1 = 0; // which is live!
+  precision = precis;
   allthedigits = NULL;
-  isFromSourceFile = true; // default
-  filename = NULL;
-}
-
-chillAST_FloatingLiteral::chillAST_FloatingLiteral(double val) {
-  doublevalue = val;
-  precision = 2;
-  float0double1 = 1; // which is live!
-  allthedigits = NULL;
-  isFromSourceFile = true; // default
-  filename = NULL;
-}
-
-chillAST_FloatingLiteral::chillAST_FloatingLiteral(float val, int precis) {
-  value = val;
-  float0double1 = 0; // which is live!
-  precision = precis; //
-  allthedigits = NULL;
-  isFromSourceFile = true; // default
-  filename = NULL;
-}
-
-chillAST_FloatingLiteral::chillAST_FloatingLiteral(double val, int precis) {
-  doublevalue = val;
-  float0double1 = 1; // which is live!
-  precision = precis; //
-  allthedigits = NULL;
-  isFromSourceFile = true; // default
-  filename = NULL;
-}
-
-chillAST_FloatingLiteral::chillAST_FloatingLiteral(float val, const char *printthis) {
-  value = val;
-  float0double1 = 0; // which is live!
-  precision = 1;
-  allthedigits = NULL;
-  if (printthis) allthedigits = strdup(printthis);
-  //fprintf(stderr, "\nfloatingliteral allthedigits = '%s'\n", allthedigits);
-  isFromSourceFile = true; // default
-  filename = NULL;
-}
-
-chillAST_FloatingLiteral::chillAST_FloatingLiteral(float val, int precis, const char *printthis) {
-  value = val;
-  float0double1 = 0; // which is live!
-  precision = precis; // but value is a float??  TODO
-  allthedigits = NULL;
-  if (printthis) {
-    //fprintf(stderr, "\nchillAST_FloatingLiteral constructor, printthis ");
-    //fprintf(stderr, "%p\n", printthis);
+  if (printthis)
     allthedigits = strdup(printthis);
-  }
-  //fprintf(stderr, "\nfloatingliteral allthedigits = '%s'\n", allthedigits);
-  isFromSourceFile = true; // default
+  isFromSourceFile = true;
   filename = NULL;
 }
 
 
 chillAST_FloatingLiteral::chillAST_FloatingLiteral(chillAST_FloatingLiteral *old) {
-  //fprintf(stderr, "chillAST_FloatingLiteral::chillAST_FloatingLiteral( old ) allthedigits %p\n", old->allthedigits);
-
   value = old->value;
-  doublevalue = old->doublevalue;
-  float0double1 = old->float0double1;
   allthedigits = NULL;
   if (old->allthedigits) allthedigits = strdup(old->allthedigits);
   precision = old->precision;
@@ -2984,8 +2926,7 @@ void chillAST_FloatingLiteral::print(int indent, FILE *fp) {
     strcpy(output, allthedigits); // if they have specified 100 digits of pi, give 'em 100 digits
     //fprintf(stderr, "floatingliteral allthedigits = '%s'\n", allthedigits);
   } else {
-    if (float0double1 == 0) sprintf(output, "%f", value);
-    else sprintf(output, "%f", doublevalue);
+    sprintf(output, "%f", value);
 
     // next part to avoid printing 123.4560000000000000000000000000
     char *dot = index(output, '.');
@@ -3082,8 +3023,6 @@ chillAST_Node *chillAST_UnaryOperator::constantFold() {
         F->parent = FL->parent;
 
         F->value = -F->value;
-        F->doublevalue = -F->doublevalue;
-
         F->print();
         fprintf(stderr, "\n");
 
