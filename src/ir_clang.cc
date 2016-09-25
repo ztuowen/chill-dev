@@ -2250,6 +2250,11 @@ IR_clangCode::IR_clangCode(const char *fname, const char *proc_name) : IR_Code()
 
     pInstance->setCurrentFunction(localFD);
 
+    CHILL_DEBUG_BEGIN
+      fprintf(stderr, "Dumping AST for localFD\n");
+      localFD->dump();
+    CHILL_DEBUG_END
+
     chillAST_Node *b = localFD->getBody();  // we do this just because it will get done next
 
     CHILL_DEBUG_PRINT("calling new CG_chillBuilder() umwut?\n");
@@ -2600,7 +2605,7 @@ std::vector<IR_Control *> IR_clangCode::FindOneLevelControlStructure(const IR_Bl
   // bundled up into an IR_Block
   // ifs and loops will get their own entry
 
-  std::vector<chillAST_Node *> children;
+  std::vector<chillAST_Node *> *children;
 
 
   if (blockast->getType() == CHILLAST_NODE_FORSTMT) {
@@ -2639,7 +2644,7 @@ std::vector<IR_Control *> IR_clangCode::FindOneLevelControlStructure(const IR_Bl
       children = blockast->getChildren();
     }
 
-    int numchildren = children.size();
+    int numchildren = children->size();
     //fprintf(stderr, "basic block has %d statements\n", numchildren);
     //fprintf(stderr, "basic block is:\n");
     //fprintf(stderr, "{\n");
@@ -2650,7 +2655,7 @@ std::vector<IR_Control *> IR_clangCode::FindOneLevelControlStructure(const IR_Bl
     IR_chillBlock *basicblock = new IR_chillBlock(this); // no statements
     for (int i = 0; i < numchildren; i++) {
       //fprintf(stderr, "child %d is of type %s\n", i, children[i]->getTypeString());
-      CHILLAST_NODE_TYPE typ = children[i]->getType();
+      CHILLAST_NODE_TYPE typ = (*children)[i]->getType();
       if (typ == CHILLAST_NODE_LOOP) {
         if (numchildren == 1) {
           CHILL_DEBUG_PRINT("found a For statement (Loop)\n");
@@ -2667,16 +2672,16 @@ std::vector<IR_Control *> IR_clangCode::FindOneLevelControlStructure(const IR_Bl
         }
 
         CHILL_DEBUG_PRINT("pushing the loop at %d\n", i);
-        controls.push_back(new IR_chillLoop(this, (chillAST_ForStmt *) children[i]));
+        controls.push_back(new IR_chillLoop(this, (chillAST_ForStmt *) (*children)[i]));
 
       }
         //else if (typ == CHILLAST_NODE_IFSTMT ) // TODO
       else { // straight line code
-        basicblock->addStatement(children[i]);
+        basicblock->addStatement((*children)[i]);
         CHILL_DEBUG_BEGIN
           fprintf(stderr, "straight line code\n");
           fprintf(stderr, "child %d = \n", i);
-          children[i]->print();
+          (*children)[i]->print();
           printf("\n");
           fflush(stdout);
           fprintf(stderr, "child %d is part of a basic block\n", i);
@@ -2869,13 +2874,13 @@ void IR_clangCode::ReplaceCode(IR_Control *old, omega::CG_outputRepr *repr) {
       fflush(stdout);
       fprintf(stderr, "\n}\n");
 
-      std::vector<chillAST_Node *> oldparentcode = par->getChildren(); // probably only works for compoundstmts
+      std::vector<chillAST_Node *> *oldparentcode = par->getChildren(); // probably only works for compoundstmts
       //fprintf(stderr, "ir_clang.cc oldparentcode\n"); 
 
       // find loop in the parent
       int index = -1;
-      int numstatements = oldparentcode.size();
-      for (int i = 0; i < numstatements; i++) if (oldparentcode[i] == forstmt) { index = i; }
+      int numstatements = oldparentcode->size();
+      for (int i = 0; i < numstatements; i++) if ((*oldparentcode)[i] == forstmt) { index = i; }
       if (index == -1) {
         fprintf(stderr, "ir_clang.cc can't find the loop in its parent\n");
         exit(-1);
@@ -2923,11 +2928,11 @@ void IR_clangCode::ReplaceCode(IR_Control *old, omega::CG_outputRepr *repr) {
   //fprintf(stderr, "\nafter inserting %d statements into the Clang IR,", numnew);
   CHILL_DEBUG_BEGIN
     fprintf(stderr, "new parent2 is\n\n{\n");
-    std::vector<chillAST_Node *> newparentcode = par->getChildren();
-    for (int i = 0; i < newparentcode.size(); i++) {
+    std::vector<chillAST_Node *> *newparentcode = par->getChildren();
+    for (int i = 0; i < newparentcode->size(); i++) {
       fflush(stdout);
       //fprintf(stderr, "%d ", i);
-      newparentcode[i]->print();
+      (*newparentcode)[i]->print();
       printf(";\n");
       fflush(stdout);
     }

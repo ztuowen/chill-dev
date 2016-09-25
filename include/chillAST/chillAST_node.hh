@@ -4,12 +4,10 @@
 #define _CHILLAST_NODE_H_
 
 #include "chillAST_def.hh"
-#include "printer.h"
 
 //! generic node of the actual chillAST, a multiway tree node.
 class chillAST_Node {
 public:
-  friend class chill::printer::GenericPrinter;
   // TODO decide how to hide some data
   //! this Node's parent
   chillAST_Node *parent;
@@ -121,8 +119,6 @@ public:
 
   bool isCudaSYNCTHREADS() { return (getType() == CHILLAST_NODE_CUDASYNCTHREADS); };
 
-  bool isDeclStmt() { return (getType() == CHILLAST_NODE_DECLSTMT); }; // doesn't exist
-
   bool isConstant() {
     return (getType() == CHILLAST_NODE_INTEGERLITERAL) || (getType() == CHILLAST_NODE_FLOATINGLITERAL);
   }
@@ -168,7 +164,7 @@ public:
 
   int getNumChildren() { return children.size(); };
 
-  chillAST_NodeList& getChildren() { return children; };  // not usually useful
+  chillAST_NodeList* getChildren() { return &children; };  // not usually useful
   void setChildren(chillAST_NodeList &c) { children = c; }; // does not set parent. probably should
   chillAST_Node *getChild(int which) { return children[which]; };
 
@@ -406,12 +402,6 @@ public:
     exit(-1);;
   };
 
-  //! Print AST
-  virtual void dump(int indent = 0, FILE *fp = stderr) {
-    fflush(fp);
-    CHILL_ERROR("(%s) forgot to implement dump()\n", getTypeString());
-  };// print ast
-
   // TODO We might want to print the code a bit differently, This can be only a generic dump
   //! Print CODE
   virtual void print(int indent = 0, FILE *fp = stderr) {
@@ -545,6 +535,8 @@ public:
   virtual chillAST_SymbolTable* getParameters() {return parameters;}
   virtual chillAST_VarDecl* getParameter(const char * name);
   virtual void addParameter(chillAST_VarDecl* name);
+
+  void dump(int indent=0,FILE *fp = stderr);
 
 };
 

@@ -43,7 +43,7 @@ namespace omega {
       stmtclassname = strdup(chillast->getTypeString());
       //fprintf(stderr, "made new chillRepr of class %s\n", stmtclassname);
       if (chillast->getType() == CHILLAST_NODE_COMPOUNDSTMT) {
-        std::vector<chillAST_Node *> children = chillast->getChildren();
+        std::vector<chillAST_Node *> &children = *(chillast->getChildren());
         int numchildren = children.size();
         for (int i = 0; i < numchildren; i++) {
           chillnodes.push_back(children[i]);

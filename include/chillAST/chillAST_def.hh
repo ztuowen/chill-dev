@@ -14,7 +14,7 @@
 #include <assert.h>
 #include <vector>  // std::vector
 
-#include <ir_enums.hh> // for IR_CONDITION_* 
+#include <ir_enums.hh> // for IR_CONDITION_*
 
 enum CHILLAST_NODE_TYPE {
   CHILLAST_NODE_UNKNOWN = 0,
