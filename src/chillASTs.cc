@@ -79,30 +79,6 @@ char *parseUnderlyingType(const char *sometype) {
   return underlying;
 }
 
-void printSymbolTable(chillAST_SymbolTable *st) {
-  CHILL_DEBUG_PRINT("%d entries\n", st->size());
-  if (!st) return;
-  for (int i = 0; i < st->size(); i++) {
-    printf("%d  ", i);
-    (*st)[i]->printName();
-    printf("\n");
-  }
-  if (st->size())printf("\n");
-  fflush(stdout);
-}
-
-void printSymbolTableMoreInfo(chillAST_SymbolTable *st) {
-  CHILL_DEBUG_PRINT("%d entries\n", st->size());
-  if (!st) return;
-  for (int i = 0; i < st->size(); i++) {
-    printf("%d  ", i);
-    (*st)[i]->print();
-    printf("\n");
-  }
-  if (st->size())printf("\n");
-  fflush(stdout);
-}
-
 char *splitVariableName(char *name) {
   char *cdot = strstr(name, ".");
   char *carrow = strstr(name, "->");  // initial 'c' for const - can't change those
@@ -311,33 +287,6 @@ chillAST_RecordDecl *chillAST_Node::findRecordDeclNamed(const char *name) { // r
   return parent->findRecordDeclNamed(name);
 }
 
-
-void chillAST_Node::printPreprocBEFORE(int indent, FILE *fp) {
-  int numstmts = preprocessinginfo.size();
-  //if (0 != numstmts) {
-  //  fprintf(fp, "chillAST_Node::printPreprocBEFORE()  %d statements\n", numstmts);
-  //}
-
-
-  for (int i = 0; i < numstmts; i++) {
-    //fprintf(fp, "stmt %d   %d\n", i, preprocessinginfo[i]->position);
-    if (preprocessinginfo[i]->position == CHILLAST_PREPROCESSING_LINEBEFORE ||
-        preprocessinginfo[i]->position == CHILLAST_PREPROCESSING_IMMEDIATELYBEFORE) {
-      //fprintf(stderr, "before %d\n", preprocessinginfo[i]->position);
-      preprocessinginfo[i]->print(indent, fp);
-    }
-  }
-}
-
-void chillAST_Node::printPreprocAFTER(int indent, FILE *fp) {
-  for (int i = 0; i < preprocessinginfo.size(); i++) {
-    if (preprocessinginfo[i]->position == CHILLAST_PREPROCESSING_LINEAFTER ||
-        preprocessinginfo[i]->position == CHILLAST_PREPROCESSING_TOTHERIGHT) {
-      preprocessinginfo[i]->print(indent, fp);
-    }
-  }
-}
-
 chillAST_SourceFile::chillAST_SourceFile(const char *filename) {
   if(filename) SourceFileName = strdup(filename);
   else SourceFileName = strdup("No Source File");
@@ -346,32 +295,6 @@ chillAST_SourceFile::chillAST_SourceFile(const char *filename) {
   FileToWrite = NULL;
   frontend = strdup("unknown");
 };
-
-void chillAST_SourceFile::print(int indent, FILE *fp) {
-  fflush(fp);
-  CHILL_DEBUG_PRINT("\n// this source derived from CHILL AST originally from file '%s' as parsed by frontend compiler %s\n\n",
-          SourceFileName, frontend);
-  std::vector<char *> includedfiles;
-  int sofar = 0;
-
-  //fprintf(fp, "#define __rose_lt(x,y) ((x)<(y)?(x):(y))\n#define __rose_gt(x,y) ((x)>(y)?(x):(y))\n"); // help diff figure out what's going on
-
-  int numchildren = children.size();
-
-  for (int i = 0; i < numchildren; i++) {
-    if (children[i]->isFromSourceFile) {
-      if (children[i]->isFunctionDecl()) {
-        fprintf(stderr, "\nchild %d function %s\n", i, ((chillAST_FunctionDecl *) children[i])->functionName);
-      }
-      children[i]->print(indent, fp);
-      if (children[i]->isVarDecl()) fprintf(fp, ";\n");
-      fflush(fp);  // top level vardecl\n");
-    }
-  }
-
-  fflush(fp);
-};
-
 
 void chillAST_SourceFile::printToFile(char *filename) {
   char fn[1024];
@@ -461,49 +384,6 @@ chillAST_TypedefDecl::chillAST_TypedefDecl(char *t, const char *a, char *p) {
   filename = NULL;
 };
 
-
-void chillAST_TypedefDecl::print(int indent, FILE *fp) {
-  printPreprocBEFORE(indent, fp);
-
-  if (isStruct) {
-    fprintf(fp, "\n/* A typedef STRUCT */\n");
-    chillindent(indent, fp);
-  }
-
-  chillindent(indent, fp);
-  fprintf(fp, "typedef ");
-  fflush(fp);
-
-  if (rd) {
-    rd->print(indent, fp);   // needs to not print the ending semicolon ??
-  } else if (isStruct) {
-    fprintf(stderr, "/* no rd */\n");
-
-    //fprintf(fp, "struct %s\n", structname);
-    chillindent(indent, fp);
-    fprintf(fp, "{\n");
-    for (int i = 0; i < subparts.size(); i++) {
-      //fprintf(fp, "a %s\n", subparts[i]->getTypeString());
-      subparts[i]->print(indent + 1, fp);
-      fprintf(fp, ";\n");
-    }
-    fprintf(fp, "};\n");
-  } else {
-    fprintf(fp, "/* NOT A STRUCT */ typedef %s  %s%s;\n", underlyingtype, newtype, arraypart);
-    dump();
-    printf("\n\n");
-    fflush(stdout);
-  }
-
-  // then the newname
-  fprintf(fp, "%s;\n", newtype);
-  fflush(fp);
-  printPreprocAFTER(indent, fp);
-
-  return;
-}
-
-
 chillAST_VarDecl *chillAST_TypedefDecl::findSubpart(const char *name) {
   //fprintf(stderr, "chillAST_TypedefDecl::findSubpart( %s )\n", name);
   //fprintf(stderr, "typedef %s  %s\n", structname, newtype);
@@ -580,8 +460,6 @@ void chillAST_RecordDecl::print(int indent, FILE *fp) {
   CHILL_DEBUG_PRINT("chillAST_RecordDecl::print()\n");
   if (isUnnamed) return;
 
-  printPreprocBEFORE(indent, fp);
-
   chillindent(indent, fp);
   if (isStruct) {
     fprintf(fp, "struct ");
@@ -600,7 +478,6 @@ void chillAST_RecordDecl::print(int indent, FILE *fp) {
     CHILL_ERROR("/* UNKNOWN RECORDDECL print() */  ");
     exit(-1);
   }
-  printPreprocAFTER(indent, fp);
   fflush(fp);
 }
 
@@ -677,12 +554,10 @@ void chillAST_FunctionDecl::insertChild(int i, chillAST_Node *node) {
     chillAST_VarDecl *vd = ((chillAST_VarDecl *) node);
     fprintf(stderr, "functiondecl %s inserting a VarDecl named %s\n", functionName, vd->varname);
     chillAST_SymbolTable *st = getSymbolTable();
-    if (!st) {
+    if (!st)
       fprintf(stderr, "symbol table is NULL!\n");
-    } else {
+    else
       fprintf(stderr, "%d entries in the symbol table\n", st->size());
-      printSymbolTable(getSymbolTable());
-    }
     fprintf(stderr, "\n\n");
   }
 }
@@ -705,8 +580,6 @@ void chillAST_FunctionDecl::print(int indent, FILE *fp) {
   //fprintf(fp, "\n// functiondecl %p    \n", this);
   //chillindent(indent, fp);
   //fprintf(fp, "//(functiondecl)  %d parameters\n", numparameters);
-
-  printPreprocBEFORE(indent, fp);
 
   fprintf(fp, "\n");
   chillindent(indent, fp);
@@ -745,8 +618,6 @@ void chillAST_FunctionDecl::print(int indent, FILE *fp) {
   } else { // extern func or forward decl.   just end forward declaration
     fprintf(fp, "; // fwd decl\n");
   }
-
-  printPreprocAFTER(indent, fp);
 
   fflush(fp);
 }
@@ -940,26 +811,6 @@ void chillAST_MacroDefinition::addChild(chillAST_Node *node) {
   node->setParent(this); // this, or body??
 }
 
-void chillAST_MacroDefinition::print(int indent, FILE *fp) {  // UHOH   TODO
-  CHILL_DEBUG_PRINT("macro has %d parameters\n", parameters->size());
-
-  printPreprocBEFORE(indent, fp);
-
-  fprintf(fp, "#define %s", macroName);
-  if (0 != parameters->size()) {
-    fprintf(fp, "(");
-    for (int i = 0; i < parameters->size(); i++) {
-      if (i) fprintf(fp, ",");
-      fprintf(fp, "%s", (*parameters)[i]->varname);
-    }
-    fprintf(fp, ")  ");
-  }
-
-  if (body) body->print(0, fp); // TODO should force newlines out of multiline macros
-  fprintf(fp, "\n");
-}
-
-
 chillAST_ForStmt::chillAST_ForStmt() {
   init = cond = incr = NULL;
   body = new chillAST_CompoundStmt();
@@ -1093,64 +944,6 @@ void chillAST_ForStmt::printControl(int in, FILE *fp) {
   fflush(fp);
 }
 
-
-void chillAST_ForStmt::print(int indent, FILE *fp) {
-  printPreprocBEFORE(indent, fp);
-  //fprintf(fp, "chillAST_ForStmt::print()\n");
-  if (metacomment) {
-    chillindent(indent, fp);
-    //for(int i=0; i<indent; i++) fprintf(fp, "..");
-    fprintf(fp, "// %s\n", metacomment);
-  }
-
-  printControl(indent, fp);  // does not do a newline or bracket
-  fprintf(fp, " {\n");
-
-
-  // I have no idea what made me do this next bit.
-  // A forstmt with compounds inside compounds ???
-  // this should probably all go away
-
-  chillAST_Node *b = body;
-  //fprintf(fp, "b children %d\n", b->getNumChildren());
-  //fprintf(fp, "body child 0 of type %s\n", b->children[0]->getTypeString());
-  //fprintf(stderr, "forstmt body type %s\n", Chill_AST_Node_Names[b->getType()] );
-  // deal with a tree of compound statements, in an ugly way. leave the ugliness
-  while (1 == b->getNumChildren() && b->children[0]->isCompoundStmt()) {
-    b = b->children[0];
-  }
-
-
-  // this was to sometimes not enclose in a bracket. stupid. always enclose in a bracket.
-  //if (1 == b->getNumChildren() && b->children[0]->isForStmt()) fprintf(fp, ") {\n" );
-  //else if (1 == b->getNumChildren() ) fprintf(fp, ") { ?? \n" ); // to allow for() for( ) to not have open bracket?
-  //else {
-  //fprintf(fp, ")\n");
-  //chillindent(in, fp);
-  //fprintf(fp, "{\n" );
-
-  //fprintf(fp, ")");
-  //}
-
-  b->print(indent + 1, fp);
-
-  // I think this can't happen any more. body is always a compound statement
-  if (b->getType() == CHILLAST_NODE_BINARYOPERATOR) { // a single assignment statement
-    fprintf(fp, ";\n");
-  }
-
-  // always print brackets
-
-  //if ((1 == b->getNumChildren() && b->children[0]->isForStmt()) ||
-  //    (1 != b->getNumChildren() )) {
-  chillindent(indent, fp);
-  fprintf(fp, "}\n");
-  //}
-
-  printPreprocAFTER(indent, fp);
-  fflush(fp); //
-}
-
 chillAST_Node *chillAST_ForStmt::constantFold() {
   init = init->constantFold();
   cond = cond->constantFold();
@@ -1158,7 +951,6 @@ chillAST_Node *chillAST_ForStmt::constantFold() {
   body = body->constantFold();
   return this;
 }
-
 
 chillAST_Node *chillAST_ForStmt::clone() {
   chillAST_ForStmt *fs = new chillAST_ForStmt(init->clone(), cond->clone(), incr->clone(), body->clone());
@@ -1677,8 +1469,6 @@ chillAST_IntegerLiteral *chillAST_BinaryOperator::evalAsIntegerLiteral() {
 }
 
 void chillAST_BinaryOperator::print(int indent, FILE *fp) {
-  printPreprocBEFORE(indent, fp);
-
   chillindent(indent, fp);
   bool needparens = getPrec()<lhs->getPrec();
 
@@ -1696,8 +1486,6 @@ void chillAST_BinaryOperator::print(int indent, FILE *fp) {
   else fprintf(fp, "(NULL)");
   if (needparens) fprintf(fp, ")");
   fflush(fp);
-  printPreprocAFTER(indent, fp);
-
 }
 
 
@@ -1705,18 +1493,6 @@ char *chillAST_BinaryOperator::stringRep(int indent) {
   std::string s = string(lhs->stringRep()) + " " + op + " " + string(lhs->stringRep());
   return strdup(s.c_str());
 }
-
-
-void chillAST_BinaryOperator::printonly(int indent, FILE *fp) {
-
-  lhs->printonly(indent, fp);
-  fprintf(fp, " %s ", op);
-  rhs->printonly(0, fp);
-  fflush(fp);
-
-
-}
-
 
 class chillAST_Node *chillAST_BinaryOperator::constantFold() {
   //fprintf(stderr, "\nchillAST_BinaryOperator::constantFold()  ");
@@ -1931,7 +1707,6 @@ chillAST_TernaryOperator::chillAST_TernaryOperator(const char *oper, chillAST_No
 }
 
 void chillAST_TernaryOperator::print(int indent, FILE *fp) {
-  printPreprocBEFORE(indent, fp);
   chillindent(indent, fp);
   fprintf(fp, "(");
   condition->print(0, fp);
@@ -1999,18 +1774,6 @@ void chillAST_TernaryOperator::replaceVarDecls(chillAST_VarDecl *olddecl, chillA
   lhs->replaceVarDecls(olddecl, newdecl);
   rhs->replaceVarDecls(olddecl, newdecl);
 }
-
-void chillAST_TernaryOperator::printonly(int indent, FILE *fp) {
-  fprintf(fp, "(");
-  condition->printonly(0, fp);
-  fprintf(fp, "%s", op);
-  lhs->printonly(0, fp);
-  fprintf(fp, ":");
-  rhs->printonly(0, fp);
-  fprintf(fp, ")");
-  fflush(fp);
-}
-
 
 class chillAST_Node *chillAST_TernaryOperator::constantFold() {
   condition = condition->constantFold();
@@ -2164,14 +1927,6 @@ void chillAST_ArraySubscriptExpr::gatherIndeces(std::vector<chillAST_Node *> &in
   ind.push_back(index);
 }
 
-void chillAST_ArraySubscriptExpr::print(int indent, FILE *fp) {
-  base->print(indent, fp);
-  fprintf(fp, "[");
-  index->print(0, fp);
-  fprintf(fp, "]");
-  fflush(fp);
-}
-
 char *chillAST_ArraySubscriptExpr::stringRep(int indent) {
   fprintf(stderr, "chillAST_ArraySubscriptExpr::stringRep\n");
 
@@ -2182,25 +1937,6 @@ char *chillAST_ArraySubscriptExpr::stringRep(int indent) {
   fprintf(stderr, "ASE stringrep %s\n", s.c_str());
   return strdup(s.c_str());
 }
-
-
-void chillAST_ArraySubscriptExpr::printonly(int indent, FILE *fp) {
-  base->printonly(indent, fp);
-  fprintf(fp, "[");
-  index->printonly(0, fp);
-  fprintf(fp, "]");
-  fflush(fp);
-}
-
-
-void chillAST_ArraySubscriptExpr::print(int indent, FILE *fp) const {
-  base->print(indent, fp);
-  fprintf(fp, "[");
-  index->print(0, fp);
-  fprintf(fp, "]");
-  fflush(fp);
-};
-
 
 chillAST_VarDecl *chillAST_ArraySubscriptExpr::multibase() {
   //this should probably be a chillAST_Node function instead of having all these ifs
@@ -2395,27 +2131,7 @@ chillAST_MemberExpr::chillAST_MemberExpr(chillAST_Node *bas, const char *mem, vo
   }
 }
 
-void chillAST_MemberExpr::print(int indent, FILE *fp) {
-  if (base) base->print(indent, fp);
-  else {
-    chillindent(indent, fp);
-    fprintf(fp, "(NULL)");
-  }
-  if (exptype == CHILLAST_MEMBER_EXP_ARROW) fprintf(fp, "->");
-  else fprintf(fp, ".");
-  if (member) fprintf(fp, "%s", member);
-  else fprintf(fp, "(NULL)");
-  fflush(fp);
-}
-
-
-void chillAST_MemberExpr::printonly(int indent, FILE *fp) {
-  base->print(indent, fp);
-  if (exptype == CHILLAST_MEMBER_EXP_ARROW) fprintf(fp, "->");
-  else fprintf(fp, ".");
-  fprintf(fp, "%s", member);
-  fflush(fp);
-}
+// TODO member can be another member expression, Right?
 
 char *chillAST_MemberExpr::stringRep(int indent) { // char pointer to what we'd print
   fprintf(stderr, "*chillAST_MemberExpr::stringRep()\n");
@@ -2877,12 +2593,6 @@ chillAST_IntegerLiteral::chillAST_IntegerLiteral(int val) {
   filename = NULL;
 }
 
-void chillAST_IntegerLiteral::print(int indent, FILE *fp) {
-  chillindent(indent, fp);
-  fprintf(fp, "%d", value);
-  fflush(fp);
-}
-
 class chillAST_Node *chillAST_IntegerLiteral::constantFold() { return this; } // can never do anything
 
 
@@ -3089,18 +2799,6 @@ chillAST_ImplicitCastExpr::chillAST_ImplicitCastExpr(chillAST_Node *sub) {
   //fprintf(stderr, "ImplicitCastExpr 0x%x  has subexpr 0x%x", this, subexpr);
   //fprintf(stderr, " of type %s\n", subexpr->getTypeString());
 }
-
-void chillAST_ImplicitCastExpr::print(int indent, FILE *fp) {
-  // No need to print anything, simply forward to the sub expression.
-  subexpr->print(indent, fp);
-  fflush(fp);
-};
-
-void chillAST_ImplicitCastExpr::printonly(int indent, FILE *fp) {
-  // No need to print anything, simply forward to the sub expression.
-  subexpr->printonly(indent, fp);
-  fflush(fp);
-};
 
 void chillAST_ImplicitCastExpr::replaceChild(chillAST_Node *old, chillAST_Node *newchild) {
   if (subexpr == old) { // should be the case for this to get called
@@ -3320,10 +3018,7 @@ void chillAST_CStyleAddressOf::gatherVarUsage(vector<chillAST_VarDecl *> &decls)
 }
 
 
-chillAST_Malloc::chillAST_Malloc(char *thething, chillAST_Node *numthings) {
-  thing = NULL;
-  if (thething)
-  thing = strdup(thething);   // "int" or "float" or "struct widget"
+chillAST_Malloc::chillAST_Malloc(chillAST_Node *numthings) {
   sizeexpr = numthings;
   isFromSourceFile = true; // default
   filename = NULL;
@@ -3334,7 +3029,7 @@ chillAST_Node *chillAST_Malloc::constantFold() {
 }
 
 chillAST_Node *chillAST_Malloc::clone() {
-  chillAST_Malloc *M = new chillAST_Malloc(thing, sizeexpr); // the general version
+  chillAST_Malloc *M = new chillAST_Malloc(sizeexpr); // the general version
   M->setParent(getParent());
   M->isFromSourceFile = isFromSourceFile;
   if (filename) M->filename = strdup(filename);
@@ -3364,19 +3059,6 @@ void chillAST_Malloc::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
 
 void chillAST_Malloc::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
   sizeexpr->gatherVarUsage(decls);
-};
-
-
-void chillAST_Malloc::print(int indent, FILE *fp) {
-  chillindent(indent, fp);
-  fprintf(fp, "malloc(");
-
-  if (thing) {
-    fprintf(fp, " sizeof(%s) * ", thing);
-  }
-  sizeexpr->print(0, fp);
-  fprintf(fp, ")");
-  fflush(fp);
 };
 
 chillAST_CudaMalloc::chillAST_CudaMalloc(chillAST_Node *devmemptr, chillAST_Node *size) {
@@ -3495,20 +3177,6 @@ chillAST_CudaMemcpy::chillAST_CudaMemcpy(chillAST_VarDecl *d, chillAST_VarDecl *
   cudaMemcpyKind = kind;
 };
 
-void chillAST_CudaMemcpy::print(int indent, FILE *fp) {
-  chillindent(indent, fp);
-  fprintf(fp, "cudaMemcpy(%s,%s,", dest->varname, src->varname);
-  //dest->print( 0, fp );
-  //fprintf(fp, ",");
-  // src->print( 0, fp );  just want the src NAME, not name and array info
-  //fprintf(fp, ",");
-  size->print(0, fp);
-  fprintf(fp, ",%s)", cudaMemcpyKind);
-  fflush(fp);
-};
-
-
-
 class chillAST_Node *chillAST_CudaMemcpy::constantFold() {
   dest = (chillAST_VarDecl *) dest->constantFold();
   src = (chillAST_VarDecl *) src->constantFold();
@@ -3582,7 +3250,6 @@ chillAST_ReturnStmt::chillAST_ReturnStmt(chillAST_Node *retval) {
 
 
 void chillAST_ReturnStmt::print(int indent, FILE *fp) {
-  printPreprocBEFORE(indent, fp);
   chillindent(indent, fp);
   if (returnvalue != NULL) {
     fprintf(fp, "return(");
@@ -3654,7 +3321,6 @@ void chillAST_CallExpr::addArg(chillAST_Node *a) {
 
 
 void chillAST_CallExpr::print(int indent, FILE *fp) {
-  printPreprocBEFORE(indent, fp);
   chillindent(indent, fp);
   chillAST_FunctionDecl *FD = NULL;
   chillAST_MacroDefinition *MD = NULL;
@@ -4066,137 +3732,6 @@ chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a, 
 
 };
 
-
-void chillAST_VarDecl::print(int indent, FILE *fp) {
-  //fprintf(fp, "chillAST_VarDecl::print()\n");
-
-  printPreprocBEFORE(indent, fp);
-
-  //fprintf(fp, "VarDecl vartype '%s'    varname %s   ", vartype, varname);
-  //if (isAStruct()) fprintf(fp, "isAStruct()\n");
-  //else  fprintf(fp, "NOT A Struct\n");
-
-  // fprintf(fp, "\n");  fflush(fp); dump(0,fp); fflush(fp);  // debug
-
-  chillindent(indent, fp);
-  //fprintf(fp, "vardecl->print  vartype '%s'\n", vartype);
-  if (isDevice) fprintf(fp, "__device__ ");
-  if (isShared) fprintf(fp, "__shared__ ");
-
-  //if (isAStruct()) fprintf(fp, "/* isAStruct() */  ");
-  //else fprintf(fp, "/* NOT A Struct() */  ");
-  //if (vardef)      fprintf(fp, "/* vardef */  ");
-  //else  fprintf(fp, "/* NOT vardef */  ");
-
-
-  //fprintf(stderr, "chillAST_VarDecl::print()  %s\n", varname );
-  //if (isParmVarDecl()) fprintf(stderr, "%s is a parameter\n", varname);
-  //if (isAStruct()) fprintf(stderr, "%s is a struct\n", varname);
-  //else fprintf(stderr, "%s is NOT a struct\n", varname);
-  //if (!parent) fprintf(stderr, "VARDECL HAS NO PARENT\n");
-  //else fprintf(stderr, "parent of %s is type %s\n", varname, parent->getTypeString());
-
-  // this logic is probably wrong (what about pointer to struct? )
-
-  //fprintf(stderr, "checking for unnamed only used here\n");
-
-  if ((!isAParameter) && isAStruct() && vardef) { // an unnamed  struct used only here ??
-
-    //fprintf(fp, "i%s sAStruct() && vardef ??   vardecl of type UNNAMED ONLY USED HERE \n", varname );
-    // print the internals of the struct and then the name
-    vardef->printStructure(0, fp);
-    fprintf(fp, "%s", varname);
-
-    return;
-  }
-
-  //fprintf(fp, "ugly logic\n");
-  // ugly logic TODO
-
-  if (typedefinition && typedefinition->isAStruct()) fprintf(fp, "struct ");
-
-  if (isAParameter) {
-    //fprintf(fp, "%s isaparameter\n", varname);
-    //if (isAStruct())  fprintf(fp, "struct ");
-    //fprintf(fp, "(param) nd %d", numdimensions );
-    //dump();
-    if (numdimensions > 0) {
-      if (knownArraySizes) {  // just [12][34][56]
-        fprintf(fp, "%s ", vartype);
-        if (byreference) fprintf(fp, "&");
-        fprintf(fp, "%s", varname);
-        for (int n = 0; n < (numdimensions); n++) fprintf(fp, "[%d]", arraysizes[n]);
-      } else {  // some unknown array part    float *a;  or float **a;  or float (*)a[1234]
-
-        //fprintf(fp, "\nsome unknown\n");
-        //fprintf(fp, "arraypointerpart '%s'\n", arraypointerpart);
-        //fprintf(fp, "arraysetpart '%s'\n", arraysetpart);
-
-        if (numdimensions == 1) {
-          //fprintf(fp, "\nnd1, vartype %s\n", vartype);
-
-          // TODO this if means I have probably made a mistake somewhere
-          if (!index(vartype, '*')) fprintf(fp, "%s *%s", vartype, varname); // float *x
-          else fprintf(fp, "%s%s", vartype, varname); // float *a;
-
-
-        } else { // more than one dimension
-
-          if (!strcmp("", arraysetpart)) { // no known dimensions   float ***a;
-            fprintf(fp, "%s %s%s", vartype, arraypointerpart, varname);
-          } else if (!strcmp("", arraypointerpart)) { // ALL known  float a[2][7];
-            fprintf(fp, "%s %s", vartype, varname);
-            for (int n = 0; n < numdimensions; n++) fprintf(fp, "[%d]", arraysizes[n]);
-          } else { //   float (*)a[1234]
-            // this seems really wrong
-            //     float (*)a[1234]
-            fprintf(fp, "%s (", vartype);
-            for (int n = 0; n < (numdimensions - 1); n++) fprintf(fp, "*");
-            fprintf(fp, "%s)", varname);
-            fprintf(fp, "[%d]", arraysizes[numdimensions - 1]);
-          }
-
-        }
-      }
-    } // if numdimensions > 0
-    else { // parameter float x
-      fprintf(fp, "%s ", vartype);
-      if (byreference) fprintf(fp, "&");
-      fprintf(fp, "%s", varname);
-    }
-  } // end parameter
-
-  else { // NOT A PARAMETER
-    //fprintf(fp, "NOT A PARAM ... vartype '%s'\n", vartype);
-    //if (isArray()) fprintf(stderr, "an array, numdimensions %d\n", numdimensions);
-    //fprintf(stderr, "arraysizes %p\n", arraysizes);
-
-
-
-    //if (isArray() && arraysizes == NULL) {
-    //    // we just know the number of dimensions but no sizes
-    //    // int ***something
-    //    fprintf(fp, "%s ", vartype);   // "int "
-    //    for (int i=0; i<numdimensions; i++) fprintf(fp, "*"); // ***
-    //    fprintf(fp, "%s", varname); // variable name
-    //  }
-    //  else
-
-    fprintf(fp, "%s %s", vartype, arraypointerpart);
-    if (isRestrict) fprintf(fp, " __restrict__ ");  // wrong place
-    fprintf(fp, "%s%s", varname, arraysetpart);
-    if (init) {
-      fprintf(fp, " = ");
-      fflush(fp);
-      init->print(0, fp);
-    }
-  }
-  fflush(fp);
-  //fprintf(stderr, "numdimensions %d    arraysizes address 0x%x\n",  numdimensions, arraysizes);
-  //if (!isAParameter) fprintf(fp, ";\n",   vartype, varname, arraypart );
-};
-
-
 void chillAST_VarDecl::printName(int in, FILE *fp) {
   chillindent(in, fp);
   fprintf(fp, "%s", varname);
@@ -4218,9 +3753,7 @@ chillAST_CompoundStmt::chillAST_CompoundStmt() {
 
 
 void chillAST_CompoundStmt::print(int indent, FILE *fp) {
-  printPreprocBEFORE(indent, fp);
   int numchildren = children.size();
-  //fprintf(stderr, "NUMCHILDREN %d\n", numchildren); sleep(1);
   for (int i = 0; i < numchildren; i++) {
     children[i]->print(indent, fp);
     if (children[i]->getType() != CHILLAST_NODE_FORSTMT
@@ -4510,14 +4043,6 @@ chillAST_Sizeof::chillAST_Sizeof(char *athing) {
   thing = strdup(athing); // memory leak
 }
 
-void chillAST_Sizeof::print(int indent, FILE *fp) {
-  //fprintf(stderr, "chillAST_Sizeof::print()\n");
-  chillindent(indent, fp); // hard to believe this will ever do anything
-  fprintf(fp, "sizeof(");
-  fprintf(fp, "%s)", thing);
-  fflush(fp);
-}
-
 void chillAST_Sizeof::gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento) {}
 
 void chillAST_Sizeof::gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {}
@@ -4741,7 +4266,6 @@ chillAST_Node *chillAST_IfStmt::clone() {
 }
 
 void chillAST_IfStmt::print(int indent, FILE *fp) {
-  printPreprocBEFORE(indent, fp);
   chillindent(indent, fp);
   fprintf(fp, "if (");
   if (cond) cond->print(0, fp);
@@ -5084,9 +4608,9 @@ chillAST_VarDecl* chillAST_Node::getParameter(const char *t) {
 void chillAST_Node::dump(int indent, FILE *fp) {
   if (fp == stderr) {
     chill::printer::Dump d;
-    d.print("",this,std::cerr);
+    d.printErr("",this);
   } else {
     chill::printer::Dump d;
-    d.print("",this,std::cout);
+    d.printOut("",this);
   }
 }

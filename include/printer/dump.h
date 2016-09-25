@@ -7,13 +7,13 @@
 
 #include "printer/generic.h"
 
-/*!
- * \file
- * \brief this replace the old dump function in the chillAST
- */
-
 namespace chill {
   namespace printer {
+    /*!
+     * \brief this replace the old dump function in the chillAST
+     *
+     * Everthing is written in a Tree-like structure: (<NodeName> <Params>). No precedence calculation is needed.
+     */
     class Dump : public GenericPrinter {
     public:
       Dump() {}

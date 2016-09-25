@@ -11,13 +11,6 @@ public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_NULL;}
   chillAST_NULL() {
   };
-
-  void print(int indent = 0, FILE *fp = stderr) {
-    chillindent(indent, fp);
-    fprintf(fp, "/* (NULL statement); */ ");
-    fflush(fp);
-  }
-
 };
 
 class chillAST_Preprocessing : public chillAST_Node {
@@ -90,9 +83,6 @@ public:
     fprintf(stderr, "TypedefDecl getUnderLyingType()\n");
     return underlyingtype;
   };
-
-  void print(int indent = 0, FILE *fp = stderr);
-
 };
 
 class chillAST_VarDecl : public chillAST_Node {
@@ -165,8 +155,6 @@ public:
   chillAST_VarDecl(chillAST_TypedefDecl *tdd, const char *n, const char *arraypart);
 
   chillAST_VarDecl(chillAST_RecordDecl *astruct, const char *n, const char *arraypart);
-
-  void print(int indent = 0, FILE *fp = stderr);
 
   void printName(int indent = 0, FILE *fp = stderr);
 
@@ -446,13 +434,13 @@ public:
 };  // end FunctionDecl 
 
 class chillAST_SourceFile : public chillAST_Node {
+  // TODO included source file
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_SOURCEFILE;}
 
   // constructors
   chillAST_SourceFile(const char *filename);  //  defined in chill_ast.cc
 
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
   void printToFile(char *filename = NULL);
 
   char *SourceFileName; // where this originated
@@ -522,8 +510,6 @@ public:
 
   chillAST_Node *getBody() { return (body); }
 
-  void print(int indent = 0, FILE *fp = stderr); // in chill_ast.cc
-
   chillAST_Node *clone();
 
   // none of these make sense for macros 
@@ -592,7 +578,6 @@ public:
 
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
   void printControl(int indent = 0, FILE *fp = stderr);  // print just for ( ... ) but not body
 
   chillAST_Node *constantFold();
@@ -711,7 +696,6 @@ public:
 
   // required methods that I can't seem to get to inherit
   void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
-  void printonly(int indent = 0, FILE *fp = stderr);
 
   chillAST_Node *constantFold();
 
@@ -820,7 +804,6 @@ public:
 
   // required methods that I can't seem to get to inherit
   void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
-  void printonly(int indent = 0, FILE *fp = stderr);
 
   char *stringRep(int indent = 0);
 
@@ -892,9 +875,6 @@ public:
   void replaceChild(chillAST_Node *old, chillAST_Node *newchild); // will examine index
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
-  void printonly(int indent = 0, FILE *fp = stderr);
-
   void print(int indent = 0, FILE *fp = stderr) const;  // print CODE   in chill_ast.cc
   char *stringRep(int indent = 0);
 
@@ -957,10 +937,6 @@ public:
   bool operator==(const chillAST_MemberExpr &);
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
-  void printonly(int indent = 0, FILE *fp = stderr);
-
-  void print(int indent = 0, FILE *fp = stderr) const;  // print CODE   in chill_ast.cc
   char *stringRep(int indent = 0);
 
   chillAST_Node *constantFold();
@@ -1013,7 +989,6 @@ public:
   int evalAsInt() { return value; }
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
@@ -1151,8 +1126,6 @@ public:
   // required methods that I can't seem to get to inherit
   void replaceChild(chillAST_Node *old, chillAST_Node *newchild);
 
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
-  void printonly(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
@@ -1352,19 +1325,15 @@ class chillAST_Malloc : public chillAST_Node {   // malloc( sizeof(int) * 2048 )
 public:
   virtual CHILLAST_NODE_TYPE getType(){return CHILLAST_NODE_MALLOC;}
   // variables that are special for this type of node
-  //! to void if this is null  ,  sizeof(thing) if it is not
-  char *thing;
   //! The subexpression calculating bytes
   chillAST_Node *sizeexpr; // bytes
 
   // constructors
-  chillAST_Malloc(char *thething, chillAST_Node *numthings); // malloc (sizeof(int) *1024)
+  chillAST_Malloc(chillAST_Node *numthings); // malloc (sizeof(int) *1024)
 
   // other methods particular to this type of node
 
-
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
@@ -1412,7 +1381,6 @@ public:
 
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
@@ -1607,7 +1575,6 @@ public:
 
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
@@ -1641,7 +1608,6 @@ public:
   chillAST_NoOp(); //  { parent = p; };
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr) {};  // print CODE   in chill_ast.cc
   chillAST_Node *constantFold() {};
 
   chillAST_Node *clone() { chillAST_Node* n = new chillAST_NoOp(); n->setParent(parent); return n; }; // ??
@@ -1746,8 +1712,6 @@ public:
 
 
   // required methods that I can't seem to get to inherit
-  void print(int indent = 0, FILE *fp = stderr);  // print CODE   in chill_ast.cc
-  //void dump(  int indent=0,  FILE *fp = stderr );  // print ast    in chill_ast.cc
 };
 
 

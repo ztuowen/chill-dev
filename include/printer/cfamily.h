@@ -9,46 +9,53 @@
 
 /*!
  * \file
- * \brief Print the AST for C like syntax, This replace the old print function
  */
 
 namespace chill {
   namespace printer{
+    /*!
+     * \brief Print the AST for C like syntax, This replace the old print function
+     * Custom multiplexer should not be needed. This version should calculate the correct precedence for expressions.
+     * Expression should be encapsulated in {} or () or ended with ; with heuristics at the parent node
+     */
     class CFamily : public GenericPrinter {
     public:
       CFamily() {}
       virtual int getPrec(chillAST_Node *n);
-      virtual void print(std::string ident, chillAST_ArraySubscriptExpr *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_BinaryOperator *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_CallExpr *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_CompoundStmt *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_CStyleAddressOf *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_CStyleCastExpr *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_CudaFree *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_CudaKernelCall *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_CudaMalloc *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_CudaMemcpy *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_CudaSyncthreads *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_DeclRefExpr *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_FloatingLiteral *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_ForStmt *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_Free *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_FunctionDecl *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_ImplicitCastExpr *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_MacroDefinition *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_Malloc *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_MemberExpr *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_ParenExpr *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_Preprocessing *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_RecordDecl *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_ReturnStmt *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_Sizeof *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_SourceFile *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_TypedefDecl *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_TernaryOperator *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_UnaryOperator *n, std::ostringstream &o);
-      virtual void print(std::string ident, chillAST_VarDecl *n, std::ostringstream &o);
-      virtual void print(string ident, chillAST_Node *n, ostringStream &o);
+      virtual void printS(std::string ident, chillAST_ArraySubscriptExpr *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_BinaryOperator *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_CallExpr *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_CompoundStmt *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_CStyleAddressOf *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_CStyleCastExpr *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_CudaFree *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_CudaKernelCall *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_CudaMalloc *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_CudaMemcpy *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_CudaSyncthreads *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_DeclRefExpr *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_FloatingLiteral *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_ForStmt *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_Free *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_FunctionDecl *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_IfStmt *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_IntegerLiteral *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_ImplicitCastExpr *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_MacroDefinition *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_Malloc *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_MemberExpr *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_NULL *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_NoOp *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_ParenExpr *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_Preprocessing *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_RecordDecl *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_ReturnStmt *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_Sizeof *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_SourceFile *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_TypedefDecl *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_TernaryOperator *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_UnaryOperator *n, std::ostream &o);
+      virtual void printS(std::string ident, chillAST_VarDecl *n, std::ostream &o);
     };
   }
 }

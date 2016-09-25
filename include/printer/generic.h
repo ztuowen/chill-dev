@@ -11,20 +11,25 @@
 
 /*!
  * \file
- * \brief this is a generic AST printSer that printSs the code out to a C-family like syntax
+ * \brief this is a generic AST printSer that prints the code out to a C-family like syntax
  */
 namespace chill {
   namespace printer {
     class GenericPrinter {
     private:
-      std::string indentSpace;
+      std::string identSpace;
     public:
-      GenericPrinter() { indentSpace = "  "; }
-
+      GenericPrinter() { identSpace = "  "; }
+      //! Set the indentation for print
+      /*!
+       * Some subclass has indentation unused, like Dump. Also, only spaces is supported,
+       * so it is a number of the spaces in the indentaion.
+       * @param numspaces number of spaces for the indentation
+       */
       void setIndentSpace(int numspaces) {
-        indentSpace = "";
+        identSpace = "";
         for (int i = 0; i < numspaces; ++i)
-          indentSpace += "  ";
+          identSpace += "  ";
       }
       virtual int getPrecS(chillAST_ArraySubscriptExpr *n) { return INT8_MAX; }
       virtual int getPrecS(chillAST_BinaryOperator *n) { return INT8_MAX; }
@@ -117,6 +122,28 @@ namespace chill {
         std::ostringstream os;
         print(ident, n, os);
         return os.str();
+      }
+      //! Print the AST to stdout
+      /*!
+       * @param ident indentation of the node, the one inherited from the parent
+       * @param n the chillAST_Node
+       */
+      virtual void printOut(std::string ident, chillAST_Node *n) {
+        print(ident,n,std::cout);
+      }
+      //! Print the AST to stdErr
+      /*!
+       * @param ident indentation of the node
+       * @param n the chillAST_Node
+       */
+      virtual void printErr(std::string ident, chillAST_Node *n) {
+        print(ident,n,std::cerr);
+      }
+      //! Print the subexpression with precedence
+      virtual void printPrec(std::string ident,chillAST_Node *n,std::ostream &o, int prec) {
+        if (getPrec(n) > prec) o<<"(";
+        print(ident,n,prec);
+        if (getPrec(n) > prec) o<<")";
       }
    };
   }

@@ -25,7 +25,6 @@ public:
   char *filename;
   //! for compiler internals, formerly a comment
   char *metacomment;
-  std::vector<chillAST_Preprocessing *> preprocessinginfo;
 
   //! for manufactured scalars 
   static int chill_scalar_counter;
@@ -418,16 +417,13 @@ public:
     fprintf(fp, "(%s) forgot to implement printName()\n", getTypeString());
   };// print CODE 
 
-  //! The AST's print version
+  //! The AST's print version, for reason unknown and incorrect
   virtual char *stringRep(int indent = 0) {
     fflush(stdout);
     // TODO chillindent(indent, fp);
     CHILL_ERROR("(%s) forgot to implement stringRep()\n", getTypeString());
     exit(-1);
   }
-
-
-  virtual void printonly(int indent = 0, FILE *fp = stderr) { print(indent, fp); };
 
   virtual void getTopLevelLoops(std::vector<chillAST_ForStmt *> &loops) {
     int n = children.size();
@@ -528,14 +524,11 @@ public:
     fprintf(stderr, "\n\n");
   }
 
-  void printPreprocBEFORE(int indent, FILE *fp);
-
-  void printPreprocAFTER(int indent, FILE *fp);
-
   virtual chillAST_SymbolTable* getParameters() {return parameters;}
   virtual chillAST_VarDecl* getParameter(const char * name);
   virtual void addParameter(chillAST_VarDecl* name);
 
+  //! Emulation of the old dump function but using printer instead of hardcoded heuritics
   void dump(int indent=0,FILE *fp = stderr);
 
 };
