@@ -153,20 +153,17 @@ public:
 
   virtual void addTypedefToScope(chillAST_TypedefDecl *tdd);
 
-  chillAST_TypedefDecl *findTypeDecleration(const char *t);
-
-  chillAST_VarDecl *findVariableDecleration(const char *t);
-
+  //! Non recursive version that tries to find the declaration in this node
   chillAST_VarDecl *getVariableDeclaration(const char *vn);
 
+  //! Non recursive version that tries to find the declaration in this node
   chillAST_TypedefDecl *getTypeDeclaration(const char *tn);
 
-  virtual chillAST_VarDecl *findVariableNamed(const char *name); // recursive
+  //! Recursive version that will go to parent node if not finding in this
+  chillAST_VarDecl *findVariableDecleration(const char *t);
 
-  chillAST_RecordDecl *findRecordDeclNamed(const char *name); // recursive
-
-  // void addDecl( chillAST_VarDecl *vd); // recursive, adds to first  symbol table it can find
-
+  //! Recursive version that will go the parent node if not finding in this
+  chillAST_TypedefDecl *findTypeDecleration(const char *t);
 
   int getNumChildren() { return children.size(); };
 
@@ -181,72 +178,19 @@ public:
 
   void setMetaComment(const char *c) { metacomment = strdup(c); };
 
-  virtual void chillMergeChildInfo(chillAST_Node) {
-    // TODO if (par) par->add to definition for vardecl/typedecl
-    // TODO  if (par) par->getSourceFile()->addFunc(this); for FuncDecl
-    // TODO if (par) par->getSourceFile()->addMacro(this); For MacroDecl
-    // TODO if (parent) parent->addVariableToSymbolTable(this); // should percolate up until something has a symbol table
-  }
+  virtual void mergeChildInfo(chillAST_Node);
 
-  virtual void addChild(chillAST_Node *c) {
-    c->parent = this;
-    // check to see if it's already there
-    for (int i = 0; i < children.size(); i++) {
-      if (c == children[i]) {
-        CHILL_ERROR("addchild ALREADY THERE\n");
-        return; // already there
-      }
-    }
-    children.push_back(c);
-  };  // not usually useful
+  virtual void addChild(chillAST_Node *c);
 
-  virtual void addChildren(const chillAST_NodeList &c) {
-    for (int i = 0; i < c.size(); ++i) {
-      addChild(c[i]);
-    }
-  }
+  virtual void addChildren(const chillAST_NodeList &c);
 
-  virtual void insertChild(int i, chillAST_Node *node) {
-    //fprintf(stderr, "%s inserting child of type %s at location %d\n", getTypeString(), node->getTypeString(), i); 
-    node->parent = this;
-    children.insert(children.begin() + i, node);
-  };
+  virtual void insertChild(int i, chillAST_Node *node);
 
-  virtual void removeChild(int i) {
-    children.erase(children.begin() + i);
-  };
+  virtual void removeChild(int i);
 
-  int findChild(chillAST_Node *c) {
-    for (int i = 0; i < children.size(); i++) {
-      if (children[i] == c) return i;
-    }
-    return -1;
-  }
+  int findChild(chillAST_Node *c);
 
-  virtual void replaceChild(chillAST_Node *old, chillAST_Node *newchild) {
-    CHILL_DEBUG_PRINT("(%s) forgot to implement replaceChild() ... using generic\n", getTypeString());
-    CHILL_DEBUG_PRINT("%d children\n", children.size());
-    for (int i = 0; i < children.size(); i++) {
-      if (children[i] == old) {
-        children[i] = newchild;
-        newchild->setParent(this);
-        return;
-      }
-    }
-    CHILL_ERROR("%s %p generic replaceChild called with oldchild that was not a child\n",
-                getTypeString(), this);
-    CHILL_DEBUG_BEGIN
-      fprintf(stderr, "printing\n");
-      print();
-      fprintf(stderr, "\nchild: ");
-      if (!old) fprintf(stderr, "oldchild NULL!\n");
-      old->print();
-      fprintf(stderr, "\nnew: ");
-      newchild->print();
-      fprintf(stderr, "\n");
-    CHILL_DEBUG_END
-    exit(-1);
-  };
+  virtual void replaceChild(chillAST_Node *old, chillAST_Node *newchild);
 
   //! Spread the loop across a bunch of cores that will each calculate its own loop variable.
   /*!
@@ -262,12 +206,7 @@ public:
    *
    * @param var
    */
-  virtual void loseLoopWithLoopVar(char *var) {
-    std::vector<chillAST_Node *> dupe = children; // simple enough?
-    for (int i = 0; i < dupe.size(); i++) {  // recurse on all children
-      dupe[i]->loseLoopWithLoopVar(var);
-    }
-  }
+  virtual void loseLoopWithLoopVar(char *var);
 
   virtual int evalAsInt() {
     CHILL_ERROR("(%s) can't be evaluated as an integer??\n", getTypeString());
@@ -314,37 +253,13 @@ public:
   };
 
   //! recursive walk parent links, looking for loops, and grabbing the declRefExpr in the loop init and cond.
-  virtual void gatherLoopIndeces(
-      std::vector<chillAST_VarDecl *> &indeces) {
-    // you can quit when you get to certain nodes
-
-    CHILL_DEBUG_PRINT("%s::gatherLoopIndeces()\n", getTypeString());
-
-    if (isSourceFile() || isFunctionDecl()) return; // end of the line
-
-    if (!parent) return; // should not happen, but be careful
-
-    // for most nodes, this just recurses upwards
-    parent->gatherLoopIndeces(indeces);
-  }
+  virtual void gatherLoopIndeces(std::vector<chillAST_VarDecl *> &indeces);
 
   //! recursive walk parent links, looking for loops
-  chillAST_ForStmt *findContainingLoop() {
-    CHILL_DEBUG_PRINT("%s::findContainingLoop()   ", getTypeString());
-    if (!parent) return NULL;
-    if (parent->isForStmt()) return (chillAST_ForStmt *) parent;
-    return parent->findContainingLoop(); // recurse upwards
-  }
+  chillAST_ForStmt *findContainingLoop();
 
   //! recursive walk parent links, avoiding loops
-  chillAST_Node *findContainingNonLoop() {
-    fprintf(stderr, "%s::findContainingNonLoop()   ", getTypeString());
-    if (!parent) return NULL;
-    if (parent->isCompoundStmt() && parent->getParent()->isForStmt())
-      return parent->getParent()->findContainingNonLoop(); // keep recursing
-    if (parent->isForStmt()) return parent->findContainingNonLoop(); // keep recursing
-    return (chillAST_Node *) parent; // return non-loop
-  }
+  chillAST_Node *findContainingNonLoop();
 
   // TODO gather loop init and cond (and if cond) like gatherloopindeces
 
@@ -415,87 +330,22 @@ public:
     fprintf(fp, "(%s) forgot to implement printName()\n", getTypeString());
   };// print CODE 
 
-  //! The AST's print version, for reason unknown and incorrect
-  virtual char *stringRep(int indent = 0) {
-    fflush(stdout);
-    // TODO chillindent(indent, fp);
-    CHILL_ERROR("(%s) forgot to implement stringRep()\n", getTypeString());
-    exit(-1);
-  }
+  virtual void getTopLevelLoops(std::vector<chillAST_ForStmt *> &loops);
 
-  virtual void getTopLevelLoops(std::vector<chillAST_ForStmt *> &loops) {
-    int n = children.size();
-    for (int i = 0; i < n; i++) {
-      if (children[i]->isForStmt()) {
-        loops.push_back(((chillAST_ForStmt *) (children[i])));
-      }
-    }
-  }
+  virtual void repairParentChild();
 
-
-  virtual void repairParentChild() {  // for nodes where all subnodes are children
-    int n = children.size();
-    for (int i = 0; i < n; i++) {
-      if (children[i]->parent != this) {
-        fprintf(stderr, "fixing child %s that didn't know its parent\n", children[i]->getTypeString());
-        children[i]->parent = this;
-      }
-    }
-  }
-
-
-  virtual void
-  get_deep_loops(std::vector<chillAST_ForStmt *> &loops) { // this is probably broken - returns ALL loops under it
-    int n = children.size();
-    //fprintf(stderr, "get_deep_loops of a %s with %d children\n", getTypeString(), n); 
-    for (int i = 0; i < n; i++) {
-      //fprintf(stderr, "child %d is a %s\n", i, children[i]->getTypeString()); 
-      children[i]->get_deep_loops(loops);
-    }
-    //fprintf(stderr, "found %d deep loops\n", loops.size()); 
-  }
+  virtual void get_deep_loops(std::vector<chillAST_ForStmt *> &loops);
 
 
   // generic for chillAST_Node with children
-  virtual void find_deepest_loops(std::vector<chillAST_ForStmt *> &loops) { // returns DEEPEST nesting of loops
-    std::vector<chillAST_ForStmt *> deepest; // deepest below here
-
-    int n = children.size();
-    //fprintf(stderr, "find_deepest_loops of a %s with %d children\n", getTypeString(), n); 
-    for (int i = 0; i < n; i++) {
-      std::vector<chillAST_ForStmt *> subloops;  // loops below here among a child of mine 
-
-      //fprintf(stderr, "child %d is a %s\n", i, children[i]->getTypeString()); 
-      children[i]->find_deepest_loops(subloops);
-
-      if (subloops.size() > deepest.size()) {
-        deepest = subloops;
-      }
-    }
-
-    // append deepest we see at this level to loops 
-    for (int i = 0; i < deepest.size(); i++) {
-      loops.push_back(deepest[i]);
-    }
-
-    //fprintf(stderr, "found %d deep loops\n", loops.size()); 
-
-  }
-
+  virtual void find_deepest_loops(std::vector<chillAST_ForStmt *> &loops);
 
   void setParent(chillAST_Node *p) { parent = p; };
 
   chillAST_Node *getParent() { return parent; };
 
   //! This will be ideally replaced by call at to the top level
-  chillAST_SourceFile *getSourceFile() {
-    if (isSourceFile()) return ((chillAST_SourceFile *) this);
-    if (parent != NULL) return parent->getSourceFile();
-    CHILL_ERROR("UHOH, getSourceFile() called on node %p %s that does not have a parent and is not a source file\n",
-                this, this->getTypeString());
-    this->print();
-    exit(-1);
-  }
+  chillAST_SourceFile *getSourceFile();
 
   // TODO DOC
   virtual chillAST_Node *getEnclosingStatement(int level = 0);

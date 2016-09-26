@@ -23,7 +23,7 @@ enum CHILLAST_NODE_TYPE {
   CHILLAST_NODE_TYPEDEFDECL,
   CHILLAST_NODE_VARDECL,
   //  CHILLAST_NODE_PARMVARDECL,   not used any more
-  CHILLAST_NODE_FUNCTIONDECL,
+      CHILLAST_NODE_FUNCTIONDECL,
   CHILLAST_NODE_RECORDDECL,     // struct or union (or class)
   CHILLAST_NODE_MACRODEFINITION,
   CHILLAST_NODE_COMPOUNDSTMT,
@@ -41,7 +41,7 @@ enum CHILLAST_NODE_TYPE {
   CHILLAST_NODE_RETURNSTMT,
   CHILLAST_NODE_CALLEXPR,
   //CHILLAST_NODE_DECLSTMT, not used
-  CHILLAST_NODE_PARENEXPR,
+      CHILLAST_NODE_PARENEXPR,
   CHILLAST_NODE_CSTYLECASTEXPR,
   CHILLAST_NODE_CSTYLEADDRESSOF,
   CHILLAST_NODE_IFSTMT,
@@ -51,7 +51,7 @@ enum CHILLAST_NODE_TYPE {
   CHILLAST_NODE_PREPROCESSING, // comments, #define, #include, whatever else works
   CHILLAST_NODE_NOOP,   // NO OP
   // CUDA specific
-  CHILLAST_NODE_CUDAMALLOC,
+      CHILLAST_NODE_CUDAMALLOC,
   CHILLAST_NODE_CUDAFREE,
   CHILLAST_NODE_CUDAMEMCPY,
   CHILLAST_NODE_CUDAKERNELCALL,
@@ -97,6 +97,7 @@ char *splitTypeInfo(char *underlyingtype);
 
 //! change "1024UL" to "1024"
 char *ulhack(char *brackets);
+
 //! remove __restrict__ , MODIFIES the argument!
 char *restricthack(char *typeinfo);
 
@@ -106,8 +107,10 @@ extern const char *ChillAST_Node_Names[];  // WARNING MUST BE KEPT IN SYNC WITH 
 // fwd declarations
 //! the generic node, who specific types are derived from
 class chillAST_Node;
+
 //! empty node
 class chillAST_NULL;
+
 //! ast for an entire source file (translationunit)
 class chillAST_SourceFile;
 
@@ -120,15 +123,19 @@ class chillAST_FunctionDecl;
 
 //! structs and unions (and classes?)
 class chillAST_RecordDecl;
+
 class chillAST_MacroDefinition;
 
 //! A sequence of statements
 class chillAST_CompoundStmt;
+
 //! a For LOOP
 class chillAST_ForStmt;
 
 class chillAST_UnaryOperator;
+
 class chillAST_BinaryOperator;
+
 class chillAST_TernaryOperator;
 
 class chillAST_ArraySubscriptExpr;
@@ -169,6 +176,7 @@ class chillAST_CudaFree;
 
 class chillAST_CudaMemcpy;
 
+// Not implemented
 class chillAST_CudaKernelCall;
 
 class chillAST_CudaSyncthreads;
@@ -180,20 +188,21 @@ typedef std::vector<chillAST_VarDecl *> chillAST_SymbolTable;
 typedef std::vector<chillAST_TypedefDecl *> chillAST_TypedefTable;
 
 chillAST_VarDecl *symbolTableFindName(chillAST_SymbolTable *table, const char *name);
+
 chillAST_VarDecl *symbolTableFindVariableNamed(chillAST_SymbolTable *table,
                                                const char *name);
+
 chillAST_TypedefDecl *typedefTableFindName(chillAST_TypedefTable *table, const char *name);
 
-void printSymbolTable(chillAST_SymbolTable *st);
-void printSymbolTableMoreInfo(chillAST_SymbolTable *st);
-
-
 chillAST_Node *lessthanmacro(chillAST_Node *left, chillAST_Node *right);
+
 chillAST_SymbolTable *addSymbolToTable(chillAST_SymbolTable *st, chillAST_VarDecl *vd);
+
 chillAST_TypedefTable *addTypedefToTable(chillAST_TypedefTable *tt, chillAST_TypedefDecl *td);
 
 
 void chillindent(int i, FILE *fp);
+
 void insertNewDeclAtLocationOfOldIfNeeded(chillAST_VarDecl *newdecl, chillAST_VarDecl *olddecl);
 
 chillAST_DeclRefExpr *buildDeclRefExpr(chillAST_VarDecl *);

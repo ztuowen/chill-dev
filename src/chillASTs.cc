@@ -55,8 +55,8 @@ const char *ChillAST_Node_Names[] = {
     "fake3"
 };
 
-bool streq(const char * a, const char * b) {
-  return !strcmp(a,b);
+bool streq(const char *a, const char *b) {
+  return !strcmp(a, b);
 }
 
 //! Parse to the most basic type
@@ -75,7 +75,7 @@ char *parseUnderlyingType(const char *sometype) {
       while (*p != '[') --p;
     else break;
 
-  *(p+1) = '\0';
+  *(p + 1) = '\0';
 
   return underlying;
 }
@@ -136,7 +136,7 @@ chillAST_VarDecl *variableDeclFindSubpart(chillAST_VarDecl *decl, const char *na
           CHILL_DEBUG_PRINT("DIDN'T FIND a struct member named %s\n", varname);
         if (!subpart)
           return sp;
-        return variableDeclFindSubpart(sp,subpart);  // return the subpart??
+        return variableDeclFindSubpart(sp, subpart);  // return the subpart??
       } else {
         CHILL_ERROR("no recordDecl\n");
         exit(-1);
@@ -161,12 +161,11 @@ chillAST_VarDecl *symbolTableFindVariableNamed(chillAST_SymbolTable *table, cons
 
   if (!subpart)
     return vd;
-  return variableDeclFindSubpart(vd,subpart);
+  return variableDeclFindSubpart(vd, subpart);
 }
 
 //! remove UL from numbers, MODIFIES the argument!
-char *ulhack(char *brackets)
-{
+char *ulhack(char *brackets) {
   CHILL_DEBUG_PRINT("ulhack( \"%s\"  -> \n", brackets);
   int len = strlen(brackets);
   for (int i = 0; i < len - 2; i++) {
@@ -183,8 +182,7 @@ char *ulhack(char *brackets)
 
 
 //! remove __restrict__ , MODIFIES the argument!
-char *restricthack(char *typeinfo)
-{
+char *restricthack(char *typeinfo) {
   CHILL_DEBUG_PRINT("restricthack( \"%s\"  -> \n", typeinfo);
   std::string r("__restrict__");
   std::string t(typeinfo);
@@ -244,52 +242,8 @@ bool isRestrict(const char *sometype) { // does not modify sometype
 
 void chillindent(int howfar, FILE *fp) { for (int i = 0; i < howfar; i++) fprintf(fp, "  "); }
 
-chillAST_VarDecl *chillAST_Node::findVariableNamed(const char *name) { // generic, recursive
-  CHILL_DEBUG_PRINT("nodetype %s  findVariableNamed( %s )\n", getTypeString(), name);
-  if (getSymbolTable()) { // look in my symbol table if I have one
-    CHILL_DEBUG_PRINT("%s has a symbol table\n", getTypeString());
-    chillAST_VarDecl *vd = symbolTableFindVariableNamed(getSymbolTable(), name);
-    if (vd) {
-      CHILL_DEBUG_PRINT("found it\n");
-      return vd; // found locally
-    }
-    CHILL_DEBUG_PRINT("%s has a symbol table but couldn't find %s\n", getTypeString(), name);
-  }
-  if (!parent) {
-    CHILL_DEBUG_PRINT("%s has no parent\n", getTypeString());
-    return NULL; // no more recursion available
-  }
-  // recurse upwards
-  //fprintf(stderr, "recursing from %s up to parent %p\n", getTypeString(), parent);
-  CHILL_DEBUG_PRINT("recursing from %s up to parent\n", getTypeString());
-  return parent->findVariableNamed(name);
-}
-
-
-chillAST_RecordDecl *chillAST_Node::findRecordDeclNamed(const char *name) { // recursive
-  fprintf(stderr, "%s::findRecordDeclNamed( %s )\n", getTypeString(), name);
-  // look in children
-  int numchildren = children.size();
-  fprintf(stderr, "%d children\n", numchildren);
-  for (int i = 0; i < numchildren; i++) {
-    fprintf(stderr, "child %d  %s\n", i, children[i]->getTypeString());
-    if (children[i]->isRecordDecl()) {
-      chillAST_RecordDecl *RD = (chillAST_RecordDecl *) children[i];
-      fprintf(stderr, "it is a recordDecl named '%s' vs '%s'\n", RD->getName(), name);
-      if (!strcmp(RD->getName(), name)) {
-        fprintf(stderr, "FOUND IT\n");
-        return RD;
-      }
-    }
-  }
-
-  if (!parent) return NULL; // no more recursion available
-  // recurse upwards
-  return parent->findRecordDeclNamed(name);
-}
-
 chillAST_SourceFile::chillAST_SourceFile(const char *filename) {
-  if(filename) SourceFileName = strdup(filename);
+  if (filename) SourceFileName = strdup(filename);
   else SourceFileName = strdup("No Source File");
   symbolTable = new chillAST_SymbolTable();
   typedefTable = new chillAST_TypedefTable();
@@ -683,7 +637,6 @@ chillAST_Node *chillAST_FunctionDecl::constantFold() {
 
 chillAST_MacroDefinition::chillAST_MacroDefinition(const char *mname = NULL, const char *rhs = NULL) {
   if (mname) macroName = strdup(mname); else macroName = strdup("UNDEFINEDMACRO");
-  if(rhs) rhsString = strdup(rhs); else rhsString = NULL;
   metacomment = NULL;
   parameters = new chillAST_SymbolTable();
   isFromSourceFile = true; // default
@@ -695,10 +648,10 @@ chillAST_Node *chillAST_MacroDefinition::clone() {
 
   CHILL_ERROR("cloning a macro makes no sense\n");
   return this;
-  chillAST_MacroDefinition *clo = new chillAST_MacroDefinition( macroName );
+  chillAST_MacroDefinition *clo = new chillAST_MacroDefinition(macroName);
   clo->setParent(parent);
-  for (int i=0; i<parameters->size(); i++) clo->addVariableToScope( (*parameters)[i] );
-  clo->setBody( body->clone() );
+  for (int i = 0; i < parameters->size(); i++) clo->addVariableToScope((*parameters)[i]);
+  clo->setBody(body->clone());
   return clo;
 
 }
@@ -710,7 +663,6 @@ void chillAST_MacroDefinition::setBody(chillAST_Node *bod) {
   fprintf(stderr, "body is:\n");
   body->print(0, stderr);
   fprintf(stderr, "\n\n");
-  rhsString = body->stringRep();
   bod->setParent(this);  // well, ...
 }
 
@@ -1064,7 +1016,7 @@ bool chillAST_ForStmt::findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bo
     // find vardecl for named preferred index.  it has to already exist
     fprintf(stderr, "RIGHT NOW, change all the references that this loop wants swapped out \n");
 
-    chillAST_VarDecl *newguy = findVariableNamed(vname); // recursive
+    chillAST_VarDecl *newguy = findVariableDecleration(vname); // recursive
     if (!newguy) {
       fprintf(stderr, "there was no variable named %s anywhere I could find\n", vname);
     }
@@ -1378,11 +1330,6 @@ chillAST_IntegerLiteral *chillAST_BinaryOperator::evalAsIntegerLiteral() {
   return new chillAST_IntegerLiteral(evalAsInt()); // ??
 }
 
-char *chillAST_BinaryOperator::stringRep(int indent) {
-  std::string s = string(lhs->stringRep()) + " " + op + " " + string(lhs->stringRep());
-  return strdup(s.c_str());
-}
-
 class chillAST_Node *chillAST_BinaryOperator::constantFold() {
   //fprintf(stderr, "\nchillAST_BinaryOperator::constantFold()  ");
   //print(0,stderr); fprintf(stderr, "\n");
@@ -1691,7 +1638,8 @@ void chillAST_TernaryOperator::gatherScalarRefs(std::vector<chillAST_DeclRefExpr
   rhs->gatherScalarRefs(refs, 0);
 }
 
-chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr(chillAST_Node *bas, chillAST_Node *indx, bool writtento, void *unique) {
+chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr(chillAST_Node *bas, chillAST_Node *indx, bool writtento,
+                                                         void *unique) {
   base = index = NULL;
   basedecl = NULL; //fprintf(stderr, "setting basedecl NULL for ASE %p\n", this);
   imwrittento = writtento; // ??
@@ -1802,17 +1750,6 @@ chillAST_Node *chillAST_Node::getEnclosingStatement(int level) {  // TODO do for
 void chillAST_ArraySubscriptExpr::gatherIndeces(std::vector<chillAST_Node *> &ind) {
   if (base->isArraySubscriptExpr()) ((chillAST_ArraySubscriptExpr *) base)->gatherIndeces(ind);
   ind.push_back(index);
-}
-
-char *chillAST_ArraySubscriptExpr::stringRep(int indent) {
-  fprintf(stderr, "chillAST_ArraySubscriptExpr::stringRep\n");
-
-  char *blurb;
-  char *b = base->stringRep(0);
-  char *i = index->stringRep(0);
-  std::string s = string(b) + "[" + string(i) + "]";
-  fprintf(stderr, "ASE stringrep %s\n", s.c_str());
-  return strdup(s.c_str());
 }
 
 chillAST_VarDecl *chillAST_ArraySubscriptExpr::multibase() {
@@ -2010,24 +1947,6 @@ chillAST_MemberExpr::chillAST_MemberExpr(chillAST_Node *bas, const char *mem, vo
 
 // TODO member can be another member expression, Right?
 
-char *chillAST_MemberExpr::stringRep(int indent) { // char pointer to what we'd print
-  fprintf(stderr, "*chillAST_MemberExpr::stringRep()\n");
-  if (base->isDeclRefExpr()) { //
-    chillAST_VarDecl *vd = (chillAST_VarDecl *) ((chillAST_DeclRefExpr *) base)->decl;
-    char *leak = (char *) malloc(128);
-    if (exptype == CHILLAST_MEMBER_EXP_ARROW) sprintf(leak, "%s->%s", vd->varname, member);
-    else sprintf(leak, "%s.%s", vd->varname, member);
-    printstring = leak;
-    return leak;
-  }
-
-
-  // else
-  // TODO
-  return strdup("chillAST_MemberExpr::getStringRep()hadanerror");
-}
-
-
 class chillAST_Node *chillAST_MemberExpr::constantFold() {
   base = base->constantFold();
   //member = member->constantFold();
@@ -2195,10 +2114,6 @@ chillAST_DeclRefExpr::chillAST_DeclRefExpr(chillAST_FunctionDecl *fd) { // funct
 chillAST_DeclRefExpr *buildDeclRefExpr(chillAST_VarDecl *vd) {
   chillAST_DeclRefExpr *dre = new chillAST_DeclRefExpr(vd);
   return dre;
-}
-
-char *chillAST_DeclRefExpr::stringRep(int indent) {
-  return strdup(declarationName);
 }
 
 class chillAST_Node *chillAST_DeclRefExpr::constantFold() {  // can never do anything?
@@ -4092,81 +4007,3 @@ chillAST_Preprocessing::chillAST_Preprocessing(CHILLAST_PREPROCESSING_POSITION p
   blurb = strdup(text);
 }
 
-void chillAST_Node::addVariableToScope(chillAST_VarDecl *vd) {
-  CHILL_DEBUG_PRINT("addVariableToScope( %s )\n", vd->varname);
-  if (!symbolTable) return;
-  symbolTable = addSymbolToTable(symbolTable, vd);
-  vd->parent = this;
-}
-void chillAST_Node::addTypedefToScope(chillAST_TypedefDecl *tdd) {
-  if (!typedefTable) return;
-  typedefTable = addTypedefToTable(typedefTable, tdd);
-  tdd->parent = this;
-}
-chillAST_TypedefDecl* chillAST_Node::findTypeDecleration(const char *t) {
-  fprintf(stderr, " %s \n", t);
-  chillAST_TypedefDecl* td = getTypeDeclaration(t);
-  if (!td && parent) return parent->findTypeDecleration(t);
-  return td; // should not happen
-}
-chillAST_VarDecl* chillAST_Node::findVariableDecleration(const char *t) {
-  fprintf(stderr, " %s \n", t);
-  chillAST_VarDecl* td = getVariableDeclaration(t);
-  if (!td && parent) return parent->findVariableDecleration(t);
-  return td; // should not happen
-}
-
-chillAST_VarDecl* chillAST_Node::getVariableDeclaration(const char *t) {
-  chillAST_VarDecl* vd = symbolTableFindName(getSymbolTable(),t);
-  if (!vd) vd = getParameter(t);
-  return vd;
-}
-
-chillAST_TypedefDecl* chillAST_Node::getTypeDeclaration(const char *t){
-  return typedefTableFindName(getTypedefTable(),t);
-}
-
-void chillAST_Node::addParameter(chillAST_VarDecl *vd) {
-  if (!parameters) {
-    CHILL_ERROR("Calling addParameter on construct without parameters");
-    exit(-1);
-  }
-
-  if (symbolTableFindName(getParameters(), vd->varname)) { // NOT recursive. just in FunctionDecl
-    CHILL_ERROR("parameter %s already exists?\n", vd->varname);
-    return;
-  }
-
-  CHILL_DEBUG_PRINT("setting %s isAParameter\n", vd->varname);
-  getParameters()->push_back(vd);
-  vd->isAParameter = true;
-  vd->setParent(this); // this is a combined list!
-}
-
-chillAST_VarDecl* chillAST_Node::getParameter(const char *t) {
-  return symbolTableFindName(getParameters(),t);
-}
-
-void chillAST_Node::dump(int indent, FILE *fp) {
-  if (fp == stderr) {
-    chill::printer::Dump d;
-    d.printErr("",this);
-    fprintf(stderr,"\n");
-  } else {
-    chill::printer::Dump d;
-    d.printOut("",this);
-    fprintf(stdout,"\n");
-  }
-}
-
-void chillAST_Node::print(int indent, FILE *fp) {
-  if (fp == stderr) {
-    chill::printer::CFamily d;
-    d.printErr("",this);
-    fprintf(stderr,"\n");
-  } else {
-    chill::printer::CFamily d;
-    d.printOut("",this);
-    fprintf(stdout,"\n");
-  }
-}

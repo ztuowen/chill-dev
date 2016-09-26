@@ -159,7 +159,6 @@ void Dump::printS(std::string ident, chillAST_MacroDefinition *n, std::ostream &
   o << n->macroName << " ";
   dumpVector(this, ident, n->getParameters(), o);
   print(ident, n->getBody(), o);
-  if (n->rhsString) o << " (aka " << n->rhsString << ") ";
 }
 
 void Dump::printS(std::string ident, chillAST_Malloc *n, std::ostream &o) {

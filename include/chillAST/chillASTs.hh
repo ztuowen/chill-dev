@@ -227,8 +227,6 @@ public:
   };
 
   // required methods that I can't seem to get to inherit
-  char *stringRep(int indent = 0);
-
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
@@ -498,14 +496,9 @@ public:
   virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_MACRODEFINITION; }
 
   char *macroName;
-  char *rhsString;
 
   // parameters - these will be odd, in that they HAVE NO TYPE
   void setName(char *n) { macroName = strdup(n); /* probable memory leak */ };
-
-  void setRhsString(char *n) { rhsString = strdup(n); /* probable memory leak */ };
-
-  char *getRhsString() { return rhsString; }
 
   chillAST_MacroDefinition(const char *name, const char *rhs);
 
@@ -808,8 +801,6 @@ public:
 
 
   // required methods that I can't seem to get to inherit
-  char *stringRep(int indent = 0);
-
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
@@ -879,8 +870,6 @@ public:
   void replaceChild(chillAST_Node *old, chillAST_Node *newchild); // will examine index
 
   // required methods that I can't seem to get to inherit
-  char *stringRep(int indent = 0);
-
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
@@ -941,8 +930,6 @@ public:
   bool operator==(const chillAST_MemberExpr &);
 
   // required methods that I can't seem to get to inherit
-  char *stringRep(int indent = 0);
-
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();

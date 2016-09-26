@@ -160,10 +160,13 @@ void CFamily::printS(std::string ident, chillAST_DeclRefExpr *n, std::ostream &o
 }
 
 void CFamily::printS(std::string ident, chillAST_FloatingLiteral *n, std::ostream &o) {
-  // Althedigits contaminates the result
-  o << showpoint << n->value;
-  if (n->getPrecision() == 1)
-    o << "f";
+  if (n->allthedigits)
+    o<<n->allthedigits;
+  else {
+    o << showpoint << n->value;
+    if (n->getPrecision() == 1)
+      o << "f";
+  }
 }
 
 void CFamily::printS(std::string ident, chillAST_ForStmt *n, std::ostream &o) {

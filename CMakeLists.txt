@@ -26,7 +26,10 @@ set(CORE_SRC
 
 set(IR_CHILL_SRC
         src/ir_clang.cc
+        )
+set(AST_CHILL_SRC
         src/chillASTs.cc
+        src/ast/node.cpp
         )
 
 set(PYTHON_SRC
@@ -91,6 +94,7 @@ add_executable(chill
         ${CORE_SRC}
         ${PYTHON_SRC}
         ${IR_CHILL_SRC}
+        ${AST_CHILL_SRC}
         ${PRINTER_SRC})
 
 target_link_libraries(chill
