@@ -10,14 +10,13 @@
 namespace chill {
   namespace printer {
     /*!
-     * \brief this replace the old dump function in the chillAST
+     * \brief Dump the whole AST in Prefix format
      *
+     * This replace the old dump function in the chillAST.
      * Everthing is written in a Tree-like structure: (<NodeName> <Params>). No precedence calculation is needed.
      */
     class Dump : public GenericPrinter {
-    public:
-      Dump() {}
-
+    protected:
       virtual void printS(std::string ident, chillAST_ArraySubscriptExpr *n, std::ostream &o);
 
       virtual void printS(std::string ident, chillAST_BinaryOperator *n, std::ostream &o);
@@ -86,6 +85,8 @@ namespace chill {
 
       virtual void printS(std::string ident, chillAST_VarDecl *n, std::ostream &o);
 
+    public:
+      Dump() {}
       /*!
        * Just prints everything. Indent is igored due to need to limit the number of output
        * @param ident

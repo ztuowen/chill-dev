@@ -9,33 +9,18 @@
 #include <string>
 #include <sstream>
 
-/*!
- * \file
- * \brief this is a generic AST printSer that prints the code out to a C-family like syntax
- */
 namespace chill {
+  /*!
+   * \brief this is a generic AST printSer that prints the code out to a C-family like syntax
+   */
   namespace printer {
     class GenericPrinter {
     protected:
       std::string identSpace;
-    public:
-      GenericPrinter() { identSpace = "  "; }
-      //! Set the indentation for print
-      /*!
-       * Some subclass has indentation unused, like Dump. Also, only spaces is supported,
-       * so it is a number of the spaces in the indentaion.
-       * @param numspaces number of spaces for the indentation
-       */
-      void setIndentSpace(int numspaces) {
-        identSpace = "";
-        for (int i = 0; i < numspaces; ++i)
-          identSpace += "  ";
-      }
-
-      /*!
-       * Default return value for get prec, can be used as a reference
-       * @return default precedence
-       */
+     /*!
+      * Default return value for get prec, can be used as a reference
+      * @return default precedence
+      */
       virtual int defGetPrecS() { return INT8_MAX; }
 
       virtual int getPrecS(chillAST_ArraySubscriptExpr *n) { return defGetPrecS(); }
@@ -105,12 +90,6 @@ namespace chill {
       virtual int getPrecS(chillAST_UnaryOperator *n) { return defGetPrecS(); }
 
       virtual int getPrecS(chillAST_VarDecl *n) { return defGetPrecS(); }
-      //! return the Precedence of the corresponding AST node
-      /*!
-       * @param n the chillAST_Node
-       * @return a int representing the subnodes's precedence, 0 being the highest, INT8_MAX being the default
-       */
-      virtual int getPrec(chillAST_Node *n);
       //! default error output when encountering not recognized error code
       /*!
        * @param ident
@@ -190,6 +169,26 @@ namespace chill {
       virtual void printS(std::string ident, chillAST_UnaryOperator *n, std::ostream &o) { errorPrintS(ident, n, o); }
 
       virtual void printS(std::string ident, chillAST_VarDecl *n, std::ostream &o) { errorPrintS(ident, n, o); }
+
+    public:
+      GenericPrinter() { identSpace = "  "; }
+      //! Set the indentation for print
+      /*!
+       * Some subclass has indentation unused, like Dump. Also, only spaces is supported,
+       * so it is a number of the spaces in the indentaion.
+       * @param numspaces number of spaces for the indentation
+       */
+      void setIndentSpace(int numspaces) {
+        identSpace = "";
+        for (int i = 0; i < numspaces; ++i)
+          identSpace += "  ";
+      }
+      //! return the Precedence of the corresponding AST node
+      /*!
+       * @param n the chillAST_Node
+       * @return a int representing the subnodes's precedence, 0 being the highest, INT8_MAX being the default
+       */
+      virtual int getPrec(chillAST_Node *n);
       //! Print the AST to string stream, multiplexer
       /*!
        * @param ident indentation of the node
@@ -224,7 +223,6 @@ namespace chill {
       virtual void printErr(std::string ident, chillAST_Node *n) {
         print(ident, n, std::cerr);
       }
-
       //! Print the subexpression with precedence
       virtual void printPrec(std::string ident, chillAST_Node *n, std::ostream &o, int prec) {
         if (getPrec(n) > prec) o << "(";

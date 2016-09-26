@@ -7,23 +7,19 @@
 
 #include "printer/generic.h"
 
-/*!
- * \file
- */
-
 namespace chill {
   namespace printer {
     /*!
-     * \brief Print the AST for C like syntax, This replace the old print function
+     * \brief Print the AST in a C-like syntax.
+     *
+     * This replace the old print function.
      * Custom multiplexer should not be needed. This version should calculate the correct precedence for expressions.
      * Expression should be encapsulated in {} or () or ended with ; with heuristics at the parent node
      *
      * All precedence calculation taken from http://en.cppreference.com/w/cpp/language/operator_precedence
      */
     class CFamily : public GenericPrinter {
-    public:
-      CFamily() {}
-
+    protected:
       virtual int getPrecS(chillAST_BinaryOperator *n);
 
       virtual int getPrecS(chillAST_CallExpr *n);
@@ -109,6 +105,8 @@ namespace chill {
       virtual void printS(std::string ident, chillAST_UnaryOperator *n, std::ostream &o);
 
       virtual void printS(std::string ident, chillAST_VarDecl *n, std::ostream &o);
+    public:
+      CFamily() {}
     };
   }
 }
