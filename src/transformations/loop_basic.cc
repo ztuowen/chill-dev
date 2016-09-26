@@ -115,7 +115,7 @@ void Loop::permute(int stmt_num, int level, const std::vector<int> &pi) {
   if (min_dep_dim > max_dep_dim)
     return;
   if (max_dep_dim - min_dep_dim + 1 != t.size())
-    throw loop_error("cannot update the dependence graph after permuation");
+    throw chill::error::loop("cannot update the dependence graph after permuation");
   std::vector<int> dep_pi(dep.num_dim());
   for (int i = 0; i < min_dep_dim; i++)
     dep_pi[i] = i;
@@ -157,7 +157,7 @@ void Loop::permute(int stmt_num, int level, const std::vector<int> &pi) {
               break;
             }
             default:
-              throw loop_error("unknown dependence type");
+              throw chill::error::loop("unknown dependence type");
           }
         }
         g.connect(i, j->first, dv);
@@ -183,7 +183,7 @@ void Loop::permute(int stmt_num, int level, const std::vector<int> &pi) {
             case DEP_CONTROL:
               break;
             default:
-              throw loop_error("unknown dependence type");
+              throw chill::error::loop("unknown dependence type");
           }
         g.connect(i, j->first, dv);
       }
@@ -217,7 +217,7 @@ void Loop::permute(int stmt_num, int level, const std::vector<int> &pi) {
             break;
           }
           default:
-            throw loop_error(
+            throw chill::error::loop(
                 "unknown loop level information for statement "
                 + to_string(*i));
         }
@@ -243,7 +243,7 @@ void Loop::permute(int stmt_num, int level, const std::vector<int> &pi) {
             break;
           }
           default:
-            throw loop_error(
+            throw chill::error::loop(
                 "unknown loop level information for statement "
                 + to_string(*i));
         }
@@ -351,7 +351,7 @@ void Loop::permute(const std::set<int> &active, const std::vector<int> &pi) {
   if (min_dep_dim > max_dep_dim)
     return;
   if (max_dep_dim - min_dep_dim + 1 != t.size())
-    throw loop_error("cannot update the dependence graph after permuation");
+    throw chill::error::loop("cannot update the dependence graph after permuation");
   std::vector<int> dep_pi(num_dep_dim);
   for (int i = 0; i < min_dep_dim; i++)
     dep_pi[i] = i;
@@ -393,7 +393,7 @@ void Loop::permute(const std::set<int> &active, const std::vector<int> &pi) {
               break;
             }
             default:
-              throw loop_error("unknown dependence type");
+              throw chill::error::loop("unknown dependence type");
           }
         }
         g.connect(i, j->first, dv);
@@ -419,7 +419,7 @@ void Loop::permute(const std::set<int> &active, const std::vector<int> &pi) {
             case DEP_CONTROL:
               break;
             default:
-              throw loop_error("unknown dependence type");
+              throw chill::error::loop("unknown dependence type");
           }
         g.connect(i, j->first, dv);
       }
@@ -452,7 +452,7 @@ void Loop::permute(const std::set<int> &active, const std::vector<int> &pi) {
             break;
           }
           default:
-            throw loop_error(
+            throw chill::error::loop(
                 "unknown loop level information for statement "
                 + to_string(*i));
         }
@@ -478,7 +478,7 @@ void Loop::permute(const std::set<int> &active, const std::vector<int> &pi) {
             break;
           }
           default:
-            throw loop_error(
+            throw chill::error::loop(
                 "unknown loop level information for statement "
                 + to_string(*i));
         }
@@ -605,7 +605,7 @@ std::set<int> Loop::split(int stmt_num, int level, const Relation &cond) {
                     if (dv.type != DEP_CONTROL)
                       if (dv.hasNegative(dimension)
                           && !dv.quasi)
-                        throw loop_error(
+                        throw chill::error::loop(
                             "loop error: Split is illegal, dependence violation!");
 
                   }
@@ -662,7 +662,7 @@ std::set<int> Loop::split(int stmt_num, int level, const Relation &cond) {
                         if (dv.hasNegative(dimension)
                             && !dv.quasi)
 
-                          throw loop_error(
+                          throw chill::error::loop(
                               "loop error: Split is illegal, dependence violation!");
 
                     }
@@ -723,7 +723,7 @@ std::set<int> Loop::split(int stmt_num, int level, const Relation &cond) {
                       if (dv.hasNegative(dimension)
                           && !dv.quasi)
 
-                        throw loop_error(
+                        throw chill::error::loop(
                             "loop error: Split is illegal, dependence violation!");
 
                   }
@@ -777,7 +777,7 @@ std::set<int> Loop::split(int stmt_num, int level, const Relation &cond) {
                       if (dv.hasNegative(dimension)
                           && !dv.quasi)
 
-                        throw loop_error(
+                        throw chill::error::loop(
                             "loop error: Split is illegal, dependence violation!");
 
                   }
@@ -1030,7 +1030,7 @@ void Loop::skew(const std::set<int> &stmt_nums, int level,
 
               if ((dv.isCarried(dep_dim) && dv.hasNegative(dep_dim))
                   && !dv.quasi)
-                throw loop_error(
+                throw chill::error::loop(
                     "loop error: Skewing is illegal, dependence violation!");
               dv.lbounds[dep_dim] = lb;
               dv.ubounds[dep_dim] = ub;
@@ -1040,7 +1040,7 @@ void Loop::skew(const std::set<int> &stmt_nums, int level,
 
               if ((dv.isCarried(dep_dim)
                    && dv.hasNegative(dep_dim)) && !dv.quasi)
-                throw loop_error(
+                throw chill::error::loop(
                     "loop error: Skewing is illegal, dependence violation!");
             }
           }
@@ -1256,7 +1256,7 @@ void Loop::fuse(const std::set<int> &stmt_nums, int level) {
           for (int k = 0; k < dvs.size(); k++)
             if (dvs[k].isCarried(dep_dim)
                 && dvs[k].hasNegative(dep_dim))
-              throw loop_error(
+              throw chill::error::loop(
                   "loop error: statements " + to_string(*ii)
                   + " and " + to_string(*jj)
                   + " cannot be fused together due to negative dependence");
@@ -1264,7 +1264,7 @@ void Loop::fuse(const std::set<int> &stmt_nums, int level) {
           for (int k = 0; k < dvs.size(); k++)
             if (dvs[k].isCarried(dep_dim)
                 && dvs[k].hasNegative(dep_dim))
-              throw loop_error(
+              throw chill::error::loop(
                   "loop error: statements " + to_string(*jj)
                   + " and " + to_string(*ii)
                   + " cannot be fused together due to negative dependence");
@@ -1300,9 +1300,9 @@ void Loop::fuse(const std::set<int> &stmt_nums, int level) {
                                                                     dep_dim);
     std::cout << g;
     s = typed_fusion(g, s2);
-  } catch (const loop_error &e) {
+  } catch (const chill::error::loop&e) {
 
-    throw loop_error(
+    throw chill::error::loop(
         "statements cannot be fused together due to negative dependence");
 
   }
@@ -1359,9 +1359,9 @@ void Loop::fuse(const std::set<int> &stmt_nums, int level) {
                                                                     dep_dim);
     std::cout<< g;
     s = typed_fusion(g);
-  } catch (const loop_error &e) {
+  } catch (const chill::error::loop&e) {
     
-    throw loop_error(
+    throw chill::error::loop(
       "statements cannot be fused together due to negative dependence");
     
   }
@@ -1417,7 +1417,7 @@ void Loop::fuse(const std::set<int> &stmt_nums, int level) {
     }
     
   } else
-    throw loop_error("Typed Fusion Error");
+    throw chill::error::loop("Typed Fusion Error");
   */
 }
 
@@ -1518,7 +1518,7 @@ void Loop::distribute(const std::set<int> &stmt_nums, int level) {
   std::vector<std::set<int> > s2 = g2.topoSort();
   // nothing to distribute
   if (s2.size() == 1)
-    throw loop_error(
+    throw chill::error::loop(
         "loop error: no statement can be distributed due to dependence cycle");
   std::vector<std::set<int> > s3;
   for (int i = 0; i < s2.size(); i++) {
@@ -1603,7 +1603,7 @@ std::vector<std::vector<std::string> > constructInspectorVariables(IR_Code *ir,
     CG_outputRepr *subscript = (*i)->index(0);
 
     if ((*i)->n_dim() > 1)
-      throw ir_error(
+      throw chill::error::ir(
           "multi-dimensional array support non-existent for flattening currently");
 
     while (ir->QueryExpOperation(subscript) == IR_OP_ARRAY_VARIABLE) {
@@ -1627,7 +1627,7 @@ std::vector<std::vector<std::string> > constructInspectorVariables(IR_Code *ir,
           break;
 
       if (j == index.size())
-        throw ir_error("Non index variable in array expression");
+        throw chill::error::ir("Non index variable in array expression");
 
       int k;
       for (k = 0; k < to_return.size(); k++)
@@ -1758,7 +1758,7 @@ void Loop::normalize(int stmt_num, int loop_level) {
   Relation bound = get_loop_bound(r, loop_level, this->known);
   if (!bound.has_single_conjunct() || !bound.is_satisfiable()
       || bound.is_tautology())
-    throw loop_error("unable to extract loop bound for normalize");
+    throw chill::error::loop("unable to extract loop bound for normalize");
 
   // extract the loop stride
   coef_t stride;
@@ -1772,7 +1772,7 @@ void Loop::normalize(int stmt_num, int loop_level) {
                    abs(result.first.get_coef(bound.set_var(loop_level))));
 
   if (stride != 1)
-    throw loop_error(
+    throw chill::error::loop(
         "normalize currently only handles unit stride, non unit stride present in loop bounds");
 
   GEQ_Handle lb;
@@ -1831,7 +1831,7 @@ void Loop::normalize(int stmt_num, int loop_level) {
     }
 
   } else
-    throw loop_error("loop bounds too complex for normalize!");
+    throw chill::error::loop("loop bounds too complex for normalize!");
 
 }
 

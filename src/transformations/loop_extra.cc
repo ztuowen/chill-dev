@@ -120,7 +120,7 @@ void Loop::peel(int stmt_num, int level, int peel_amount) {
           }
         }
     if (!found_bound)
-      throw loop_error("can't find lower bound for peeling at loop level " + to_string(level));
+      throw chill::error::loop("can't find lower bound for peeling at loop level " + to_string(level));
 
     for (int i = 1; i <= peel_amount; i++) {
       Relation r(level);
@@ -183,7 +183,7 @@ void Loop::peel(int stmt_num, int level, int peel_amount) {
           }
         }
     if (!found_bound)
-      throw loop_error("can't find upper bound for peeling at loop level " + to_string(level));
+      throw chill::error::loop("can't find upper bound for peeling at loop level " + to_string(level));
 
     for (int i = 1; i <= -peel_amount; i++) {
       Relation r(level);

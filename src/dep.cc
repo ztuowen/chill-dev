@@ -381,7 +381,7 @@ std::vector<DependenceVector> DependenceVector::permute(
   }
 
   if (((violated == 1) && !quasi) && !is_scalar_dependence) {
-    throw ir_error("dependence violation");
+    throw chill::error::ir("dependence violation");
 
   }
 

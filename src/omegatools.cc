@@ -81,7 +81,7 @@ void exp2formula(IR_Code *ir,
       std::vector<CG_outputRepr *> v = ir->QueryExpOperand(repr);
       IR_ConstantRef *ref = static_cast<IR_ConstantRef *>(ir->Repr2Ref(v[0]));
       if (!ref->is_integer())
-        throw ir_exp_error("non-integer constant coefficient");
+        throw chill::error::ir_exp("non-integer constant coefficient");
 
       coef_t c = ref->integer();
       if (rel == IR_COND_GE || rel == IR_COND_GT) {
@@ -285,7 +285,7 @@ void exp2formula(IR_Code *ir,
         delete ref;
         term = v[0];
       } else
-        throw ir_exp_error("not presburger expression");
+        throw chill::error::ir_exp("not presburger expression");
 
       F_Exists *f_exists = f_root->add_exists();
       Variable_ID e = f_exists->declare(tmp_e());
@@ -818,7 +818,7 @@ void exp2formula(IR_Code *ir,
 
 
     default:
-      throw ir_exp_error("unsupported operand type");
+      throw chill::error::ir_exp("unsupported operand type");
   }
 }
 
@@ -910,7 +910,7 @@ Relation arrays2relation(IR_Code *ir, std::vector<Free_Var_Decl *> &freevars,
         exp2formula(ir, r, f_and, freevars, repr_dst, e2, 'r', IR_COND_EQ, false,
                     uninterpreted_symbols, uninterpreted_symbols_stringrepr);
       }
-      catch (const ir_exp_error &e) {
+      catch (const chill::error::ir_exp &e) {
         has_complex_formula = true;
       }
 
@@ -1332,7 +1332,7 @@ void exp2constraint(IR_Code *ir, Relation &r, F_And *f_root,
       break;
     }
     default:
-      throw ir_exp_error("unrecognized conditional expression");
+      throw chill::error::ir_exp("unrecognized conditional expression");
   }
 }
 
@@ -2336,7 +2336,7 @@ Relation replace_set_var_as_another_set_var(const omega::Relation &new_relation,
                 h.update_coef(r.input_var(new_pos),
                               cvi.curr_coef());
               else
-                throw omega_error(
+                throw chill::error::omega(
                     "relation contains set vars other than that to be replicated!");
               break;
 
@@ -3043,7 +3043,7 @@ CG_outputRepr *construct_int_floor(CG_outputBuilder *ocg, const Relation &R,
         };
         if (!result.first) {
           delete repr;
-          throw omega_error(
+          throw chill::error::omega(
               "Can't generate bound expression with wildcard not involved in floor definition");
         }
 

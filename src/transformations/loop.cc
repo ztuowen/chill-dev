@@ -501,7 +501,7 @@ bool Loop::init_loop(std::vector<ir_tree_node *> &ir_tree,
                 exp2formula(ir, r, f_root, freevar, ub, v, 's',
                             cond, true, uninterpreted_symbols[i], uninterpreted_symbols_stringrepr[i]);
               else
-                throw ir_error("loop condition not supported");
+                throw chill::error::ir("loop condition not supported");
 
 
               if ((ir->QueryExpOperation(lp->lower_bound())
@@ -550,12 +550,12 @@ bool Loop::init_loop(std::vector<ir_tree_node *> &ir_tree,
                 exp2formula(ir, r, f_root, freevar, ub, v, 's',
                             IR_COND_LT, true, uninterpreted_symbols[i], uninterpreted_symbols_stringrepr[i]);
               else
-                throw ir_error("loop condition not supported");
+                throw chill::error::ir("loop condition not supported");
 
               vars_to_be_reversed.push_back(lp->index()->name());
             } else
-              throw ir_error("loop step size zero");
-          } catch (const ir_error &e) {
+              throw chill::error::ir("loop step size zero");
+          } catch (const chill::error::ir &e) {
             actual_code[loc] =
                 static_cast<IR_Block *>(ir_stmt[loc]->content)->extract();
             for (int i = 0; i < itn->children.size(); i++)
@@ -604,7 +604,7 @@ bool Loop::init_loop(std::vector<ir_tree_node *> &ir_tree,
               exp2constraint(ir, r, f_and, freevar, cond, true, uninterpreted_symbols[i],
                              uninterpreted_symbols_stringrepr[i]);
             }
-          } catch (const ir_error &e) {
+          } catch (const chill::error::ir&e) {
             std::vector<ir_tree_node *> *t;
             if (itn->parent == NULL)
               t = &ir_tree;
@@ -1104,17 +1104,17 @@ int Loop::get_dep_dim_of(int stmt_num, int level) const {
         if (level < 1)
           return -1;
         if (level > stmt[stmt_num].loop_level.size())
-          throw loop_error("incorrect loop level information for statement "
+          throw chill::error::loop("incorrect loop level information for statement "
                            + to_string(stmt_num));
         break;
       default:
-        throw loop_error(
+        throw chill::error::loop(
             "unknown loop level information for statement "
             + to_string(stmt_num));
     }
     trip_count++;
     if (trip_count >= stmt[stmt_num].loop_level.size())
-      throw loop_error(
+      throw chill::error::loop(
           "incorrect loop level information for statement "
           + to_string(stmt_num));
   }
@@ -1406,7 +1406,7 @@ int Loop::getLexicalOrder(int stmt_num, int level) const {
       }
     }
 
-  throw loop_error(
+  throw chill::error::loop(
       "can't find lexical order for statement " + to_string(stmt_num)
       + "'s loop level " + to_string(level));
 }
@@ -1579,7 +1579,7 @@ void update_successors(int n,
     int m = i->first;
 
     if (node_num[m] != -1)
-      throw loop_error("Graph input for fusion has cycles not a DAG!!");
+      throw chill::error::loop("Graph input for fusion has cycles not a DAG!!");
 
     std::vector<bool> check_ = g.getEdge(n, m);
 
@@ -1690,7 +1690,7 @@ Graph<std::set<int>, bool> Loop::construct_induced_graph_at_level(
                     && dvs[k].has_been_carried_at(dep_dim))) {
 
               if (is_connected_i_to_j || has_true_edge_i_to_j)
-                throw loop_error(
+                throw chill::error::loop(
                     "Graph input for fusion has cycles not a DAG!!");
 
               if (dvs[k].is_data_dependence()
@@ -1784,7 +1784,7 @@ std::vector<std::set<int> > Loop::typed_fusion(Graph<std::set<int>, bool> g,
   if (work_list.empty() || (s2.size() != g.vertex.size())) {
 
     std::cout << s2.size() << "\t" << g.vertex.size() << std::endl;
-    throw loop_error("Input for fusion not a DAG!!");
+    throw chill::error::loop("Input for fusion not a DAG!!");
 
 
   }
@@ -1816,9 +1816,9 @@ std::vector<std::set<int> > Loop::typed_fusion(Graph<std::set<int>, bool> g,
         try {
           update_successors(n, node_num, cant_fuse_with, g, work_list,
                             type_list, types);
-        } catch (const loop_error &e) {
+        } catch (const chill::error::loop&e) {
 
-          throw loop_error(
+          throw chill::error::loop(
               "statements cannot be fused together due to negative dependence");
 
         }
@@ -1845,9 +1845,9 @@ std::vector<std::set<int> > Loop::typed_fusion(Graph<std::set<int>, bool> g,
         try {
           update_successors(n, node_num, cant_fuse_with, g, work_list,
                             type_list, types);
-        } catch (const loop_error &e) {
+        } catch (const chill::error::loop&e) {
 
-          throw loop_error(
+          throw chill::error::loop(
               "statements cannot be fused together due to negative dependence");
 
         }
@@ -1863,9 +1863,9 @@ std::vector<std::set<int> > Loop::typed_fusion(Graph<std::set<int>, bool> g,
       try {
         update_successors(n, node_num, cant_fuse_with, g, work_list,
                           type_list, types);
-      } catch (const loop_error &e) {
+      } catch (const chill::error::loop&e) {
 
-        throw loop_error(
+        throw chill::error::loop(
             "statements cannot be fused together due to negative dependence");
 
       }
@@ -2030,7 +2030,7 @@ void Loop::setLexicalOrder(int dim, const std::set<int> &active,
 
     std::vector<std::set<int> > s = g.topoSort();
     if (s.size() != g.vertex.size())
-      throw loop_error(
+      throw chill::error::loop(
           "cannot separate statements with different loop types at loop level "
           + to_string(level));
 
@@ -2973,7 +2973,7 @@ void Loop::scalar_expand(int stmt_num, const std::vector<int> &levels,
               break;
             }
             default:
-              throw loop_error("unsupported array index expression");
+              throw chill::error::loop("unsupported array index expression");
           }
         }
         if ((*ei).get_const() != 0)
@@ -3026,7 +3026,7 @@ void Loop::scalar_expand(int stmt_num, const std::vector<int> &levels,
         ub_list.push_back(*gi);
     }
     if (lb_list.size() == 0 || ub_list.size() == 0)
-      throw loop_error("failed to calcuate array footprint size");
+      throw chill::error::loop("failed to calcuate array footprint size");
 
     // build lower bound representation
     std::vector<CG_outputRepr *> lb_repr_list;
@@ -3069,7 +3069,7 @@ void Loop::scalar_expand(int stmt_num, const std::vector<int> &levels,
                 break;
               }
               default:
-                throw loop_error(
+                throw chill::error::loop(
                     "cannot calculate temporay array size statically");
             }
           }
@@ -3093,7 +3093,7 @@ void Loop::scalar_expand(int stmt_num, const std::vector<int> &levels,
                 break;
               }
               default:
-                throw loop_error(
+                throw chill::error::loop(
                     "cannot calculate temporay array size statically");
             }
           }
@@ -3201,7 +3201,7 @@ void Loop::scalar_expand(int stmt_num, const std::vector<int> &levels,
                 break;
                 }
                 default:
-                throw loop_error(
+                throw chill::error::loop(
                 "failed to generate array index bound code");
                 }
                 }
@@ -3625,7 +3625,7 @@ void Loop::scalar_expand(int stmt_num, const std::vector<int> &levels,
         CG_outputRepr *temp = tmp_array_ref->convert()->clone();
         if (ir->QueryExpOperation(stmt[stmt_num].code)
             != IR_OP_PLUS_ASSIGNMENT)
-          throw ir_error(
+          throw chill::error::ir(
               "Statement is not a += accumulation statement");
 
         fprintf(stderr, "replacing in a +=\n");
@@ -3723,7 +3723,7 @@ void Loop::scalar_expand(int stmt_num, const std::vector<int> &levels,
         CG_outputRepr *temp = tmp_ptr_array_ref->convert()->clone();
         if (ir->QueryExpOperation(stmt[stmt_num].code)
             != IR_OP_PLUS_ASSIGNMENT)
-          throw ir_error(
+          throw chill::error::ir(
               "Statement is not a += accumulation statement");
         stmt[newStmt_num].code = ir->builder()->CreatePlusAssignment(0,
                                                                      temp->clone(), rhs);
@@ -4056,7 +4056,7 @@ std::set<std::string> inspect_loop_bounds(IR_Code *ir, const Relation &R,
                                           std::map<std::string, std::vector<omega::CG_outputRepr *> > &uninterpreted_symbols) {
 
   if (!R.is_set())
-    throw loop_error("Input R has to be a set not a relation!");
+    throw chill::error::loop("Input R has to be a set not a relation!");
 
   std::set<std::string> vars;
 
@@ -4108,7 +4108,7 @@ CG_outputRepr *create_counting_loop_body(IR_Code *ir, const Relation &R,
                                          std::map<std::string, std::vector<omega::CG_outputRepr *> > &uninterpreted_symbols) {
 
   if (!R.is_set())
-    throw loop_error("Input R has to be a set not a relation!");
+    throw chill::error::loop("Input R has to be a set not a relation!");
 
   CG_outputRepr *ub, *lb;
   ub = NULL;
@@ -4133,7 +4133,7 @@ CG_outputRepr *create_counting_loop_body(IR_Code *ir, const Relation &R,
 
                 if ((*gi).get_coef(v) > 0) {
                   if (ub != NULL)
-                    throw ir_error(
+                    throw chill::error::ir(
                         "bound expression too complex!");
 
                   ub = ir->builder()->CreateInvoke(s,
@@ -4143,7 +4143,7 @@ CG_outputRepr *create_counting_loop_body(IR_Code *ir, const Relation &R,
 
                 } else {
                   if (lb != NULL)
-                    throw ir_error(
+                    throw chill::error::ir(
                         "bound expression too complex!");
                   lb = ir->builder()->CreateInvoke(s,
                                                    uninterpreted_symbols.find(s)->second);
@@ -4191,7 +4191,7 @@ std::map<std::string, std::vector<std::string> > recurse_on_exp_for_arrays(
       IR_PointerArrayRef *ref_ =
           dynamic_cast<IR_PointerArrayRef *>(ir->Repr2Ref(exp));
       if (ref == NULL && ref_ == NULL)
-        throw loop_error("Array symbol unidentifiable!");
+        throw chill::error::loop("Array symbol unidentifiable!");
 
       if (ref != NULL) {
         std::vector<std::string> s0;
@@ -4204,7 +4204,7 @@ std::map<std::string, std::vector<std::string> > recurse_on_exp_for_arrays(
           for (std::map<std::string, std::vector<std::string> >::iterator j =
               a0.begin(); j != a0.end(); j++) {
             if (j->second.size() != 1 && (j->second)[0] != "")
-              throw loop_error(
+              throw chill::error::loop(
                   "indirect array references not allowed in guard!");
             s.push_back(j->first);
           }
@@ -4223,7 +4223,7 @@ std::map<std::string, std::vector<std::string> > recurse_on_exp_for_arrays(
           for (std::map<std::string, std::vector<std::string> >::iterator j =
               a0.begin(); j != a0.end(); j++) {
             if (j->second.size() != 1 && (j->second)[0] != "")
-              throw loop_error(
+              throw chill::error::loop(
                   "indirect array references not allowed in guard!");
             s.push_back(j->first);
           }
@@ -4404,7 +4404,7 @@ std::vector<std::string> construct_iteration_order(
             if (s == arrays[k])
               found = true;
           if (!found)
-            throw loop_error("guard condition not solvable");
+            throw chill::error::loop("guard condition not solvable");
         }
       } else {
         bool found = false;

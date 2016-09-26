@@ -1432,7 +1432,7 @@ int IR_chillArraySymbol::elem_size() const {
   //if(at) {
   //  return (vd_->getASTContext().getTypeSize(at->getElementType())) / 8;
   //} else
-  //  throw ir_error("Symbol is not an array!");
+  //  throw chill::error::ir("Symbol is not an array!");
   //return 0;
 }
 
@@ -1514,7 +1514,7 @@ omega::CG_outputRepr *IR_chillConstantRef::convert() {
     return result;
     */
   } else
-    throw ir_error("constant type not supported");
+    throw chill::error::ir("constant type not supported");
 }
 
 
@@ -1524,7 +1524,7 @@ IR_Ref *IR_chillConstantRef::clone() const {
   else if (type_ == IR_CONSTANT_FLOAT)
     return new IR_chillConstantRef(ir_, f_);
   else
-    throw ir_error("constant type not supported");
+    throw chill::error::ir("constant type not supported");
 }
 
 // ----------------------------------------------------------------------------
@@ -2537,7 +2537,7 @@ std::vector<IR_ArrayRef *> IR_clangCode::FindArrayRef(const omega::CG_outputRepr
       std::vector<IR_ArrayRef *> a = FindArrayRef(r);
       delete r;
       std::copy(a.begin(), a.end(), back_inserter(arrays));
-    } else throw ir_error("control structure not supported");
+    } else throw chill::error::ir("control structure not supported");
   }
   */
 /* 
@@ -2558,7 +2558,7 @@ std::vector<IR_ArrayRef *> IR_clangCode::FindArrayRef(const omega::CG_outputRepr
       std::vector<IR_ArrayRef *> a1 = FindArrayRef(r1);
       delete r1;      
       std::copy(a1.begin(), a1.end(), back_inserter(arrays));
-    } //else throw ir_error("Invalid expr. type passed to FindArrayRef");
+    } //else throw chill::error::ir("Invalid expr. type passed to FindArrayRef");
   }
   */
   return arrays;
@@ -2721,7 +2721,7 @@ IR_Block *IR_clangCode::MergeNeighboringControlStructures(const std::vector<IR_C
           parent = loop->parent;
         } else {
           if (parent != loop->parent) {
-            throw ir_error("controls to merge not at the same level");
+            throw chill::error::ir("controls to merge not at the same level");
           }
         }
         CBlock->addStatement(loop);
@@ -2736,7 +2736,7 @@ IR_Block *IR_clangCode::MergeNeighboringControlStructures(const std::vector<IR_C
             parent = blockstmts[j]->parent;
           } else {
             if (parent != blockstmts[j]->parent) {
-              throw ir_error(
+              throw chill::error::ir(
                   "ir_clang.cc  IR_clangCode::MergeNeighboringControlStructures  controls to merge not at the same level");
             }
           }
@@ -2745,7 +2745,7 @@ IR_Block *IR_clangCode::MergeNeighboringControlStructures(const std::vector<IR_C
         break;
       }
       default:
-        throw ir_error("unrecognized control to merge");
+        throw chill::error::ir("unrecognized control to merge");
     }
   } // for each control
 
@@ -2912,7 +2912,7 @@ void IR_clangCode::ReplaceCode(IR_Control *old, omega::CG_outputRepr *repr) {
       //tf_old = static_cast<IR_chillBlock *>(old)->getStmtList()[0];
       break;
     default:
-      throw ir_error("control structure to be replaced not supported");
+      throw chill::error::ir("control structure to be replaced not supported");
       break;
   }
 
@@ -3150,7 +3150,7 @@ Expr *op1, *op2;
     v.push_back(repr);
     break;
   default:
-    throw ir_error("operation not supported");
+    throw chill::error::ir("operation not supported");
   }
   */
   //} else if(UnaryOperator *uop = dyn_cast<UnaryOperator>(e)) {
@@ -3166,14 +3166,14 @@ Expr *op1, *op2;
     v.push_back(repr);
     break;
   default:
-    throw ir_error("operation not supported");
+    throw chill::error::ir("operation not supported");
   }
   */
   //} else if(ConditionalOperator *cop = dyn_cast<ConditionalOperator>(e)) {
   //omega::CG_chillRepr *repr;
 
   // TODO: Handle conditional operator here
-  //} else  throw ir_error("operand type UNsupported");
+  //} else  throw chill::error::ir("operand type UNsupported");
 
   return v;
 }

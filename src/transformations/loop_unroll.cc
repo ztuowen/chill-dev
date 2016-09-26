@@ -73,19 +73,19 @@ std::set<int> Loop::unroll(int stmt_num, int level, int unroll_amount,
 
             /*if (dv.isCarried(dim2)
               && (dv.hasNegative(dim2) && !dv.quasi))
-              throw loop_error(
+              throw chill::error::loop(
               "loop error: Unrolling is illegal, dependence violation!");
               
               if (dv.isCarried(dim2)
               && (dv.hasPositive(dim2) && dv.quasi))
-              throw loop_error(
+              throw chill::error::loop(
               "loop error: Unrolling is illegal, dependence violation!");
             */
             bool safe = false;
 
             if (dv.isCarried(dim2) && dv.hasPositive(dim2)) {
               if (dv.quasi)
-                throw loop_error(
+                throw chill::error::loop(
                     "loop error: a quasi dependence with a positive carried distance");
               if (!dv.quasi) {
                 if (dv.lbounds[dim2] != posInfinity) {
@@ -127,7 +127,7 @@ std::set<int> Loop::unroll(int stmt_num, int level, int unroll_amount,
                     if (dv.hasPositive(dim3))
                       break;
                     else if (dv.hasNegative(dim3))
-                      throw loop_error(
+                      throw chill::error::loop(
                           "loop error: Unrolling is illegal, dependence violation!");
                   }
                 }
@@ -168,7 +168,7 @@ std::set<int> Loop::unroll(int stmt_num, int level, int unroll_amount,
   Relation bound = get_loop_bound(hull, level, this->known);
   if (!bound.has_single_conjunct() || !bound.is_satisfiable()
       || bound.is_tautology())
-    throw loop_error("unable to extract loop bound for unrolling");
+    throw chill::error::loop("unable to extract loop bound for unrolling");
 
   // extract the loop stride
   coef_t stride;
@@ -231,7 +231,7 @@ std::set<int> Loop::unroll(int stmt_num, int level, int unroll_amount,
             break;
           }
           default:
-            throw loop_error("failed to calculate overflow amount");
+            throw chill::error::loop("failed to calculate overflow amount");
         }
       }
       overflow_table[i][j][NULL] += ub_list[j].get_const();
@@ -261,7 +261,7 @@ std::set<int> Loop::unroll(int stmt_num, int level, int unroll_amount,
             break;
           }
           default:
-            throw loop_error("failed to calculate overflow amount");
+            throw chill::error::loop("failed to calculate overflow amount");
         }
       }
       overflow_table[i][j][NULL] += lb_list[i].get_const();
@@ -374,7 +374,7 @@ std::set<int> Loop::unroll(int stmt_num, int level, int unroll_amount,
         if (is_split_illegal) {
           rhs->clear();
           delete rhs;
-          throw loop_error(
+          throw chill::error::loop(
               "cannot split cleanup code at loop level "
               + to_string(cleanup_split_level)
               + " due to overflow variable data dependence");
@@ -1112,7 +1112,7 @@ std::set<int> Loop::unroll(int stmt_num, int level, int unroll_amount,
                     dvs11.push_back(dv);
                     dvs22.push_back(dv);
                   } else
-                    throw loop_error(
+                    throw chill::error::loop(
                         "unrolled statements lumped together illegally");
                 } else {
                   coef_t lb = dv.lbounds[dep_dim];

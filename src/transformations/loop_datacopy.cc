@@ -329,7 +329,7 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
         fastest_changing_dimension = 0;
         break;
       default:
-        throw loop_error("unsupported array layout");
+        throw chill::error::loop("unsupported array layout");
     }
   // OK, parameter sanity checked
 
@@ -579,7 +579,7 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
               break;
             }
             default:
-              throw loop_error("unsupported array index expression");
+              throw chill::error::loop("unsupported array index expression");
           }
         }
         if ((*ei).get_const() != 0)
@@ -620,7 +620,7 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
         ub_list.push_back(*gi);
     }
     if (lb_list.size() == 0 || ub_list.size() == 0)
-      throw loop_error("failed to calcuate array footprint size");
+      throw chill::error::loop("failed to calcuate array footprint size");
 
     //fprintf(stderr, "dp3: build lower bound representation\n"); 
     // build lower bound representation
@@ -687,7 +687,7 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
                 break;
               }
               default:
-                throw loop_error("cannot calculate temporay array size statically");
+                throw chill::error::loop("cannot calculate temporay array size statically");
             }
           }
           h.update_const(ub_list[j].get_const());
@@ -710,7 +710,7 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
                 break;
               }
               default:
-                throw loop_error("cannot calculate temporay array size statically");
+                throw chill::error::loop("cannot calculate temporay array size statically");
             }
           }
           h.update_const(lb_list[k].get_const());
@@ -774,7 +774,7 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
                     break;
                   }
                   default:
-                    throw loop_error("failed to generate array index bound code");
+                    throw chill::error::loop("failed to generate array index bound code");
                 }
               }
             }
@@ -818,7 +818,7 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
           std::swap(index_sz[0], index_sz[i]);
           break;
         default:
-          throw loop_error("unsupported array layout");
+          throw chill::error::loop("unsupported array layout");
       }
   }
 
@@ -1007,7 +1007,7 @@ bool Loop::datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_A
             break;
           }
           default:
-            throw loop_error("unsupported array layout");
+            throw chill::error::loop("unsupported array layout");
         }
         cur_index++;
       }

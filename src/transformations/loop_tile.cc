@@ -70,7 +70,7 @@ void Loop::tile(int stmt_num, int level, int tile_size, int outer_level,
                       stmt[*i].loop_level[l - 1].payload)
                       && dv.hasPositive(
                       stmt[*i].loop_level[l - 1].payload))
-                    throw loop_error(
+                    throw chill::error::loop(
                         "loop error: Tiling is illegal, dependence violation!");
                 } else {
 
@@ -87,7 +87,7 @@ void Loop::tile(int stmt_num, int level, int tile_size, int outer_level,
                   if (dim3 < level - 1)
                     if (dv.isCarried(dim3)
                         && dv.hasPositive(dim3))
-                      throw loop_error(
+                      throw chill::error::loop(
                           "loop error: Tiling is illegal, dependence violation!");
                 }
             }
@@ -167,7 +167,7 @@ void Loop::tile(int stmt_num, int level, int tile_size, int outer_level,
       }
 
       if (!bound.has_single_conjunct())
-        throw loop_error("cannot handle tile bounds");
+        throw chill::error::loop("cannot handle tile bounds");
     }
 
     // separate lower and upper bounds
@@ -183,10 +183,10 @@ void Loop::tile(int stmt_num, int level, int tile_size, int outer_level,
       }
     }
     if (lb_list.size() == 0)
-      throw loop_error(
+      throw chill::error::loop(
           "unable to calculate tile controlling loop lower bound");
     if (ub_list.size() == 0)
-      throw loop_error(
+      throw chill::error::loop(
           "unable to calculate tile controlling loop upper bound");
 
     // find the simplest lower bound for StridedTile or simplest iteration count for CountedTile
@@ -352,7 +352,7 @@ void Loop::tile(int stmt_num, int level, int tile_size, int outer_level,
                 break;
               }
               default:
-                throw loop_error("cannot handle tile bounds");
+                throw chill::error::loop("cannot handle tile bounds");
             }
           }
           h.update_const(lb_list[simplest_lb].get_const());
@@ -387,7 +387,7 @@ void Loop::tile(int stmt_num, int level, int tile_size, int outer_level,
                 break;
               }
               default:
-                throw loop_error("cannot handle tile bounds");
+                throw chill::error::loop("cannot handle tile bounds");
             }
           }
           h1.update_const(lb_list[simplest_lb].get_const());
@@ -455,7 +455,7 @@ void Loop::tile(int stmt_num, int level, int tile_size, int outer_level,
                 break;
               }
               default:
-                throw loop_error("cannot handle tile bounds");
+                throw chill::error::loop("cannot handle tile bounds");
             }
           }
           h.update_const(ub_list[simplest_ub].get_const());
@@ -490,7 +490,7 @@ void Loop::tile(int stmt_num, int level, int tile_size, int outer_level,
                 break;
               }
               default:
-                throw loop_error("cannot handle tile bounds");
+                throw chill::error::loop("cannot handle tile bounds");
             }
           }
           h1.update_const(-ub_list[simplest_ub].get_const());
@@ -569,7 +569,7 @@ void Loop::tile(int stmt_num, int level, int tile_size, int outer_level,
             stmt[*i].loop_level[j - 1].payload++;
           break;
         default:
-          throw loop_error(
+          throw chill::error::loop(
               "unknown loop level type for statement "
               + to_string(*i));
       }
