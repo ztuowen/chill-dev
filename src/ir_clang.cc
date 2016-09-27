@@ -2269,14 +2269,12 @@ IR_clangCode::~IR_clangCode() {
   //chillfunc->print(); 
 
   //fprintf(stderr, "Constant Folding before\n"); 
-  //chillfunc->print(); 
   chillfunc->constantFold();
   //fprintf(stderr, "\nConstant Folding after\n"); 
   //chillfunc->print(); 
 
   chillfunc->cleanUpVarDecls();
-
-  //chillfunc->dump(); 
+  //chillfunc->dump();
 
   // TODO should output the entire file, not just the function we're working on
   chillAST_SourceFile *src = chillfunc->getSourceFile();
@@ -2611,42 +2609,21 @@ std::vector<IR_Control *> IR_clangCode::FindOneLevelControlStructure(const IR_Bl
 
     controls.push_back(new IR_chillLoop(this, (chillAST_ForStmt *) blockast));
   }
-    //else if (blockast->getType() == CHILLAST_NODE_IFSTMT) {
-    //  controls.push_back( new IR_clangIf( this, (chillAST_IfStmt *)blockast));
-    //}
   else if (blockast->getType() == CHILLAST_NODE_COMPOUNDSTMT ||
            blockast->getType() == CHILLAST_NODE_FUNCTIONDECL) {
 
     if (blockast->getType() == CHILLAST_NODE_FUNCTIONDECL) {
-      //fprintf(stderr, "ir_clanc.cc blockast->getType() == CHILLAST_NODE_FUNCTIONDECL\n");
-
       chillAST_FunctionDecl *FD = (chillAST_FunctionDecl *) blockast;
       chillAST_Node *bod = FD->getBody();
-      //fprintf(stderr, "bod 0x%x\n", bod); 
-
       children = bod->getChildren();
-
-      //fprintf(stderr, "FunctionDecl body is of type %s\n", bod->getTypeString()); 
-      //fprintf(stderr, "found a top level FunctionDecl (Basic Block)\n"); 
-      //fprintf(stderr, "basic block has %d statements\n", children.size() );
-      //fprintf(stderr, "basic block is:\n");
-      //bod->print(); 
     } else /* CompoundStmt */ {
-      //fprintf(stderr, "found a top level Basic Block\n"); 
       children = blockast->getChildren();
     }
 
     int numchildren = children->size();
-    //fprintf(stderr, "basic block has %d statements\n", numchildren);
-    //fprintf(stderr, "basic block is:\n");
-    //fprintf(stderr, "{\n");
-    //blockast->print(); 
-    //fprintf(stderr, "}\n");
-
     int ns;
     IR_chillBlock *basicblock = new IR_chillBlock(this); // no statements
     for (int i = 0; i < numchildren; i++) {
-      //fprintf(stderr, "child %d is of type %s\n", i, children[i]->getTypeString());
       CHILLAST_NODE_TYPE typ = (*children)[i]->getType();
       if (typ == CHILLAST_NODE_LOOP) {
         if (numchildren == 1) {
@@ -2654,7 +2631,6 @@ std::vector<IR_Control *> IR_clangCode::FindOneLevelControlStructure(const IR_Bl
         } else {
           CHILL_DEBUG_PRINT("found a For statement (Loop) at %d within a Basic Block\n", i);
         }
-        //children[i]->print(); printf("\n"); fflush(stdout);
 
         ns = basicblock->numstatements();
         if (ns) {
@@ -2681,21 +2657,12 @@ std::vector<IR_Control *> IR_clangCode::FindOneLevelControlStructure(const IR_Bl
       }
     } // for each child
     ns = basicblock->numstatements();
-    //fprintf(stderr, "ns %d\n", ns); 
-    if (ns != 0) {
-      if (ns != numchildren) {
+      if (ns!=0 && ns != numchildren) {
         //fprintf(stderr, "end of body ends the run of %d statements in the Basic Block\n", ns); 
         controls.push_back(basicblock);
-      } else {
-        //fprintf(stderr, "NOT sending straightline run of statements, because it would be the entire block. There are no control statements in the block\n"); 
       }
-    }
-    //else fprintf(stderr, "NOT sending the last run of %d statements\n", ns); 
-
-  } else {
-    CHILL_ERROR("block is a %s???\n", blockast->getTypeString());
-    exit(-1);
-  }
+  } else
+    CHILL_DEBUG_PRINT("Single statement block of type %s\n", blockast->getTypeString());
 
   CHILL_DEBUG_PRINT("returning vector of %d controls\n", controls.size());
   return controls;
