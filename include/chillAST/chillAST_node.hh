@@ -4,9 +4,16 @@
 #define _CHILLAST_NODE_H_
 
 #include "chillAST_def.hh"
+#include <stack>
 
 //! generic node of the actual chillAST, a multiway tree node.
 class chillAST_Node {
+protected:
+  void gatherTypedef(std::map<std::string, std::stack<chillAST_TypedefDecl*>> map, chillAST_TypedefTable* tdt);
+  void gatherSymbol(std::map<std::string, std::stack<chillAST_VarDecl*>> map, chillAST_SymbolTable* tdt);
+  void gatherRecord(std::map<std::string, std::stack<chillAST_RecordDecl*>> map, chillAST_RecordTable *tdt);
+  void gatherOther(chillAST_SourceFile *s);
+  void fixReference(std::map<std::string, std::stack<chillAST_Node*>> map);
 public:
   // TODO decide how to hide some data
   //! this Node's parent
@@ -19,6 +26,8 @@ public:
   chillAST_SymbolTable *symbolTable;
   //! typedef Scoping
   chillAST_TypedefTable *typedefTable;
+  //! recordDecl scoping
+  std::vector<chillAST_RecordDecl*> *recordTable;
   //! whether it is from a source file, when false it is from included files
   bool isFromSourceFile;
   //! the name of file this node from
@@ -165,10 +174,22 @@ public:
   //! Recursive version that will go the parent node if not finding in this
   chillAST_TypedefDecl *findTypeDecleration(const char *t);
 
-  int getNumChildren() { return children.size(); };
-
-  chillAST_NodeList *getChildren() { return &children; };  // not usually useful
-  void setChildren(chillAST_NodeList &c) { children = c; }; // does not set parent. probably should
+  /*!
+   * \brief Get the number of subexpressions
+   *
+   * This will get multiplexed for different operation. Subexpression appear in the sourcefile order.
+   * @return The number of subexpressions
+   */
+  virtual int getNumChildren() { return children.size(); };
+  //! Deprecating, return the children as a list not eligible for multiplexing
+  chillAST_NodeList *getChildren() { return &children; };
+  /*!
+   * \brief Get the which-th child
+   *
+   * This will get multiplexed in the same manner as \sa getNumChildren
+   * @param which
+   * @return The which-th node
+   */
   chillAST_Node *getChild(int which) { return children[which]; };
 
   void setChild(int which, chillAST_Node *n) {
@@ -384,6 +405,8 @@ public:
   //! Emulation of the old print function to print C-family like syntax but using printer
   void print(int ident = 0, FILE *fp = stderr);
 
+  //! Public interface for fixing child info, which can be called from anynode.
+  void fixChildInfo();
 };
 
 

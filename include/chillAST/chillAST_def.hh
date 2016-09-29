@@ -186,6 +186,7 @@ class chillAST_Preprocessing;
 typedef std::vector<chillAST_Node *> chillAST_NodeList;
 typedef std::vector<chillAST_VarDecl *> chillAST_SymbolTable;
 typedef std::vector<chillAST_TypedefDecl *> chillAST_TypedefTable;
+typedef std::vector<chillAST_RecordDecl *> chillAST_RecordTable;
 
 chillAST_VarDecl *symbolTableFindName(chillAST_SymbolTable *table, const char *name);
 

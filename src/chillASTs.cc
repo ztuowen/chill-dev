@@ -372,6 +372,7 @@ chillAST_RecordDecl::chillAST_RecordDecl(const char *nam, const char *orig) {
   else name = strdup("unknown"); // ??
 
   originalname = NULL;
+  symbolTable = new chillAST_SymbolTable();
   if (orig) originalname = strdup(orig);
 
   isStruct = isUnion = false;

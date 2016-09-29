@@ -276,7 +276,7 @@ namespace omega {
     
     int numchildren = CS->getNumChildren(); 
     for (int i=0; i<numchildren; i++) { 
-      CS->setChild( i, substituteChill(oldvar, newvar, CS->getChild(i), CS )); 
+      CS->setChild( i, substituteChill(oldvar, newvar, CS->getChild(i), CS ));
     }
     
     return CS;

@@ -14,25 +14,26 @@ public:
   };
 };
 
+// TODO doc and usage
 class chillAST_Preprocessing : public chillAST_Node {
-public:
-  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_PREPROCESSING; }
-
-  // variables that are special for this type of node
+private:
   CHILLAST_PREPROCESSING_POSITION position;
   CHILLAST_PREPROCESSING_TYPE pptype;
   char *blurb;
+public:
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_PREPROCESSING; }
 
-  // constructors
-  chillAST_Preprocessing(); // not sure what this is good for
+  chillAST_Preprocessing();
   chillAST_Preprocessing(CHILLAST_PREPROCESSING_POSITION pos, CHILLAST_PREPROCESSING_TYPE t, char *text);
-
-  // other methods particular to this type of node
-
-  // required methods that I can't seem to get to inherit
 };
 
-//typedef is a keyword in the C and C++ programming languages. The purpose of typedef is to assign alternative names to existing types, most often those whose standard declaration is cumbersome, potentially confusing, or likely to vary from one implementation to another. 
+/*!
+ * \brief A typedef declaration
+ *
+ * typedef is a keyword in the C and C++ programming languages. The purpose of typedef is to assign alternative names
+ * to existing types, most often those whose standard declaration is cumbersome, potentially confusing, or likely to
+ * vary from one implementation to another.
+ */
 class chillAST_TypedefDecl : public chillAST_Node {
 private:
   bool isStruct;
@@ -47,7 +48,7 @@ public:
   char *arraypart;  // string like "[1234][56]"  ?? 
 
   chillAST_RecordDecl *rd;  // if it's a struct, point to the recorddecl ??
-  // TODO what if   "typedef int[10] tenints; " ?? 
+  // TODO what if   "typedef int[10] tenints; " ??
   void setStructInfo(chillAST_RecordDecl *arrdee) { rd = arrdee; };
 
   chillAST_RecordDecl *getStructDef();
@@ -86,14 +87,18 @@ public:
   };
 };
 
+//! A variable declaration node
 class chillAST_VarDecl : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_VARDECL; }
 
   char *vartype; // should probably be an enum, except it's used for unnamed structs too
 
-  chillAST_RecordDecl *vardef;// the thing that says what the struct looks like
-  chillAST_TypedefDecl *typedefinition; // NULL for float, int, etc.
+  //! Points to the recorddecl
+  chillAST_RecordDecl *vardef;
+  //! Typedef info if it is typedefed
+  chillAST_TypedefDecl *typedefinition;
+
   chillAST_RecordDecl *getStructDef(); // TODO make vardef private?
 
   //bool insideAStruct;  // this variable is itself part of a struct
@@ -190,6 +195,7 @@ public:
 
 };
 
+//! referencing a previously defined node, Function or variable
 class chillAST_DeclRefExpr : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_DECLREFEXPR; }
@@ -198,7 +204,6 @@ public:
   char *declarationType;
   char *declarationName;
   chillAST_Node *decl; // the declaration of this variable or function ... uhoh
-  //char *functionparameters;  // TODO probably should split this node into 2 types, one for variables, one for functions
 
   // constructors
   chillAST_DeclRefExpr(const char *vartype, const char *variablename, chillAST_Node *dec);
@@ -267,6 +272,7 @@ public:
   chillAST_Node *multibase2() { return (chillAST_Node *) multibase(); }
 };
 
+//! A basic block consists of multiple statements
 class chillAST_CompoundStmt : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_COMPOUNDSTMT; }
@@ -275,10 +281,7 @@ public:
   // constructors
   chillAST_CompoundStmt(); // never has any args ???
 
-  // other methods particular to this type of node
-
-
-  // required methods 
+  // required methods
   void replaceChild(chillAST_Node *old, chillAST_Node *newchild);
 
   chillAST_Node *constantFold();
@@ -310,7 +313,8 @@ public:
   void gatherStatements(std::vector<chillAST_Node *> &statements);
 };
 
-class chillAST_RecordDecl : public chillAST_Node {  // declaration of the shape of a struct or union
+//! Declaration of the shape of a struct or union
+class chillAST_RecordDecl : public chillAST_Node {
 private:
   char *name;  // could be NULL? for unnamed structs?
   char *originalname;
