@@ -5,15 +5,41 @@
 
 #include "chillAST_def.hh"
 #include <stack>
+#include <map>
 
 //! generic node of the actual chillAST, a multiway tree node.
 class chillAST_Node {
 protected:
-  void gatherTypedef(std::map<std::string, std::stack<chillAST_TypedefDecl*>> map, chillAST_TypedefTable* tdt);
-  void gatherSymbol(std::map<std::string, std::stack<chillAST_VarDecl*>> map, chillAST_SymbolTable* tdt);
-  void gatherRecord(std::map<std::string, std::stack<chillAST_RecordDecl*>> map, chillAST_RecordTable *tdt);
-  void gatherOther(chillAST_SourceFile *s);
-  void fixReference(std::map<std::string, std::stack<chillAST_Node*>> map);
+  /*!
+   * Add typedef to containing scope
+   * @param tdt the containing scope
+   */
+  void gatherTypedef(chillAST_TypedefTable* tdt);
+  /*!
+   * Add symboldefinition to containing scope
+   * @param st the containing scope
+   */
+  void gatherSymbol(chillAST_SymbolTable* st);
+  /*!
+   * Add struct definition to containing scope
+   * @param rt the containing scope
+   */
+  void gatherRecord(chillAST_RecordTable *rt);
+  /*!
+   * Add function declaration & definition to the source file
+   * @param s
+   */
+  void gatherFunctionDecl(std::vector<chillAST_FunctionDecl *> *s);
+  /*!
+   * Add macro definition to the source file
+   * @param s
+   */
+  void gatherMacroDecl(std::vector<chillAST_MacroDefinition *> *s);
+  /*!
+   * Fix the pointer reference in a source file
+   * @param nameMap a mapping from string to the corresponding declarations, stack is used to mimic scoping
+   */
+  void fixReference(std::map<std::string, std::stack<chillAST_Node*>> nameMap);
 public:
   // TODO decide how to hide some data
   //! this Node's parent
@@ -198,8 +224,6 @@ public:
   };
 
   void setMetaComment(const char *c) { metacomment = strdup(c); };
-
-  virtual void mergeChildInfo(chillAST_Node);
 
   virtual void addChild(chillAST_Node *c);
 

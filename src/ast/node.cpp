@@ -7,19 +7,7 @@
 #include "printer/cfamily.h"
 #include <stack>
 
-void chillAST_Node::fixChildInfo(std::stack<chillAST_TypedefTable *> &tdt, std::stack<chillAST_SymbolTable *> &st,
-                                 chillAST_SourceFile *s) {
-
-}
-
 void chillAST_Node::fixChildInfo() {}
-
-void chillAST_Node::mergeChildInfo(chillAST_Node) {
-  // TODO if (par) par->add to definition for vardecl/typedecl
-  // TODO  if (par) par->getSourceFile()->addFunc(this); for FuncDecl
-  // TODO if (par) par->getSourceFile()->addMacro(this); For MacroDecl
-  // TODO if (parent) parent->addVariableToSymbolTable(this); // should percolate up until something has a symbol table
-}
 
 void chillAST_Node::addChild(chillAST_Node *c) {
   c->parent = this;
