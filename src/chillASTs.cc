@@ -635,33 +635,28 @@ void chillAST_MacroDefinition::addChild(chillAST_Node *node) {
 }
 
 chillAST_ForStmt::chillAST_ForStmt() {
-  init = cond = incr = NULL;
-  body = new chillAST_CompoundStmt();
+  children.push_back(NULL); // init
+  children.push_back(NULL); // cond
+  children.push_back(NULL); // incr
+  children.push_back(new chillAST_CompoundStmt()); // Body
 
   conditionoperator = IR_COND_UNKNOWN;
   symbolTable = new chillAST_SymbolTable();
 }
 
 
-chillAST_ForStmt::chillAST_ForStmt(chillAST_Node *ini, chillAST_Node *con, chillAST_Node *inc, chillAST_Node *bod) {
-  init = ini;
-  cond = con;
-  incr = inc;
-  body = bod;
-  init->setParent(this);
-  cond->setParent(this);
-  incr->setParent(this);
-  symbolTable = new chillAST_SymbolTable();
+chillAST_ForStmt::chillAST_ForStmt(chillAST_Node *ini, chillAST_Node *con, chillAST_Node *inc, chillAST_Node *bod)
+    :chillAST_ForStmt() {
+  setInit(ini);
+  setCond(con);
+  setInc(inc);
+  setBody(bod);
 
-  //fprintf(stderr, "chillAST_ForStmt::chillAST_ForStmt() bod %p\n", bod);
-
-  if (body) body->setParent(this);  // not sure this should be legal
-
-  if (!cond->isBinaryOperator()) {
-    CHILL_ERROR("ForStmt conditional is of type %s. Expecting a BinaryOperator\n", cond->getTypeString());
+  if (!con->isBinaryOperator()) {
+    CHILL_ERROR("ForStmt conditional is of type %s. Expecting a BinaryOperator\n", con->getTypeString());
     exit(-1);
   }
-  chillAST_BinaryOperator *bo = (chillAST_BinaryOperator *) cond;
+  chillAST_BinaryOperator *bo = (chillAST_BinaryOperator *) con;
   char *condstring = bo->op;
   if (!strcmp(condstring, "<")) conditionoperator = IR_COND_LT;
   else if (!strcmp(condstring, "<=")) conditionoperator = IR_COND_LE;
@@ -682,13 +677,13 @@ bool chillAST_ForStmt::lowerBound(int &l) { // l is an output (passed as referen
       conditionoperator == IR_COND_LE) {
 
     // lower bound is rhs of init
-    if (!init->isBinaryOperator()) {
+    if (!getInit()->isBinaryOperator()) {
       fprintf(stderr, "chillAST_ForStmt::lowerBound() init is not a chillAST_BinaryOperator\n");
       exit(-1);
     }
 
-    chillAST_BinaryOperator *bo = (chillAST_BinaryOperator *) init;
-    if (!init->isAssignmentOp()) {
+    chillAST_BinaryOperator *bo = (chillAST_BinaryOperator *) getInit();
+    if (!getInit()->isAssignmentOp()) {
       fprintf(stderr, "chillAST_ForStmt::lowerBound() init is not an assignment chillAST_BinaryOperator\n");
       exit(-1);
     }
@@ -700,7 +695,7 @@ bool chillAST_ForStmt::lowerBound(int &l) { // l is an output (passed as referen
   } else if (conditionoperator == IR_COND_GT ||
              conditionoperator == IR_COND_GE) {  // decrementing
     // lower bound is rhs of cond (not init)
-    chillAST_BinaryOperator *bo = (chillAST_BinaryOperator *) cond;
+    chillAST_BinaryOperator *bo = (chillAST_BinaryOperator *) getCond();
     l = bo->rhs->evalAsInt(); // float could be legal I suppose
     return true;
   }
@@ -720,13 +715,13 @@ bool chillAST_ForStmt::upperBound(int &u) { // u is an output (passed as referen
       conditionoperator == IR_COND_GE) {  // decrementing
 
     // upper bound is rhs of init
-    if (!init->isBinaryOperator()) {
+    if (!getInit()->isBinaryOperator()) {
       fprintf(stderr, "chillAST_ForStmt::upperBound() init is not a chillAST_BinaryOperator\n");
       exit(-1);
     }
 
-    chillAST_BinaryOperator *bo = (chillAST_BinaryOperator *) init;
-    if (!init->isAssignmentOp()) {
+    chillAST_BinaryOperator *bo = (chillAST_BinaryOperator *) getInit();
+    if (!getInit()->isAssignmentOp()) {
       fprintf(stderr, "chillAST_ForStmt::upperBound() init is not an assignment chillAST_BinaryOperator\n");
       exit(-1);
     }
@@ -737,7 +732,7 @@ bool chillAST_ForStmt::upperBound(int &u) { // u is an output (passed as referen
              conditionoperator == IR_COND_LE) {
     //fprintf(stderr, "upper bound is rhs of cond   ");
     // upper bound is rhs of cond (not init)
-    chillAST_BinaryOperator *bo = (chillAST_BinaryOperator *) cond;
+    chillAST_BinaryOperator *bo = (chillAST_BinaryOperator *) getCond();
     //bo->rhs->print(0,stderr);
     u = bo->rhs->evalAsInt(); // float could be legal I suppose
 
@@ -758,96 +753,22 @@ bool chillAST_ForStmt::upperBound(int &u) { // u is an output (passed as referen
 void chillAST_ForStmt::printControl(int in, FILE *fp) {
   chillindent(in, fp);
   fprintf(fp, "for (");
-  init->print(0, fp);
+  getInit()->print(0, fp);
   fprintf(fp, "; ");
-  cond->print(0, fp);
+  getCond()->print(0, fp);
   fprintf(fp, "; ");
-  incr->print(0, fp);
+  getInc()->print(0, fp);
   fprintf(fp, ")");
   fflush(fp);
 }
 
-chillAST_Node *chillAST_ForStmt::constantFold() {
-  init = init->constantFold();
-  cond = cond->constantFold();
-  incr = incr->constantFold();
-  body = body->constantFold();
-  return this;
-}
-
 chillAST_Node *chillAST_ForStmt::clone() {
-  chillAST_ForStmt *fs = new chillAST_ForStmt(init->clone(), cond->clone(), incr->clone(), body->clone());
+  chillAST_ForStmt *fs = new chillAST_ForStmt(getInit()->clone(), getCond()->clone(), getInc()->clone(), getBody()->clone());
   fs->isFromSourceFile = isFromSourceFile;
   if (filename) fs->filename = strdup(filename);
   fs->setParent(getParent());
   return fs;
 }
-
-void chillAST_ForStmt::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "chillAST_ForStmt::gatherVarDecls()\n");
-  //fprintf(stderr, "chillAST_ForStmt::gatherVarDecls()  before %d\n", decls.size());
-  // TODO clear a loop_var_decls variable and then walk it ?
-  init->gatherVarDecls(decls);
-  cond->gatherVarDecls(decls);
-  incr->gatherVarDecls(decls);
-  body->gatherVarDecls(decls);
-  //fprintf(stderr, "after %d\n", decls.size());
-}
-
-void chillAST_ForStmt::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "chillAST_ForStmt::gatherScalarVarDecls()  before %d\n", decls.size());
-  init->gatherScalarVarDecls(decls);
-  cond->gatherScalarVarDecls(decls);
-  incr->gatherScalarVarDecls(decls);
-  body->gatherScalarVarDecls(decls);
-}
-
-void chillAST_ForStmt::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "chillAST_ForStmt::gatherArrayVarDecls()  before %d\n", decls.size());
-  init->gatherArrayVarDecls(decls);
-  cond->gatherArrayVarDecls(decls);
-  incr->gatherArrayVarDecls(decls);
-  body->gatherArrayVarDecls(decls);
-}
-
-void chillAST_ForStmt::gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento) {
-  init->gatherArrayRefs(refs, 0);  // 0 ??
-  cond->gatherArrayRefs(refs, 0);  // 0 ??
-  incr->gatherArrayRefs(refs, 0);  // 0 ??
-  body->gatherArrayRefs(refs, 0);  // 0 ??
-}
-
-void chillAST_ForStmt::gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {
-  init->gatherScalarRefs(refs, 0);  // 0 ??
-  cond->gatherScalarRefs(refs, 0);  // 0 ??
-  incr->gatherScalarRefs(refs, 0);  // 0 ??
-  body->gatherScalarRefs(refs, 0);  // 0 ??
-}
-
-void chillAST_ForStmt::gatherDeclRefExprs(vector<chillAST_DeclRefExpr *> &refs) {
-  init->gatherDeclRefExprs(refs);
-  cond->gatherDeclRefExprs(refs);
-  incr->gatherDeclRefExprs(refs);
-  body->gatherDeclRefExprs(refs);
-}
-
-
-void chillAST_ForStmt::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
-  init->gatherVarUsage(decls);
-  cond->gatherVarUsage(decls);
-  incr->gatherVarUsage(decls);
-  body->gatherVarUsage(decls);
-}
-
-void chillAST_ForStmt::gatherStatements(std::vector<chillAST_Node *> &statements) {
-
-  // for completeness, should do all 4. Maybe someday
-  //init->gatherStatements( statements );
-  //cond->gatherStatements( statements );
-  //incr->gatherStatements( statements );
-  body->gatherStatements(statements);
-}
-
 
 void chillAST_ForStmt::addSyncs() {
   //fprintf(stderr, "\nchillAST_ForStmt::addSyncs()  ");
@@ -860,14 +781,7 @@ void chillAST_ForStmt::addSyncs() {
   //fprintf(stderr, ")\n");
 
   if (!parent) {
-    fprintf(stderr, "uhoh, chillAST_ForStmt::addSyncs() ForStmt has no parent!\n");
-    fprintf(stderr, "for (");
-    init->print(0, stderr);
-    fprintf(stderr, "; ");
-    cond->print(0, stderr);
-    fprintf(stderr, "; ");
-    incr->print(0, stderr);
-    fprintf(stderr, ")\n");
+    CHILL_ERROR("uhoh, chillAST_ForStmt::addSyncs() ForStmt has no parent!\n");
 
     return; // exit?
   }
@@ -954,7 +868,7 @@ bool chillAST_ForStmt::findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bo
     //fprintf(stderr, "prefer '%s'\n", vname );
 
     vector<chillAST_VarDecl *> decls;
-    init->gatherVarLHSUsage(decls);
+    getInit()->gatherVarLHSUsage(decls);
     //cond->gatherVarUsage( decls );
     //incr->gatherVarUsage( decls );
     //fprintf(stderr, "forstmt has %d vardecls in init, cond, inc\n", decls.size());
@@ -1021,29 +935,8 @@ bool chillAST_ForStmt::findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bo
     // swap out old for new in init, cond, incr, body
     if (newguy) {
       fprintf(stderr, "\nwill replace %s with %s in init, cond, incr\n", olddecl->varname, newguy->varname);
-      fprintf(stderr, "was: for (");
-      init->print(0, stderr);
-      fprintf(stderr, "; ");
-      cond->print(0, stderr);
-      fprintf(stderr, "; ");
-      incr->print(0, stderr);
-      fprintf(stderr, ")\n");
 
-
-      init->replaceVarDecls(olddecl, newguy);
-      cond->replaceVarDecls(olddecl, newguy);
-      incr->replaceVarDecls(olddecl, newguy);
-
-      fprintf(stderr, " is: for (");
-      init->print(0, stderr);
-      fprintf(stderr, "; ");
-      cond->print(0, stderr);
-      fprintf(stderr, "; ");
-      incr->print(0, stderr);
-      fprintf(stderr, ")\n\n");
-
-      fprintf(stderr, "recursing to ForStmt body of type %s\n", body->getTypeString());
-      body->replaceVarDecls(olddecl, newguy);
+      replaceVarDecls(olddecl, newguy);
 
       fprintf(stderr, "\nafter recursing to body, this loop is   (there should be no %s)\n", olddecl->varname);
       print(0, stderr);
@@ -1058,37 +951,18 @@ bool chillAST_ForStmt::findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bo
   }
 
   // check for more loops.  We may have already swapped variables out in body (right above here)
-  body->findLoopIndexesToReplace(symtab, false);
+  getBody()->findLoopIndexesToReplace(symtab, false);
 
   return force;
 }
-
-void chillAST_ForStmt::replaceChild(chillAST_Node *old, chillAST_Node *newchild) {
-  //fprintf(stderr, "chillAST_ForStmt::replaceChild()  REALLY CALLING BODY->ReplaceCHILD\n");
-  body->replaceChild(old, newchild);
-}
-
-
-void chillAST_ForStmt::replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl) {
-  // logic problem  if my loop var is olddecl!
-
-  //fprintf(stderr, "chillAST_ForStmt::replaceVarDecls( old %s,  new %s )\n", olddecl->varname, newdecl->varname);
-
-  // this is called for inner loops!
-  init->replaceVarDecls(olddecl, newdecl);
-  cond->replaceVarDecls(olddecl, newdecl);
-  incr->replaceVarDecls(olddecl, newdecl);
-  body->replaceVarDecls(olddecl, newdecl);
-}
-
 
 void chillAST_ForStmt::gatherLoopIndeces(std::vector<chillAST_VarDecl *> &indeces) {
   //fprintf(stderr, "chillAST_ForStmt::gatherLoopIndeces()\nloop is:\n"); print(0,stderr);
 
   vector<chillAST_VarDecl *> decls;
-  init->gatherVarLHSUsage(decls);
-  cond->gatherVarLHSUsage(decls);
-  incr->gatherVarLHSUsage(decls);
+  getInit()->gatherVarLHSUsage(decls);
+  getCond()->gatherVarLHSUsage(decls);
+  getInc()->gatherVarLHSUsage(decls);
   // note: NOT GOING INTO BODY OF THE LOOP
 
   int numdecls = decls.size();
@@ -1122,9 +996,9 @@ void chillAST_ForStmt::gatherLoopVars(std::vector<std::string> &loopvars) {
 
 
   vector<chillAST_VarDecl *> decls;
-  init->gatherVarLHSUsage(decls);
-  cond->gatherVarLHSUsage(decls);
-  incr->gatherVarLHSUsage(decls);
+  getInit()->gatherVarLHSUsage(decls);
+  getCond()->gatherVarLHSUsage(decls);
+  getInc()->gatherVarLHSUsage(decls);
   // note: NOT GOING INTO BODY OF THE LOOP
 
   for (int i = 0; i < decls.size(); i++) loopvars.push_back(strdup(decls[i]->varname));
@@ -1140,7 +1014,7 @@ void chillAST_ForStmt::loseLoopWithLoopVar(char *var) {
   // if you DON'T do this first, you may have already replaced yourself with this loop body
   // the body will no longer have this forstmt as parent, it will have the forstmt's parent as its parent
   //fprintf(stderr, "forstmt 0x%x, recursing loseLoop to body 0x%x of type %s with parent 0x%x of type %s\n", this, body,  body->getTypeString(), body->parent, body->parent->getTypeString());
-  body->loseLoopWithLoopVar(var);
+  getBody()->loseLoopWithLoopVar(var);
 
 
 
@@ -1177,18 +1051,18 @@ void chillAST_ForStmt::loseLoopWithLoopVar(char *var) {
     }
 
     vector<chillAST_VarDecl *> decls;
-    init->gatherVarLHSUsage(decls);   // this can fail if init is outside the loop
-    cond->gatherVarLHSUsage(decls);
-    incr->gatherVarLHSUsage(decls);
+    getInit()->gatherVarLHSUsage(decls);   // this can fail if init is outside the loop
+    getCond()->gatherVarLHSUsage(decls);
+    getInc()->gatherVarLHSUsage(decls);
     if (decls.size() > 1) {
       fprintf(stderr, "chill_ast.cc multiple loop variables confuses me\n");
       exit(-1);
     }
-    chillAST_Node *newstmt = body;
+    chillAST_Node *newstmt = getBody();
 
     // ACTUALLY, if I am being replaced, and my loop conditional is a min (Ternary), then wrap my loop body in an if statement
-    if (cond->isBinaryOperator()) { // what else could it be?
-      chillAST_BinaryOperator *BO = (chillAST_BinaryOperator *) cond;
+    if (getCond()->isBinaryOperator()) { // what else could it be?
+      chillAST_BinaryOperator *BO = (chillAST_BinaryOperator *) getCond();
       if (BO->rhs->isTernaryOperator()) {
 
         chillAST_TernaryOperator *TO = (chillAST_TernaryOperator *) BO->rhs;
@@ -1217,7 +1091,7 @@ void chillAST_ForStmt::loseLoopWithLoopVar(char *var) {
         // wrap the loop body in an if
         chillAST_DeclRefExpr *DRE = new chillAST_DeclRefExpr(decls[0]);
         chillAST_BinaryOperator *ifcond = new chillAST_BinaryOperator(DRE, "<=", ifcondrhs);
-        chillAST_IfStmt *ifstmt = new chillAST_IfStmt(ifcond, body, NULL);
+        chillAST_IfStmt *ifstmt = new chillAST_IfStmt(ifcond, getBody(), NULL);
 
         newstmt = ifstmt;
       }

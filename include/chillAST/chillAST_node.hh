@@ -220,7 +220,7 @@ public:
 
   void setChild(int which, chillAST_Node *n) {
     children[which] = n;
-    children[which]->parent = this;
+    if (n) children[which]->parent = this;
   };
 
   void setMetaComment(const char *c) { metacomment = strdup(c); };
@@ -282,20 +282,10 @@ public:
     exit(-1);
   };
 
-  virtual void gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento) {
-    CHILL_ERROR("(%s) forgot to implement gatherArrayRefs()\n", getTypeString());
-    dump();
-    print();
-    exit(-1);
-  };
+  virtual void gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento);
 
   // TODO we MIGHT want the VarDecl // NOTHING IMPLEMENTS THIS? ??? 
-  virtual void gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {
-    CHILL_ERROR("(%s) forgot to implement gatherScalarRefs()\n", getTypeString());
-    dump();
-    print();
-    exit(-1);
-  };
+  virtual void gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento);
 
   //! recursive walk parent links, looking for loops, and grabbing the declRefExpr in the loop init and cond.
   virtual void gatherLoopIndeces(std::vector<chillAST_VarDecl *> &indeces);
@@ -307,25 +297,18 @@ public:
   chillAST_Node *findContainingNonLoop();
 
   // TODO gather loop init and cond (and if cond) like gatherloopindeces
-
-  virtual void gatherDeclRefExprs(std::vector<chillAST_DeclRefExpr *> &refs) {  // both scalar and arrays
-    fprintf(stderr, "(%s) forgot to implement gatherDeclRefExpr()\n", getTypeString());
-  };
+  //! gather both scalar and array references
+  virtual void gatherDeclRefExprs(std::vector<chillAST_DeclRefExpr *> &refs);
 
 
-  virtual void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls) {
-    fprintf(stderr, "(%s) forgot to implement gatherVarUsage()\n", getTypeString());
-  };
+  virtual void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls);
 
   virtual void gatherVarLHSUsage(std::vector<chillAST_VarDecl *> &decls) {
     fprintf(stderr, "(%s) forgot to implement gatherVarLHSUsage()\n", getTypeString());
   };
 
   //! ACTUAL Declaration
-  virtual void gatherVarDecls(std::vector<chillAST_VarDecl *> &decls) {
-    fprintf(stderr, "(%s) forgot to implement gatherVarDecls()\n", getTypeString());
-  };
-
+  virtual void gatherVarDecls(std::vector<chillAST_VarDecl *> &decls);
 
   virtual void
   gatherVarDeclsMore(std::vector<chillAST_VarDecl *> &decls) {  // even if the decl itself is not in the ast.
@@ -336,9 +319,7 @@ public:
     fprintf(stderr, "(%s) forgot to implement gatherScalarVarDecls()\n", getTypeString());
   };
 
-  virtual void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls) {  // ACTUAL Declaration
-    fprintf(stderr, "(%s) forgot to implement gatherArrayVarDecls()\n", getTypeString());
-  };
+  virtual void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls);
 
   virtual chillAST_VarDecl *findArrayDecl(const char *name) { // scoping TODO
     if (!getSymbolTable()) return parent->findArrayDecl(name); // most things
@@ -347,9 +328,7 @@ public:
   }
 
 
-  virtual void replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl) {
-    fprintf(stderr, "(%s) forgot to implement replaceVarDecls()\n", getTypeString());
-  };
+  virtual void replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl);
 
   //! this just looks for ForStmts with preferred index metacomment attached
   virtual bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bool forcesync = false) {
@@ -357,11 +336,12 @@ public:
     return false;
   }
 
-
-  virtual chillAST_Node *constantFold() {  // hacky. TODO. make nice
-    CHILL_ERROR("(%s) forgot to implement constantFold()\n", getTypeString());
-    exit(-1);;
-  };
+  //! Folding constant, to some degree.
+  /*!
+   * We shoud need to delegate this to the backend compiler
+   * @return This node
+   */
+  virtual chillAST_Node *constantFold();
 
   virtual chillAST_Node *clone() {   // makes a deep COPY (?)
     CHILL_ERROR("(%s) forgot to implement clone()\n", getTypeString());
@@ -409,13 +389,7 @@ public:
 
 
   //! Get a vector of statements
-  virtual void gatherStatements(std::vector<chillAST_Node *> &statements) {
-    fprintf(stderr, "(%s) forgot to implement gatherStatements()\n", getTypeString());
-    dump();
-    fflush(stdout);
-    print();
-    fprintf(stderr, "\n\n");
-  }
+  virtual void gatherStatements(std::vector<chillAST_Node *> &statements);
 
   virtual chillAST_SymbolTable *getParameters() { return parameters; }
 

@@ -532,11 +532,6 @@ public:
 };
 
 class chillAST_ForStmt : public chillAST_Node {
-private:
-  chillAST_Node *init;
-  chillAST_Node *cond;
-  chillAST_Node *incr;
-  chillAST_Node *body; // always a compoundstmt?
 public:
   virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_FORSTMT; }
 
@@ -555,17 +550,17 @@ public:
 
   void removeSyncComment();
 
-  chillAST_Node *getInit() { return init; };
-  void setInit(chillAST_Node *i) { init = i; i->parent = this; }
+  chillAST_Node *getInit() { return children[0]; };
+  void setInit(chillAST_Node *i) { setChild(0,i); }
 
-  chillAST_Node *getCond() { return cond; };
-  void setCond(chillAST_Node *c) { cond = c; c->parent = this; }
+  chillAST_Node *getCond() { return children[1]; };
+  void setCond(chillAST_Node *c) { setChild(1,c); }
 
-  chillAST_Node *getInc() { return incr; };
-  void setInc(chillAST_Node *i) { incr = i; i->parent = this; }
+  chillAST_Node *getInc() { return children[2]; };
+  void setInc(chillAST_Node *i) { setChild(2,i); }
 
-  chillAST_Node *getBody() { return body; };
-  void setBody(chillAST_Node *b) { body = b; b->parent = this; };
+  chillAST_Node *getBody() { return children[3]; };
+  void setBody(chillAST_Node *b) { setChild(3,b); };
 
 
   bool isNotLeaf() { return true; };
@@ -576,27 +571,10 @@ public:
   // required methods that I can't seem to get to inherit
   void printControl(int indent = 0, FILE *fp = stderr);  // print just for ( ... ) but not body
 
-  chillAST_Node *constantFold();
-
   chillAST_Node *clone();
-
-  void gatherVarDecls(std::vector<chillAST_VarDecl *> &decls);
 
   void gatherVarDeclsMore(std::vector<chillAST_VarDecl *> &decls) { gatherVarDecls(decls); };
 
-  void gatherScalarVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento);
-
-  void gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento);
-
-  void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherDeclRefExprs(std::vector<chillAST_DeclRefExpr *> &refs);
-
-  void replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl); // will get called on inner loops
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bool forcesync = false);
 
   void gatherLoopIndeces(std::vector<chillAST_VarDecl *> &indeces);
@@ -607,11 +585,11 @@ public:
     // ADD MYSELF!
     loops.push_back(this);
 
-    int n = body->children.size();
+    int n = getBody()->children.size();
     //fprintf(stderr, "get_deep_loops of a %s with %d children\n", getTypeString(), n); 
     for (int i = 0; i < n; i++) {
-      //fprintf(stderr, "child %d is a %s\n", i, body->children[i]->getTypeString()); 
-      body->children[i]->get_deep_loops(loops);
+      //fprintf(stderr, "child %d is a %s\n", i, body->children[i]->getTypeString());
+      getBody()->children[i]->get_deep_loops(loops);
     }
     //fprintf(stderr, "found %d deep loops\n", loops.size()); 
   }
@@ -620,10 +598,10 @@ public:
   void find_deepest_loops(std::vector<chillAST_ForStmt *> &loops) {
     std::vector<chillAST_ForStmt *> b; // deepest loops below me
 
-    int n = body->children.size();
+    int n = getBody()->children.size();
     for (int i = 0; i < n; i++) {
       std::vector<chillAST_ForStmt *> l; // deepest loops below one child
-      body->children[i]->find_deepest_loops(l);
+      getBody()->children[i]->find_deepest_loops(l);
       if (l.size() > b.size()) { // a deeper nesting than we've seen
         b = l;
       }
@@ -635,9 +613,6 @@ public:
 
 
   void loseLoopWithLoopVar(char *var); // chillAST_ForStmt
-  void replaceChild(chillAST_Node *old, chillAST_Node *newchild);
-
-  void gatherStatements(std::vector<chillAST_Node *> &statements);
 
   bool lowerBound(int &l);
 

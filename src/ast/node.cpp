@@ -7,6 +7,8 @@
 #include "printer/cfamily.h"
 #include <stack>
 
+using namespace std;
+
 void chillAST_Node::fixChildInfo() {}
 
 void chillAST_Node::addChild(chillAST_Node *c) {
@@ -257,3 +259,74 @@ void chillAST_Node::print(int indent, FILE *fp) {
     fprintf(stdout, "\n");
   }
 }
+
+chillAST_Node* chillAST_Node::constantFold(){
+  CHILL_DEBUG_PRINT("Using generic\n");
+  for (int i = 0;i<getNumChildren();++i) {
+    if (getChild(i))
+    getChild(i)->constantFold();
+  }
+  return this;
+};
+
+void chillAST_Node::gatherVarDecls(vector<chillAST_VarDecl*> &decls) {
+  CHILL_DEBUG_PRINT("Using generic\n");
+  for (int i = 0;i<getNumChildren();++i) {
+    if (getChild(i))
+    getChild(i)->gatherVarDecls(decls);
+  }
+}
+void chillAST_Node::gatherArrayVarDecls(vector<chillAST_VarDecl*> &decls) {
+  CHILL_DEBUG_PRINT("Using generic\n");
+  for (int i = 0;i<getNumChildren();++i) {
+    if (getChild(i))
+    getChild(i)->gatherArrayVarDecls(decls);
+  }
+}
+void chillAST_Node::gatherArrayRefs(vector<chillAST_ArraySubscriptExpr*> &refs, bool writtento) {
+  CHILL_DEBUG_PRINT("Using generic\n");
+  for (int i = 0;i<getNumChildren();++i) {
+    if (getChild(i))
+    getChild(i)->gatherArrayRefs(refs,writtento);
+  }
+}
+void chillAST_Node::gatherScalarRefs(vector<chillAST_DeclRefExpr*> &refs, bool writtento) {
+  CHILL_DEBUG_PRINT("Using generic\n");
+  for (int i = 0;i<getNumChildren();++i) {
+    if (getChild(i))
+    getChild(i)->gatherScalarRefs(refs,writtento);
+  }
+}
+void chillAST_Node::gatherDeclRefExprs(vector<chillAST_DeclRefExpr*> &refs) {
+  CHILL_DEBUG_PRINT("Using generic\n");
+  for (int i = 0;i<getNumChildren();++i) {
+    if (getChild(i))
+    getChild(i)->gatherDeclRefExprs(refs);
+  }
+}
+void chillAST_Node::gatherVarUsage(vector<chillAST_VarDecl*> &decls) {
+  CHILL_DEBUG_PRINT("Using generic\n");
+  for (int i = 0;i<getNumChildren();++i) {
+    if (getChild(i))
+    getChild(i)->gatherVarUsage(decls);
+  }
+}
+void chillAST_Node::gatherStatements(vector<chillAST_Node*> &statements) {
+  CHILL_DEBUG_PRINT("using generic\n");
+  for (int i = 0;i<getNumChildren();++i) {
+    if (getChild(i))
+    getChild(i)->gatherStatements(statements);
+  }
+}
+void chillAST_Node::replaceVarDecls(chillAST_VarDecl* olddecl, chillAST_VarDecl *newdecl) {
+  CHILL_DEBUG_PRINT("using generic\n");
+  for (int i = 0;i<getNumChildren();++i) {
+    if (getChild(i))
+    getChild(i)->replaceVarDecls(olddecl,newdecl);
+  }
+}
+
+
+
+
+
