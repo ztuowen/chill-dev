@@ -264,7 +264,7 @@ chillAST_Node* chillAST_Node::constantFold(){
   CHILL_DEBUG_PRINT("Using generic\n");
   for (int i = 0;i<getNumChildren();++i) {
     if (getChild(i))
-    getChild(i)->constantFold();
+    setChild(i,getChild(i)->constantFold());
   }
   return this;
 };
@@ -326,7 +326,13 @@ void chillAST_Node::replaceVarDecls(chillAST_VarDecl* olddecl, chillAST_VarDecl 
   }
 }
 
-
+void chillAST_Node::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
+  CHILL_DEBUG_PRINT("using generic\n");
+  for (int i = 0;i<getNumChildren();++i) {
+    if (getChild(i))
+      getChild(i)->gatherScalarVarDecls(decls);
+  }
+}
 
 
 

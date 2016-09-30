@@ -550,16 +550,16 @@ public:
 
   void removeSyncComment();
 
-  chillAST_Node *getInit() { return children[0]; };
+  chillAST_Node *getInit() { return getChild(0); };
   void setInit(chillAST_Node *i) { setChild(0,i); }
 
-  chillAST_Node *getCond() { return children[1]; };
+  chillAST_Node *getCond() { return getChild(1); };
   void setCond(chillAST_Node *c) { setChild(1,c); }
 
-  chillAST_Node *getInc() { return children[2]; };
+  chillAST_Node *getInc() { return getChild(2); };
   void setInc(chillAST_Node *i) { setChild(2,i); }
 
-  chillAST_Node *getBody() { return children[3]; };
+  chillAST_Node *getBody() { return getChild(3); };
   void setBody(chillAST_Node *b) { setChild(3,b); };
 
 
@@ -626,10 +626,6 @@ public:
 
   // variables that are special for this type of node
   char *op;            // TODO need enum  so far, only "?" conditional operator
-  chillAST_Node *condition;
-  chillAST_Node *lhs;        // keep name from binary
-  chillAST_Node *rhs;
-
 
   // constructors
   chillAST_TernaryOperator();
@@ -641,56 +637,28 @@ public:
 
   bool isLeaf() { return false; };
 
-
   char *getOp() { return op; };  // dangerous. could get changed!
-  chillAST_Node *getCond() { return condition; };
 
-  chillAST_Node *getRHS() { return rhs; };
+  chillAST_Node *getCond() { return getChild(0); };
 
-  chillAST_Node *getLHS() { return lhs; };
+  chillAST_Node *getRHS() { return getChild(1); };
 
-  void setCond(chillAST_Node *newc) {
-    condition = newc;
-    newc->setParent(this);
-  }
+  chillAST_Node *getLHS() { return getChild(2); };
 
-  void setLHS(chillAST_Node *newlhs) {
-    lhs = newlhs;
-    newlhs->setParent(this);
-  }
+  void setCond(chillAST_Node *newc) { setChild(0,newc); }
 
-  void setRHS(chillAST_Node *newrhs) {
-    rhs = newrhs;
-    newrhs->setParent(this);
-  }
+  void setLHS(chillAST_Node *newlhs) { setChild(1,newlhs); }
 
+  void setRHS(chillAST_Node *newrhs) { setChild(2,newrhs); }
 
   // required methods that I can't seem to get to inherit
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
 
-  void replaceChild(chillAST_Node *old, chillAST_Node *newchild);
-
-  void gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento);
-
-  void gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento);
-
-  void gatherVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
   void gatherVarDeclsMore(std::vector<chillAST_VarDecl *> &decls) { gatherVarDecls(decls); };
 
-  void gatherScalarVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherDeclRefExprs(std::vector<chillAST_DeclRefExpr *> &refs);
-
   void gatherVarLHSUsage(std::vector<chillAST_VarDecl *> &decls);
-
-  void replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl);
 
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab,
                                 bool forcesync = false) { return false; }; // no loops under here
@@ -703,11 +671,9 @@ public:
 
   // variables that are special for this type of node
   char *op;            // TODO need enum
-  chillAST_Node *lhs;
-  chillAST_Node *rhs;
-
 
   // constructors
+  chillAST_BinaryOperator();
   chillAST_BinaryOperator(chillAST_Node *lhs, const char *op, chillAST_Node *rhs);
 
   // other methods particular to this type of node
@@ -719,19 +685,13 @@ public:
 
   bool isLeaf() { return false; };
 
-  chillAST_Node *getRHS() { return rhs; };
+  chillAST_Node *getLHS() { return getChild(0); };
 
-  chillAST_Node *getLHS() { return lhs; };
+  chillAST_Node *getRHS() { return getChild(1); };
 
-  void setLHS(chillAST_Node *newlhs) {
-    lhs = newlhs;
-    newlhs->setParent(this);
-  }
+  void setLHS(chillAST_Node *newlhs) { setChild(0,newlhs); }
 
-  void setRHS(chillAST_Node *newrhs) {
-    rhs = newrhs;
-    newrhs->setParent(this);
-  }
+  void setRHS(chillAST_Node *newrhs) { setChild(1,newrhs); }
 
   char *getOp() { return op; };  // dangerous. could get changed!
   bool isAugmentedAssignmentOp() {
@@ -776,32 +736,16 @@ public:
 
   chillAST_Node *clone();
 
-  void replaceChild(chillAST_Node *old, chillAST_Node *newchild);
-
   void gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento); // chillAST_BinaryOperator
   void gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento);
 
-  void gatherVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
   void gatherVarDeclsMore(std::vector<chillAST_VarDecl *> &decls) { gatherVarDecls(decls); };
 
-  void gatherScalarVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherDeclRefExprs(std::vector<chillAST_DeclRefExpr *> &refs);
-
   void gatherVarLHSUsage(std::vector<chillAST_VarDecl *> &decls);
-
-  void replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl);
 
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab,
                                 bool forcesync = false) { return false; }; // no loops under here
   void loseLoopWithLoopVar(char *var) {}; // binop can't have loop as child?
-
-  void gatherStatements(std::vector<chillAST_Node *> &statements); //
 
 };
 

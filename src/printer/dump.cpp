@@ -63,9 +63,9 @@ void Dump::printS(std::string ident, chillAST_ArraySubscriptExpr *n, std::ostrea
 
 void Dump::printS(std::string ident, chillAST_BinaryOperator *n, std::ostream &o) {
   o << n->op << " ";
-  if (n->lhs) print(ident, n->lhs, o);
+  if (n->getLHS()) print(ident, n->getLHS(), o);
   else o << "(NULL) ";
-  if (n->rhs) print(ident, n->rhs, o);
+  if (n->getRHS()) print(ident, n->getRHS(), o);
   else o << "(NULL) ";
 }
 
@@ -209,9 +209,9 @@ void Dump::printS(std::string ident, chillAST_TypedefDecl *n, std::ostream &o) {
 
 void Dump::printS(std::string ident, chillAST_TernaryOperator *n, std::ostream &o) {
   o << n->op << " ";
-  print(ident, n->condition, o);
-  print(ident, n->lhs, o);
-  print(ident, n->rhs, o);
+  print(ident, n->getCond(), o);
+  print(ident, n->getLHS(), o);
+  print(ident, n->getRHS(), o);
 }
 
 void Dump::printS(std::string ident, chillAST_UnaryOperator *n, std::ostream &o) {

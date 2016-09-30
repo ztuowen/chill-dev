@@ -689,14 +689,14 @@ bool chillAST_ForStmt::lowerBound(int &l) { // l is an output (passed as referen
     }
 
     //fprintf(stderr, "rhs "); bo->rhs->print(0,stderr);  fprintf(stderr, "   ");
-    l = bo->rhs->evalAsInt(); // float could be legal I suppose
+    l = bo->getRHS()->evalAsInt(); // float could be legal I suppose
     //fprintf(stderr, "   %d\n", l);
     return true;
   } else if (conditionoperator == IR_COND_GT ||
              conditionoperator == IR_COND_GE) {  // decrementing
     // lower bound is rhs of cond (not init)
     chillAST_BinaryOperator *bo = (chillAST_BinaryOperator *) getCond();
-    l = bo->rhs->evalAsInt(); // float could be legal I suppose
+    l = bo->getLHS()->evalAsInt(); // float could be legal I suppose
     return true;
   }
 
@@ -726,7 +726,7 @@ bool chillAST_ForStmt::upperBound(int &u) { // u is an output (passed as referen
       exit(-1);
     }
 
-    u = bo->rhs->evalAsInt(); // float could be legal I suppose
+    u = bo->getRHS()->evalAsInt(); // float could be legal I suppose
     return true;
   } else if (conditionoperator == IR_COND_LT ||
              conditionoperator == IR_COND_LE) {
@@ -734,7 +734,7 @@ bool chillAST_ForStmt::upperBound(int &u) { // u is an output (passed as referen
     // upper bound is rhs of cond (not init)
     chillAST_BinaryOperator *bo = (chillAST_BinaryOperator *) getCond();
     //bo->rhs->print(0,stderr);
-    u = bo->rhs->evalAsInt(); // float could be legal I suppose
+    u = bo->getRHS()->evalAsInt(); // float could be legal I suppose
 
     if (conditionoperator == IR_COND_LT) u -= 1;
 
@@ -1063,16 +1063,16 @@ void chillAST_ForStmt::loseLoopWithLoopVar(char *var) {
     // ACTUALLY, if I am being replaced, and my loop conditional is a min (Ternary), then wrap my loop body in an if statement
     if (getCond()->isBinaryOperator()) { // what else could it be?
       chillAST_BinaryOperator *BO = (chillAST_BinaryOperator *) getCond();
-      if (BO->rhs->isTernaryOperator()) {
+      if (BO->getRHS()->isTernaryOperator()) {
 
-        chillAST_TernaryOperator *TO = (chillAST_TernaryOperator *) BO->rhs;
-        chillAST_BinaryOperator *C = (chillAST_BinaryOperator *) TO->condition;
+        chillAST_TernaryOperator *TO = (chillAST_TernaryOperator *) BO->getRHS();
+        chillAST_BinaryOperator *C = (chillAST_BinaryOperator *) TO->getCond();
 
         //fprintf(stderr, "loop condition RHS  is ternary\nCondition RHS");
         C->print();
-        chillAST_Node *l = C->lhs;
+        chillAST_Node *l = C->getLHS();
         if (l->isParenExpr()) l = ((chillAST_ParenExpr *) l)->subexpr;
-        chillAST_Node *r = C->rhs;
+        chillAST_Node *r = C->getRHS();
         if (r->isParenExpr()) r = ((chillAST_ParenExpr *) r)->subexpr;
 
         //fprintf(stderr, "lhs is %s     rhs is %s\n", l->getTypeString(), r->getTypeString());
@@ -1107,8 +1107,13 @@ void chillAST_ForStmt::loseLoopWithLoopVar(char *var) {
 
 }
 
+chillAST_BinaryOperator::chillAST_BinaryOperator() {
+  children.push_back(NULL);
+  children.push_back(NULL);
+}
 
-chillAST_BinaryOperator::chillAST_BinaryOperator(chillAST_Node *l, const char *oper, chillAST_Node *r) {
+chillAST_BinaryOperator::chillAST_BinaryOperator(chillAST_Node *l, const char *oper, chillAST_Node *r)
+    :chillAST_BinaryOperator() {
   //fprintf(stderr, "chillAST_BinaryOperator::chillAST_BinaryOperator( l %p  %s  r %p,   parent %p)  this %p\n", l, oper, r, par, this);
   CHILL_DEBUG_PRINT("( l  %s  r )\n", oper);
 
@@ -1116,25 +1121,23 @@ chillAST_BinaryOperator::chillAST_BinaryOperator(chillAST_Node *l, const char *o
   //  fprintf(stderr, "("); l->print(0,stderr); fprintf(stderr, ") %s (", oper); r->print(0,stderr); fprintf(stderr, ")\n\n");
   //}
 
-  lhs = l;
-  rhs = r;
+  setLHS(l);
+  setRHS(r);
 
-  if (lhs) lhs->setParent(this);
-  if (rhs) rhs->setParent(this);  // may only have part of the lhs and rhs when binop is created
   if (oper) op = strdup(oper);
 
   // if this writes to lhs and lhs type has an 'imwrittento' concept, set that up
   if (isAssignmentOp()) {
-    if (lhs && lhs->isArraySubscriptExpr()) {
-      ((chillAST_ArraySubscriptExpr *) lhs)->imwrittento = true;
+    if (l && l->isArraySubscriptExpr()) {
+      ((chillAST_ArraySubscriptExpr *) l)->imwrittento = true;
       //fprintf(stderr, "chillAST_BinaryOperator, op '=', lhs is an array reference  LVALUE\n");
     }
   }
   if (isAugmentedAssignmentOp()) {  // +=  etc
     //fprintf(stderr, "isAugmentedAssignmentOp()  "); print(); fflush(stdout);
-    if (lhs && lhs->isArraySubscriptExpr()) {
+    if (l && l->isArraySubscriptExpr()) {
       //fprintf(stderr, "lhs is also read from  ");  lhs->print(); fflush(stdout);
-      ((chillAST_ArraySubscriptExpr *) lhs)->imreadfrom = true; // note will ALSO have imwrittento true
+      ((chillAST_ArraySubscriptExpr *) l)->imreadfrom = true; // note will ALSO have imwrittento true
     }
   }
 
@@ -1145,15 +1148,15 @@ chillAST_BinaryOperator::chillAST_BinaryOperator(chillAST_Node *l, const char *o
 
 int chillAST_BinaryOperator::evalAsInt() {
   // very limited. allow +-*/ and integer literals ...
-  if (isAssignmentOp()) return rhs->evalAsInt();  // ?? ignores/loses lhs info
+  if (isAssignmentOp()) return getRHS()->evalAsInt();  // ?? ignores/loses lhs info
 
   if (!strcmp("+", op)) {
     //fprintf(stderr, "chillAST_BinaryOperator::evalAsInt()   %d + %d\n", lhs->evalAsInt(), rhs->evalAsInt());
-    return lhs->evalAsInt() + rhs->evalAsInt();
+    return getLHS()->evalAsInt() + getRHS()->evalAsInt();
   }
-  if (!strcmp("-", op)) return lhs->evalAsInt() - rhs->evalAsInt();
-  if (!strcmp("*", op)) return lhs->evalAsInt() * rhs->evalAsInt();
-  if (!strcmp("/", op)) return lhs->evalAsInt() / rhs->evalAsInt();
+  if (!strcmp("-", op)) return getLHS()->evalAsInt() - getRHS()->evalAsInt();
+  if (!strcmp("*", op)) return getLHS()->evalAsInt() * getRHS()->evalAsInt();
+  if (!strcmp("/", op)) return getLHS()->evalAsInt() / getRHS()->evalAsInt();
 
   fprintf(stderr, "chillAST_BinaryOperator::evalAsInt() unhandled op '%s'\n", op);
   exit(-1);
@@ -1164,21 +1167,17 @@ chillAST_IntegerLiteral *chillAST_BinaryOperator::evalAsIntegerLiteral() {
 }
 
 class chillAST_Node *chillAST_BinaryOperator::constantFold() {
-  //fprintf(stderr, "\nchillAST_BinaryOperator::constantFold()  ");
-  //print(0,stderr); fprintf(stderr, "\n");
-
-  lhs = lhs->constantFold();
-  rhs = rhs->constantFold();
+  chillAST_Node::constantFold();
 
   chillAST_Node *returnval = this;
 
-  if (lhs->isConstant() && rhs->isConstant()) {
+  if (getLHS()->isConstant() && getRHS()->isConstant()) {
     //fprintf(stderr, "binop folding constants\n"); print(0,stderr); fprintf(stderr, "\n");
 
     if (!strcmp(op, "+") || !strcmp(op, "-") || !strcmp(op, "*")) {
-      if (lhs->isIntegerLiteral() && rhs->isIntegerLiteral()) {
-        chillAST_IntegerLiteral *l = (chillAST_IntegerLiteral *) lhs;
-        chillAST_IntegerLiteral *r = (chillAST_IntegerLiteral *) rhs;
+      if (getLHS()->isIntegerLiteral() && getRHS()->isIntegerLiteral()) {
+        chillAST_IntegerLiteral *l = (chillAST_IntegerLiteral *) getLHS();
+        chillAST_IntegerLiteral *r = (chillAST_IntegerLiteral *) getRHS();
         chillAST_IntegerLiteral *I;
 
         if (!strcmp(op, "+")) I = new chillAST_IntegerLiteral(l->value + r->value);
@@ -1228,8 +1227,8 @@ class chillAST_Node *chillAST_BinaryOperator::constantFold() {
 class chillAST_Node *chillAST_BinaryOperator::clone() {
   //fprintf(stderr, "chillAST_BinaryOperator::clone() "); print(); printf("\n"); fflush(stdout);
 
-  chillAST_Node *l = lhs->clone();
-  chillAST_Node *r = rhs->clone();
+  chillAST_Node *l = getLHS()->clone();
+  chillAST_Node *r = getRHS()->clone();
   chillAST_BinaryOperator *bo = new chillAST_BinaryOperator(l, op, r);
   l->setParent(bo);
   r->setParent(bo);
@@ -1239,207 +1238,44 @@ class chillAST_Node *chillAST_BinaryOperator::clone() {
 }
 
 void chillAST_BinaryOperator::gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool w) {
-  //fprintf(stderr, "chillAST_BinaryOperator::gatherArrayRefs()\n");
-  //print(); fflush(stdout); fprintf(stderr, "\n");
-  //if (isAugmentedAssignmentOp()) {
-  //  fprintf(stderr, "%s  is augmented assignment\n", op);
-  //}
-
-  //if (isAssignmentOp()) {
-  //  fprintf(stderr, "%s  is assignment\n", op);
-  //}
-
-  //if (isAugmentedAssignmentOp()) { // lhs is ALSO on the RHS, NOT as a write
-  //  if (lhs->isArraySubscriptExpr()) { // probably some case where this fails
-  //    ((chillAST_ArraySubscriptExpr *) lhs)->imreadfrom = true;
-  //    //lhs->&gatherArrayRefs( refs, 0 );
-  //  }
-  //}
-
-  //fprintf(stderr, "in chillAST_BinaryOperator::gatherArrayRefs(), %d &arrayrefs before\n", refs.size());
-  lhs->gatherArrayRefs(refs, isAssignmentOp());
-  //fprintf(stderr, "in chillAST_BinaryOperator::gatherArrayRefs(), %d &arrayrefs after lhs\n", refs.size());
-  rhs->gatherArrayRefs(refs, 0);
-  //fprintf(stderr, "in chillAST_BinaryOperator::gatherArrayRefs(), %d &refs\n", refs.size());
-
-  //for (int i=0; i<refs.size(); i++) {
-  //  fprintf(stderr, "%s\n", (*refs)[i]->basedecl->varname);
-  //}
-
+  getLHS()->gatherArrayRefs(refs, isAssignmentOp());
+  getRHS()->gatherArrayRefs(refs, 0);
 }
 
 void chillAST_BinaryOperator::gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {
-  lhs->gatherScalarRefs(refs, isAssignmentOp());
-  rhs->gatherScalarRefs(refs, 0);
-}
-
-
-void chillAST_BinaryOperator::replaceChild(chillAST_Node *old, chillAST_Node *newchild) {
-  //fprintf(stderr, "\nbinop::replaceChild( old 0x%x, new )    lhs 0x%x   rhd 0x%x\n", old, lhs, rhs);
-
-  // will pointers match??
-  if (lhs == old) setLHS(newchild);
-  else if (rhs == old) setRHS(newchild);
-
-  // silently ignore?
-  //else {
-  //  fprintf(stderr, "\nERROR chillAST_BinaryOperator::replaceChild( old 0x%x, new )    lhs 0x%x   rhd 0x%x\n", old, lhs, rhs);
-  //  fprintf(stderr, "old is not a child of this BinaryOperator\n");
-  //  print();
-  //  dump();
-  //  exit(-1);
-  //}
-}
-
-
-void chillAST_BinaryOperator::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "chillAST_BinaryOperator::gatherVarDecls()\n");
-
-  //fprintf(stderr, "chillAST_BinaryOperator::gatherVarDecls()  before %d\n", decls.size());
-  //print(0,stderr); fprintf(stderr, "\n");
-  //fprintf(stderr, "lhs is %s\n", lhs->getTypeString());
-  if (lhs) lhs->gatherVarDecls(decls); // 'if' to deal with partially formed
-  if (rhs) rhs->gatherVarDecls(decls);
-  //fprintf(stderr, "after %d\n", decls.size());
-}
-
-
-void chillAST_BinaryOperator::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "chillAST_BinaryOperator::gatherScalarVarDecls()  before %d\n", decls.size());
-  //fprintf(stderr, "lhs is %s\n", lhs->getTypeString());
-  lhs->gatherScalarVarDecls(decls);
-  rhs->gatherScalarVarDecls(decls);
-  //fprintf(stderr, "after %d\n", decls.size());
-}
-
-
-void chillAST_BinaryOperator::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "chillAST_BinaryOperator::gatherArrayVarDecls()  before %d\n", decls.size());
-  //fprintf(stderr, "lhs is %s\n", lhs->getTypeString());
-  lhs->gatherArrayVarDecls(decls);
-  rhs->gatherArrayVarDecls(decls);
-  //fprintf(stderr, "after %d\n", decls.size());
-}
-
-
-void chillAST_BinaryOperator::gatherDeclRefExprs(vector<chillAST_DeclRefExpr *> &refs) {
-  lhs->gatherDeclRefExprs(refs);
-  rhs->gatherDeclRefExprs(refs);
-}
-
-
-void chillAST_BinaryOperator::gatherStatements(std::vector<chillAST_Node *> &statements) {
-
-  // what's legit?
-  if (isAssignmentOp()) {
-    statements.push_back(this);
-  }
-
-}
-
-
-void chillAST_BinaryOperator::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
-  lhs->gatherVarUsage(decls);
-  rhs->gatherVarUsage(decls);
+  getLHS()->gatherScalarRefs(refs, isAssignmentOp());
+  getRHS()->gatherScalarRefs(refs, 0);
 }
 
 void chillAST_BinaryOperator::gatherVarLHSUsage(vector<chillAST_VarDecl *> &decls) {
-  lhs->gatherVarUsage(decls);
+  getLHS()->gatherVarUsage(decls);
 }
 
-void chillAST_BinaryOperator::replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl) {
-  //if (!strcmp(op, "<=")) {
-  //  fprintf(stderr, "chillAST_BinaryOperator::replaceVarDecls( old %s, new %s)\n", olddecl->varname, newdecl->varname );
-  //  print(); printf("\n"); fflush(stdout);
-  //  fprintf(stderr, "binaryoperator, lhs is of type %s\n", lhs->getTypeString());
-  //  fprintf(stderr, "binaryoperator, rhs is of type %s\n", rhs->getTypeString());
-  //}
-  lhs->replaceVarDecls(olddecl, newdecl);
-  rhs->replaceVarDecls(olddecl, newdecl);
-  //if (!strcmp(op, "<=")) {
-  //  print(); printf("\n\n"); fflush(stdout);
-  //}
+chillAST_TernaryOperator::chillAST_TernaryOperator() {
+  op = strdup("?");
+  children.push_back(NULL);
+  children.push_back(NULL);
+  children.push_back(NULL);
 }
 
 chillAST_TernaryOperator::chillAST_TernaryOperator(const char *oper, chillAST_Node *c, chillAST_Node *l,
-                                                   chillAST_Node *r) {
-  if (op)
-    op = strdup(oper);
-  else
-    op = strdup("?"); // the only one so far
-  condition = c;
-  lhs = l;
-  rhs = r;
-  if (condition) condition->setParent(this);
-  if (lhs) lhs->setParent(this);
-  if (rhs) rhs->setParent(this);
-}
-
-void chillAST_TernaryOperator::replaceChild(chillAST_Node *old, chillAST_Node *newchild) {
-  //fprintf(stderr, "\nbinop::replaceChild( old 0x%x, new )    lhs 0x%x   rhd 0x%x\n", old, lhs, rhs);
-
-  // will pointers match??
-  if (lhs == old) setLHS(newchild);
-  else if (rhs == old) setRHS(newchild);
-  else if (condition == old) setCond(newchild);
-
-  // silently ignore?
-  //else {
-  //}
-}
-
-
-void chillAST_TernaryOperator::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
-  condition->gatherVarDecls(decls);
-  lhs->gatherVarDecls(decls);
-  rhs->gatherVarDecls(decls);
-}
-
-void chillAST_TernaryOperator::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
-  condition->gatherScalarVarDecls(decls);
-  lhs->gatherScalarVarDecls(decls);
-  rhs->gatherScalarVarDecls(decls);
-}
-
-
-void chillAST_TernaryOperator::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
-  condition->gatherArrayVarDecls(decls);
-  lhs->gatherArrayVarDecls(decls);
-  rhs->gatherArrayVarDecls(decls);
-}
-
-
-void chillAST_TernaryOperator::gatherDeclRefExprs(vector<chillAST_DeclRefExpr *> &refs) {
-  condition->gatherDeclRefExprs(refs);
-  lhs->gatherDeclRefExprs(refs);
-  rhs->gatherDeclRefExprs(refs);
-}
-
-
-void chillAST_TernaryOperator::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
-  condition->gatherVarUsage(decls);
-  lhs->gatherVarUsage(decls);
-  rhs->gatherVarUsage(decls);
+                                                   chillAST_Node *r):chillAST_TernaryOperator() {
+  if (op) op = strdup(oper);
+  setCond(c);
+  setLHS(l);
+  setRHS(r);
 }
 
 void chillAST_TernaryOperator::gatherVarLHSUsage(vector<chillAST_VarDecl *> &decls) {
   // this makes no sense for ternary ??
 }
 
-void chillAST_TernaryOperator::replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl) {
-  condition->replaceVarDecls(olddecl, newdecl);
-  lhs->replaceVarDecls(olddecl, newdecl);
-  rhs->replaceVarDecls(olddecl, newdecl);
-}
-
 class chillAST_Node *chillAST_TernaryOperator::constantFold() {
-  condition = condition->constantFold();
-  lhs = lhs->constantFold();
-  rhs = rhs->constantFold();
+  chillAST_Node::constantFold();
 
   chillAST_Node *returnval = this;
 
-  if (condition->isConstant()) {
+  if (getCond()->isConstant()) {
     // TODO
   }
 
@@ -1447,28 +1283,13 @@ class chillAST_Node *chillAST_TernaryOperator::constantFold() {
 }
 
 class chillAST_Node *chillAST_TernaryOperator::clone() {
-  chillAST_Node *c = condition->clone();
-  chillAST_Node *l = lhs->clone();
-  chillAST_Node *r = rhs->clone();
+  chillAST_Node *c = getCond()->clone();
+  chillAST_Node *l = getLHS()->clone();
+  chillAST_Node *r = getRHS()->clone();
   chillAST_TernaryOperator *to = new chillAST_TernaryOperator(op, l, r, parent);
-  c->setParent(to);
-  l->setParent(to);
-  r->setParent(to);
   to->isFromSourceFile = isFromSourceFile;
   filename = NULL;
   return to;
-}
-
-void chillAST_TernaryOperator::gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool w) {
-  condition->gatherArrayRefs(refs, isAssignmentOp());
-  lhs->gatherArrayRefs(refs, isAssignmentOp());
-  rhs->gatherArrayRefs(refs, 0);
-}
-
-void chillAST_TernaryOperator::gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {
-  condition->gatherScalarRefs(refs, isAssignmentOp());
-  lhs->gatherScalarRefs(refs, isAssignmentOp());
-  rhs->gatherScalarRefs(refs, 0);
 }
 
 chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr(chillAST_Node *bas, chillAST_Node *indx, bool writtento,

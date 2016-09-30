@@ -56,10 +56,10 @@ int CFamily::getPrecS(chillAST_BinaryOperator *n) {
 
 void CFamily::printS(std::string ident, chillAST_BinaryOperator *n, std::ostream &o) {
   int prec = getPrec(n);
-  if (n->lhs) printPrec(ident, n->lhs, o, prec);
+  if (n->getLHS()) printPrec(ident, n->getLHS(), o, prec);
   else o << "(NULL)";
   o << " " << n->op << " ";
-  if (n->rhs) printPrec(ident, n->rhs, o, prec);
+  if (n->getRHS()) printPrec(ident, n->getRHS(), o, prec);
   else o << "(NULL)";
 }
 
@@ -347,11 +347,11 @@ int CFamily::getPrecS(chillAST_TernaryOperator *n) {
 
 void CFamily::printS(std::string ident, chillAST_TernaryOperator *n, std::ostream &o) {
   int prec = getPrec(n);
-  printPrec(ident, n->condition, o, prec);
+  printPrec(ident, n->getCond(), o, prec);
   o << "" << n->op << "";
-  printPrec(ident, n->lhs, o, prec);
+  printPrec(ident, n->getLHS(), o, prec);
   o << ":";
-  printPrec(ident, n->rhs, o, prec);
+  printPrec(ident, n->getRHS(), o, prec);
 }
 
 const char *unaryPrec[] = {

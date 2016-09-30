@@ -3071,10 +3071,10 @@ std::vector<omega::CG_outputRepr *> IR_clangCode::QueryExpOperand(const omega::C
     chillAST_BinaryOperator *bop = (chillAST_BinaryOperator *) e;
     char *op = bop->op;  // TODO enum for operator types
     if (!strcmp(op, "=")) {
-      v.push_back(new omega::CG_chillRepr(bop->rhs));  // for assign, return RHS
+      v.push_back(new omega::CG_chillRepr(bop->getRHS()));  // for assign, return RHS
     } else if (!strcmp(op, "+") || !strcmp(op, "-") || !strcmp(op, "*") || !strcmp(op, "/")) {
-      v.push_back(new omega::CG_chillRepr(bop->lhs));  // for +*-/ return both lhs and rhs
-      v.push_back(new omega::CG_chillRepr(bop->rhs));
+      v.push_back(new omega::CG_chillRepr(bop->getLHS()));  // for +*-/ return both lhs and rhs
+      v.push_back(new omega::CG_chillRepr(bop->getRHS()));
     } else {
       CHILL_ERROR("Binary Operator  UNHANDLED op (%s)\n", op);
       exit(-1);

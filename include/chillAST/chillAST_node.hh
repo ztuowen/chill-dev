@@ -315,9 +315,8 @@ public:
     fprintf(stderr, "(%s) forgot to implement gatherVarDeclsMore()\n", getTypeString());
   };
 
-  virtual void gatherScalarVarDecls(std::vector<chillAST_VarDecl *> &decls) {  // ACTUAL Declaration
-    fprintf(stderr, "(%s) forgot to implement gatherScalarVarDecls()\n", getTypeString());
-  };
+  //! Actual declaration
+  virtual void gatherScalarVarDecls(std::vector<chillAST_VarDecl *> &decls);
 
   virtual void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls);
 

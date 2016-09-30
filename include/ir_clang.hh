@@ -149,7 +149,7 @@ struct IR_chillScalarRef : public IR_ScalarRef {
     dre = NULL;
     //bop = ins; //   do we need this? 
     if (pos == OP_LEFT) {
-      chillAST_Node *lhs = ins->lhs;
+      chillAST_Node *lhs = ins->getLHS();
       if (lhs->isDeclRefExpr()) {
         chillAST_DeclRefExpr *DRE = (chillAST_DeclRefExpr *) lhs;
         dre = DRE;
@@ -161,7 +161,7 @@ struct IR_chillScalarRef : public IR_ScalarRef {
         exit(-1);
       }
     } else {
-      chillAST_Node *rhs = ins->rhs;
+      chillAST_Node *rhs = ins->getRHS();
       if (rhs->isDeclRefExpr()) {
         chillAST_DeclRefExpr *DRE = (chillAST_DeclRefExpr *) rhs;
         dre = DRE;

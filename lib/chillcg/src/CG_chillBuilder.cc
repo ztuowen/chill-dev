@@ -103,8 +103,8 @@ namespace omega {
     //  b->print(); printf("\n"); fflush(stdout); 
     //} 
     
-    chillAST_Node *lhs = b->lhs;
-    chillAST_Node *rhs = b->rhs;
+    chillAST_Node *lhs = b->getLHS();
+    chillAST_Node *rhs = b->getRHS();
     
     //if (!strcmp(b->op, "=") && rhs->isBinaryOperator() ) { 
     //  chillAST_BinaryOperator *r = (chillAST_BinaryOperator *) rhs;  
@@ -116,8 +116,8 @@ namespace omega {
     //rhs->dump(); printf("\n"); fflush(stdout);
     
     
-    b->lhs = substituteChill( oldvar, newvar, lhs, b);
-    b->rhs = substituteChill( oldvar, newvar, rhs, b);
+    b->setLHS(substituteChill( oldvar, newvar, lhs, b));
+    b->setRHS(substituteChill( oldvar, newvar, rhs, b));
     return b;
   }
   
