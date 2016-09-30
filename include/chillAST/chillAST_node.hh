@@ -313,7 +313,7 @@ public:
 
   virtual void
   gatherVarDeclsMore(std::vector<chillAST_VarDecl *> &decls) {  // even if the decl itself is not in the ast.
-    fprintf(stderr, "(%s) forgot to implement gatherVarDeclsMore()\n", getTypeString());
+    gatherVarDecls(decls);
   };
 
   //! Actual declaration

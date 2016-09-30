@@ -202,8 +202,8 @@ namespace omega {
   chillAST_Node *SubImplicitCastExpr( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
     //fprintf(stderr, "SubImplicitCastExpr subbing statement of type %s at 0x%x    parent 0x%x\n", n->getTypeString(), n, parent);
     chillAST_ImplicitCastExpr *IC = (chillAST_ImplicitCastExpr *) n; 
-    chillAST_Node *oldsub = IC->subexpr;
-    IC->subexpr = substituteChill( oldvar, newvar, oldsub, IC); 
+    chillAST_Node *oldsub = IC->getSubExpr();
+    IC->setSubExpr(substituteChill( oldvar, newvar, oldsub, IC));
     
     //if (oldsub != IC->subexpr) { 
     //fprintf(stderr, "ImplicitCastExpr has CHANGED\n");
@@ -221,14 +221,14 @@ namespace omega {
     //fprintf(stderr, "SubCStyleCastExpr()  subexpr is type ");
     chillAST_CStyleCastExpr *CSCE = (chillAST_CStyleCastExpr *) n;
     //fprintf(stderr, "%s\n", CSCE->subexpr->getTypeString()); 
-    CSCE->subexpr = substituteChill( oldvar, newvar, CSCE->subexpr, CSCE);
+    CSCE->setSubExpr(substituteChill( oldvar, newvar, CSCE->getSubExpr(), CSCE));
     return CSCE;
   }
   
   
   chillAST_Node *SubParenExpr( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
     chillAST_ParenExpr *PE = (chillAST_ParenExpr *) n;
-    PE->subexpr = substituteChill( oldvar, newvar, PE->subexpr, PE);
+    PE->setSubExpr(substituteChill( oldvar, newvar, PE->getSubExpr(), PE));
     return PE;
   }
   
@@ -251,7 +251,7 @@ namespace omega {
     //fprintf(stderr, "SubReturnStmt()\n");
     
     chillAST_ReturnStmt *RS = (chillAST_ReturnStmt *)n;
-    if (RS->returnvalue) RS->returnvalue = substituteChill(oldvar, newvar, RS->returnvalue, RS);
+    if (RS->getRetVal()) RS->setRetVal(substituteChill(oldvar, newvar, RS->getRetVal(), RS));
     return RS;
   }
   

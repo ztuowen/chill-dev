@@ -2983,9 +2983,9 @@ IR_OPERATION_TYPE IR_clangCode::QueryExpOperation(const omega::CG_outputRepr *re
   //fprintf(stderr, "chillAST node type %s\n", node->getTypeString());
 
   // really need to be more rigorous than this hack  // TODO 
-  if (node->isImplicitCastExpr()) node = ((chillAST_ImplicitCastExpr *) node)->subexpr;
-  if (node->isCStyleCastExpr()) node = ((chillAST_CStyleCastExpr *) node)->subexpr;
-  if (node->isParenExpr()) node = ((chillAST_ParenExpr *) node)->subexpr;
+  if (node->isImplicitCastExpr()) node = ((chillAST_ImplicitCastExpr *) node)->getSubExpr();
+  if (node->isCStyleCastExpr()) node = ((chillAST_CStyleCastExpr *) node)->getSubExpr();
+  if (node->isParenExpr()) node = ((chillAST_ParenExpr *) node)->getSubExpr();
 
   if (node->isIntegerLiteral() || node->isFloatingLiteral()) return IR_OP_CONSTANT;
   else if (node->isBinaryOperator() || node->isUnaryOperator()) {
@@ -3055,9 +3055,9 @@ std::vector<omega::CG_outputRepr *> IR_clangCode::QueryExpOperand(const omega::C
   //e->print(); printf("\n"); fflush(stdout); 
 
   // really need to be more rigorous than this hack  // TODO 
-  if (e->isImplicitCastExpr()) e = ((chillAST_ImplicitCastExpr *) e)->subexpr;
-  if (e->isCStyleCastExpr()) e = ((chillAST_CStyleCastExpr *) e)->subexpr;
-  if (e->isParenExpr()) e = ((chillAST_ParenExpr *) e)->subexpr;
+  if (e->isImplicitCastExpr()) e = ((chillAST_ImplicitCastExpr *) e)->getSubExpr();
+  if (e->isCStyleCastExpr()) e = ((chillAST_CStyleCastExpr *) e)->getSubExpr();
+  if (e->isParenExpr()) e = ((chillAST_ParenExpr *) e)->getSubExpr();
 
 
   //if(isa<IntegerLiteral>(e) || isa<FloatingLiteral>(e) || isa<DeclRefExpr>(e)) {

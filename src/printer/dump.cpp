@@ -79,12 +79,12 @@ void Dump::printS(std::string ident, chillAST_CompoundStmt *n, std::ostream &o) 
 }
 
 void Dump::printS(std::string ident, chillAST_CStyleAddressOf *n, std::ostream &o) {
-  print(ident, n->subexpr, o);
+  print(ident, n->getSubExpr(), o);
 }
 
 void Dump::printS(std::string ident, chillAST_CStyleCastExpr *n, std::ostream &o) {
   o << n->towhat << " ";
-  print(ident, n->subexpr, o);
+  print(ident, n->getSubExpr(), o);
 }
 
 void Dump::printS(std::string ident, chillAST_CudaFree *n, std::ostream &o) {
@@ -96,8 +96,8 @@ void Dump::printS(std::string ident, chillAST_CudaKernelCall *n, std::ostream &o
 }
 
 void Dump::printS(std::string ident, chillAST_CudaMalloc *n, std::ostream &o) {
-  print(ident, n->devPtr, o);
-  print(ident, n->sizeinbytes, o);
+  print(ident, n->getDevPtr(), o);
+  print(ident, n->getSize(), o);
 }
 
 void Dump::printS(std::string ident, chillAST_CudaMemcpy *n, std::ostream &o) {
@@ -141,10 +141,10 @@ void Dump::printS(std::string ident, chillAST_FunctionDecl *n, std::ostream &o) 
 }
 
 void Dump::printS(std::string ident, chillAST_IfStmt *n, std::ostream &o) {
-  print(ident, n->cond, o);
-  print(ident, n->thenpart, o);
-  if (n->elsepart)
-    print(ident, n->elsepart, o);
+  print(ident, n->getCond(), o);
+  print(ident, n->getThen(), o);
+  if (n->getElse())
+    print(ident, n->getElse(), o);
 }
 
 void Dump::printS(std::string ident, chillAST_IntegerLiteral *n, std::ostream &o) {
@@ -152,7 +152,7 @@ void Dump::printS(std::string ident, chillAST_IntegerLiteral *n, std::ostream &o
 }
 
 void Dump::printS(std::string ident, chillAST_ImplicitCastExpr *n, std::ostream &o) {
-  print(ident, n->subexpr, o);
+  print(ident, n->getSubExpr(), o);
 }
 
 void Dump::printS(std::string ident, chillAST_MacroDefinition *n, std::ostream &o) {
@@ -162,7 +162,7 @@ void Dump::printS(std::string ident, chillAST_MacroDefinition *n, std::ostream &
 }
 
 void Dump::printS(std::string ident, chillAST_Malloc *n, std::ostream &o) {
-  print(ident, n->sizeexpr, o);
+  print(ident, n->getSize(), o);
 }
 
 void Dump::printS(std::string ident, chillAST_MemberExpr *n, std::ostream &o) {
@@ -179,7 +179,7 @@ void Dump::printS(std::string ident, chillAST_NULL *n, std::ostream &o) {
 void Dump::printS(std::string ident, chillAST_NoOp *n, std::ostream &o) {}
 
 void Dump::printS(std::string ident, chillAST_ParenExpr *n, std::ostream &o) {
-  print(ident, n->subexpr, o);
+  print(ident, n->getSubExpr(), o);
 }
 
 void Dump::printS(std::string ident, chillAST_Preprocessing *n, std::ostream &o) {}
@@ -192,7 +192,7 @@ void Dump::printS(std::string ident, chillAST_RecordDecl *n, std::ostream &o) {
 }
 
 void Dump::printS(std::string ident, chillAST_ReturnStmt *n, std::ostream &o) {
-  if (n->returnvalue) print(ident, n->returnvalue, o);
+  if (n->getRetVal()) print(ident, n->getRetVal(), o);
 }
 
 void Dump::printS(std::string ident, chillAST_Sizeof *n, std::ostream &o) {

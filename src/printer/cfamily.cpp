@@ -117,7 +117,7 @@ int CFamily::getPrecS(chillAST_CStyleAddressOf *n) {
 
 void CFamily::printS(std::string ident, chillAST_CStyleAddressOf *n, std::ostream &o) {
   int prec = getPrec(n);
-  printPrec(ident, n->subexpr, o, prec);
+  printPrec(ident, n->getSubExpr(), o, prec);
 }
 
 int CFamily::getPrecS(chillAST_CStyleCastExpr *n) {
@@ -126,7 +126,7 @@ int CFamily::getPrecS(chillAST_CStyleCastExpr *n) {
 
 void CFamily::printS(std::string ident, chillAST_CStyleCastExpr *n, std::ostream &o) {
   o << "(" << n->towhat << ")";
-  printPrec(ident, n->subexpr, o, getPrec(n));
+  printPrec(ident, n->getSubExpr(), o, getPrec(n));
 }
 
 void CFamily::printS(std::string ident, chillAST_CudaFree *n, std::ostream &o) {
@@ -139,9 +139,9 @@ void CFamily::printS(std::string ident, chillAST_CudaKernelCall *n, std::ostream
 
 void CFamily::printS(std::string ident, chillAST_CudaMalloc *n, std::ostream &o) {
   o << "cudaMalloc(";
-  print(ident, n->devPtr, o);
+  print(ident, n->getDevPtr(), o);
   o << ", ";
-  print(ident, n->sizeinbytes, o);
+  print(ident, n->getSize(), o);
   o << ")";
 }
 
@@ -227,7 +227,7 @@ void CFamily::printS(std::string ident, chillAST_IfStmt *n, std::ostream &o) {
     CHILL_ERROR("Then part is not a CompoundStmt!\n");
   if (n->getElse()) {
     o << "else ";
-    print(ident, n->elsepart, o);
+    print(ident, n->getElse(), o);
   }
 }
 
@@ -236,7 +236,7 @@ void CFamily::printS(std::string ident, chillAST_IntegerLiteral *n, std::ostream
 }
 
 void CFamily::printS(std::string ident, chillAST_ImplicitCastExpr *n, std::ostream &o) {
-  print(ident, n->subexpr, o);
+  print(ident, n->getSubExpr(), o);
 }
 
 void CFamily::printS(std::string ident, chillAST_MacroDefinition *n, std::ostream &o) {
@@ -254,7 +254,7 @@ void CFamily::printS(std::string ident, chillAST_MacroDefinition *n, std::ostrea
 
 void CFamily::printS(std::string ident, chillAST_Malloc *n, std::ostream &o) {
   o << "malloc(";
-  print(ident, n->sizeexpr, o);
+  print(ident, n->getSize(), o);
   o << ")";
 }
 
@@ -276,7 +276,7 @@ void CFamily::printS(std::string ident, chillAST_NoOp *n, std::ostream &o) {}
 
 void CFamily::printS(std::string ident, chillAST_ParenExpr *n, std::ostream &o) {
   o << "(";
-  print(ident, n->subexpr, o);
+  print(ident, n->getSubExpr(), o);
   o << ")";
 }
 
@@ -304,9 +304,9 @@ void CFamily::printS(std::string ident, chillAST_RecordDecl *n, std::ostream &o)
 
 void CFamily::printS(std::string ident, chillAST_ReturnStmt *n, std::ostream &o) {
   o << "return";
-  if (n->returnvalue) {
+  if (n->getRetVal()) {
     o << " ";
-    print(ident, n->returnvalue, o);
+    print(ident, n->getRetVal(), o);
   }
 }
 

@@ -1071,9 +1071,9 @@ void chillAST_ForStmt::loseLoopWithLoopVar(char *var) {
         //fprintf(stderr, "loop condition RHS  is ternary\nCondition RHS");
         C->print();
         chillAST_Node *l = C->getLHS();
-        if (l->isParenExpr()) l = ((chillAST_ParenExpr *) l)->subexpr;
+        if (l->isParenExpr()) l = ((chillAST_ParenExpr *) l)->getSubExpr();
         chillAST_Node *r = C->getRHS();
-        if (r->isParenExpr()) r = ((chillAST_ParenExpr *) r)->subexpr;
+        if (r->isParenExpr()) r = ((chillAST_ParenExpr *) r)->getSubExpr();
 
         //fprintf(stderr, "lhs is %s     rhs is %s\n", l->getTypeString(), r->getTypeString());
 
@@ -1301,13 +1301,13 @@ chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr(chillAST_Node *bas, chi
   parent = NULL;
   metacomment = NULL;
   if (bas) {
-    if (bas->isImplicitCastExpr()) base = ((chillAST_ImplicitCastExpr *) bas)->subexpr; // probably wrong
+    if (bas->isImplicitCastExpr()) base = ((chillAST_ImplicitCastExpr *) bas)->getSubExpr(); // probably wrong
     else base = bas;
     base->setParent(this);
     basedecl = multibase();
   }
   if (indx) {
-    if (indx->isImplicitCastExpr()) index = ((chillAST_ImplicitCastExpr *) indx)->subexpr; // probably wrong
+    if (indx->isImplicitCastExpr()) index = ((chillAST_ImplicitCastExpr *) indx)->getSubExpr(); // probably wrong
     else index = indx;
     index->setParent(this);
   }
@@ -1422,7 +1422,7 @@ chillAST_Node *chillAST_ArraySubscriptExpr::getIndex(int dim) {
   chillAST_Node *curindex = index;
   for (;;) {
     if (b->getType() == CHILLAST_NODE_IMPLICITCASTEXPR)
-      b = ((chillAST_ImplicitCastExpr *) b)->subexpr;
+      b = ((chillAST_ImplicitCastExpr *) b)->getSubExpr();
     else if (b->getType() == CHILLAST_NODE_ARRAYSUBSCRIPTEXPR) {
       ind.push_back(curindex);
       curindex = ((chillAST_ArraySubscriptExpr *) b)->index;
@@ -1852,7 +1852,7 @@ void chillAST_DeclRefExpr::replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_V
 }
 
 chillAST_VarDecl *chillAST_ImplicitCastExpr::multibase() {
-  return subexpr->multibase();
+  return getSubExpr()->multibase();
 }
 
 
@@ -2138,256 +2138,85 @@ int chillAST_UnaryOperator::evalAsInt() {
 
   fprintf(stderr, "chillAST_UnaryOperator::evalAsInt() unhandled op '%s'\n", op);
   exit(-1);
-
 }
 
-chillAST_ImplicitCastExpr::chillAST_ImplicitCastExpr(chillAST_Node *sub) {
-  subexpr = sub;
-  subexpr->setParent(this);
-  //fprintf(stderr, "ImplicitCastExpr 0x%x  has subexpr 0x%x", this, subexpr);
-  //fprintf(stderr, " of type %s\n", subexpr->getTypeString());
+chillAST_ImplicitCastExpr::chillAST_ImplicitCastExpr() {
+  children.push_back(NULL);
 }
 
-void chillAST_ImplicitCastExpr::replaceChild(chillAST_Node *old, chillAST_Node *newchild) {
-  if (subexpr == old) { // should be the case for this to get called
-    subexpr = newchild;
-    subexpr->setParent(this);
-    //old->parent = NULL;
-    return;
-  }
-
-  fprintf(stderr, "chillAST_ImplicitCastExpr::replaceChild() called with bad 'old'\n");
-  exit(-1);  // ??
+chillAST_ImplicitCastExpr::chillAST_ImplicitCastExpr(chillAST_Node *sub):chillAST_ImplicitCastExpr() {
+  setSubExpr(sub);
 }
-
-class chillAST_Node *chillAST_ImplicitCastExpr::constantFold() {
-  chillAST_Node *child = subexpr->constantFold();
-  child->setParent(parent); // remove myself !! probably a bad idea. TODO
-  return child;
-}
-
 
 class chillAST_Node *chillAST_ImplicitCastExpr::clone() {
-  chillAST_ImplicitCastExpr *ICE = new chillAST_ImplicitCastExpr(subexpr->clone());
-  ICE->setParent(getParent());
+  chillAST_ImplicitCastExpr *ICE = new chillAST_ImplicitCastExpr(getSubExpr()->clone());
   ICE->isFromSourceFile = isFromSourceFile;
   if (filename) ICE->filename = strdup(filename);
   return ICE;
 }
 
-
-void chillAST_ImplicitCastExpr::gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool w) {
-  subexpr->gatherArrayRefs(refs, w);
+chillAST_CStyleCastExpr::chillAST_CStyleCastExpr() {
+  children.push_back(NULL);
 }
 
-void chillAST_ImplicitCastExpr::gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {
-  subexpr->gatherScalarRefs(refs, writtento);
-}
-
-void chillAST_ImplicitCastExpr::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherVarDecls(decls);
-}
-
-
-void chillAST_ImplicitCastExpr::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherScalarVarDecls(decls);
-}
-
-
-void chillAST_ImplicitCastExpr::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherArrayVarDecls(decls);
-}
-
-
-void chillAST_ImplicitCastExpr::gatherDeclRefExprs(vector<chillAST_DeclRefExpr *> &refs) {
-  subexpr->gatherDeclRefExprs(refs);
-}
-
-
-void chillAST_ImplicitCastExpr::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherVarUsage(decls);
-}
-
-
-chillAST_CStyleCastExpr::chillAST_CStyleCastExpr(const char *to, chillAST_Node *sub) {
-
-  //fprintf(stderr, "chillAST_CStyleCastExpr::chillAST_CStyleCastExpr( %s, ...)\n", to);
+chillAST_CStyleCastExpr::chillAST_CStyleCastExpr(const char *to, chillAST_Node *sub):chillAST_CStyleCastExpr() {
   towhat = strdup(to);
-  subexpr = sub;
-  if (subexpr) subexpr->setParent(this);
-  //fprintf(stderr, "chillAST_CStyleCastExpr (%s)   sub 0x%x\n", towhat, sub );
+  setSubExpr(sub);
 }
-
-void chillAST_CStyleCastExpr::replaceChild(chillAST_Node *old, chillAST_Node *newchild) {
-  if (subexpr == old) { // should be the case for this to get called
-    subexpr = newchild;
-    subexpr->setParent(this);
-    //old->parent = NULL;
-    return;
-  }
-
-  fprintf(stderr, "chillAST_CStyleCastExpr::replaceChild() called with bad 'old'\n");
-  exit(-1);  // ??
-}
-
-void chillAST_CStyleCastExpr::replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl) {
-  subexpr->replaceVarDecls(olddecl, newdecl);
-}
-
-class chillAST_Node *chillAST_CStyleCastExpr::constantFold() {
-  subexpr = subexpr->constantFold();
-  return this;
-}
-
 
 class chillAST_Node *chillAST_CStyleCastExpr::clone() {
-  chillAST_CStyleCastExpr *CSCE = new chillAST_CStyleCastExpr(towhat, subexpr->clone());
+  chillAST_CStyleCastExpr *CSCE = new chillAST_CStyleCastExpr(towhat, getSubExpr()->clone());
   CSCE->setParent(getParent());
   CSCE->isFromSourceFile = isFromSourceFile;
   if (filename) CSCE->filename = strdup(filename);
   return CSCE;
 }
 
-void chillAST_CStyleCastExpr::gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool w) {
-  subexpr->gatherArrayRefs(refs, w);
+chillAST_CStyleAddressOf::chillAST_CStyleAddressOf() {
+  children.push_back(NULL);
 }
-
-void chillAST_CStyleCastExpr::gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {
-  subexpr->gatherScalarRefs(refs, writtento);
-}
-
-
-void chillAST_CStyleCastExpr::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherVarDecls(decls);
-}
-
-
-void chillAST_CStyleCastExpr::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherScalarVarDecls(decls);
-}
-
-
-void chillAST_CStyleCastExpr::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherArrayVarDecls(decls);
-}
-
-
-void chillAST_CStyleCastExpr::gatherDeclRefExprs(vector<chillAST_DeclRefExpr *> &refs) {
-  subexpr->gatherDeclRefExprs(refs);
-}
-
-
-void chillAST_CStyleCastExpr::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherVarUsage(decls);
-}
-
-
-chillAST_CStyleAddressOf::chillAST_CStyleAddressOf(chillAST_Node *sub) {
-  subexpr = sub;
-  subexpr->setParent(this);
-  //fprintf(stderr, "chillAST_CStyleCastExpr (%s)   sub 0x%x\n", towhat, sub );
-}
-
-class chillAST_Node *chillAST_CStyleAddressOf::constantFold() {
-  subexpr = subexpr->constantFold();
-  return this;
+chillAST_CStyleAddressOf::chillAST_CStyleAddressOf(chillAST_Node *sub):chillAST_CStyleAddressOf() {
+  setSubExpr(sub);
 }
 
 class chillAST_Node *chillAST_CStyleAddressOf::clone() {
-  chillAST_CStyleAddressOf *CSAO = new chillAST_CStyleAddressOf(subexpr->clone());
+  chillAST_CStyleAddressOf *CSAO = new chillAST_CStyleAddressOf(getSubExpr()->clone());
   CSAO->setParent(getParent());
   CSAO->isFromSourceFile = isFromSourceFile;
   if (filename) CSAO->filename = strdup(filename);
   return CSAO;
 }
 
-void chillAST_CStyleAddressOf::gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool w) {
-  subexpr->gatherArrayRefs(refs, w);
+chillAST_Malloc::chillAST_Malloc() {
+  children.push_back(NULL);
 }
 
-void chillAST_CStyleAddressOf::gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {
-  subexpr->gatherScalarRefs(refs, writtento);
-}
-
-void chillAST_CStyleAddressOf::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherVarDecls(decls);
-}
-
-void chillAST_CStyleAddressOf::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherScalarVarDecls(decls);
-}
-
-
-void chillAST_CStyleAddressOf::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherArrayVarDecls(decls);
-}
-
-
-void chillAST_CStyleAddressOf::gatherDeclRefExprs(vector<chillAST_DeclRefExpr *> &refs) {
-  subexpr->gatherDeclRefExprs(refs);
-}
-
-
-void chillAST_CStyleAddressOf::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherVarUsage(decls);
-}
-
-
-chillAST_Malloc::chillAST_Malloc(chillAST_Node *numthings) {
-  sizeexpr = numthings;
+chillAST_Malloc::chillAST_Malloc(chillAST_Node *numthings):chillAST_Malloc() {
+  setSize(numthings);
   isFromSourceFile = true; // default
   filename = NULL;
 };
 
-chillAST_Node *chillAST_Malloc::constantFold() {
-  sizeexpr->constantFold();
-}
-
 chillAST_Node *chillAST_Malloc::clone() {
-  chillAST_Malloc *M = new chillAST_Malloc(sizeexpr); // the general version
+  chillAST_Malloc *M = new chillAST_Malloc(getSize()->clone()); // the general version
   M->setParent(getParent());
   M->isFromSourceFile = isFromSourceFile;
   if (filename) M->filename = strdup(filename);
   return M;
 };
 
-void chillAST_Malloc::gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento) {
-  sizeexpr->gatherArrayRefs(refs, writtento);
-};
-
-
-void chillAST_Malloc::gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {
-  sizeexpr->gatherScalarRefs(refs, writtento);
-};
-
-void chillAST_Malloc::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
-  sizeexpr->gatherVarDecls(decls);
-};
-
-void chillAST_Malloc::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
-  sizeexpr->gatherScalarVarDecls(decls);
-};
-
-void chillAST_Malloc::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
-  sizeexpr->gatherArrayVarDecls(decls);
-};
-
-void chillAST_Malloc::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
-  sizeexpr->gatherVarUsage(decls);
-};
-
-chillAST_CudaMalloc::chillAST_CudaMalloc(chillAST_Node *devmemptr, chillAST_Node *size) {
-  devPtr = devmemptr;
-  sizeinbytes = size;  // probably a multiply like   sizeof(int) * 1024
-};
-
-class chillAST_Node *chillAST_CudaMalloc::constantFold() {
-  devPtr = devPtr->constantFold();
-  return this;
+chillAST_CudaMalloc::chillAST_CudaMalloc() {
+  children.push_back(NULL);
+  children.push_back(NULL);
 }
 
+chillAST_CudaMalloc::chillAST_CudaMalloc(chillAST_Node *devmemptr, chillAST_Node *size):chillAST_CudaMalloc() {
+  setDevPtr(devmemptr);
+  setSize(size);
+};
+
 class chillAST_Node *chillAST_CudaMalloc::clone() {
-  chillAST_CudaMalloc *CM = new chillAST_CudaMalloc(devPtr->clone(), sizeinbytes->clone());
+  chillAST_CudaMalloc *CM = new chillAST_CudaMalloc(getDevPtr()->clone(), getSize()->clone());
   CM->setParent(getParent());
   CM->isFromSourceFile = isFromSourceFile;
   if (filename) CM->filename = strdup(filename);
@@ -2395,38 +2224,12 @@ class chillAST_Node *chillAST_CudaMalloc::clone() {
 }
 
 void chillAST_CudaMalloc::gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool w) {
-  devPtr->gatherArrayRefs(refs, false);
-  sizeinbytes->gatherArrayRefs(refs, false);
+  chillAST_Node::gatherArrayRefs(refs,false);
 }
 
 void chillAST_CudaMalloc::gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {
-  devPtr->gatherScalarRefs(refs, false);
-  sizeinbytes->gatherScalarRefs(refs, false);
+  chillAST_Node::gatherScalarRefs(refs,false);
 }
-
-void chillAST_CudaMalloc::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
-  devPtr->gatherVarDecls(decls);
-  sizeinbytes->gatherVarDecls(decls);
-}
-
-
-void chillAST_CudaMalloc::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
-  devPtr->gatherScalarVarDecls(decls);
-  sizeinbytes->gatherScalarVarDecls(decls);
-}
-
-
-void chillAST_CudaMalloc::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
-  devPtr->gatherArrayVarDecls(decls);
-  sizeinbytes->gatherArrayVarDecls(decls);
-}
-
-
-void chillAST_CudaMalloc::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
-  devPtr->gatherVarUsage(decls);
-  sizeinbytes->gatherVarUsage(decls);
-}
-
 
 chillAST_CudaFree::chillAST_CudaFree(chillAST_VarDecl *var) {
   variable = var;
@@ -2536,52 +2339,22 @@ void chillAST_CudaMemcpy::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
 chillAST_CudaSyncthreads::chillAST_CudaSyncthreads() {
 }
 
-chillAST_ReturnStmt::chillAST_ReturnStmt(chillAST_Node *retval) {
-  returnvalue = retval;
-  if (returnvalue) returnvalue->setParent(this);
+chillAST_ReturnStmt::chillAST_ReturnStmt() {
+  children.push_back(NULL);
 }
-
-class chillAST_Node *chillAST_ReturnStmt::constantFold() {
-  if (returnvalue) returnvalue = returnvalue->constantFold();
-  return this;
+chillAST_ReturnStmt::chillAST_ReturnStmt(chillAST_Node *retval):chillAST_ReturnStmt() {
+  setRetVal(retval);
 }
-
 
 class chillAST_Node *chillAST_ReturnStmt::clone() {
   chillAST_Node *val = NULL;
-  if (returnvalue) val = returnvalue->clone();
+  if (getRetVal()) val = getRetVal()->clone();
   chillAST_ReturnStmt *RS = new chillAST_ReturnStmt(val);
   RS->setParent(getParent());
   RS->isFromSourceFile = isFromSourceFile;
   if (filename) RS->filename = strdup(filename);
   return RS;
 }
-
-
-void chillAST_ReturnStmt::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
-  if (returnvalue) returnvalue->gatherVarDecls(decls);
-}
-
-
-void chillAST_ReturnStmt::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
-  if (returnvalue) returnvalue->gatherScalarVarDecls(decls);
-}
-
-
-void chillAST_ReturnStmt::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
-  if (returnvalue) returnvalue->gatherArrayVarDecls(decls);
-}
-
-
-void chillAST_ReturnStmt::gatherDeclRefExprs(vector<chillAST_DeclRefExpr *> &refs) {
-  if (returnvalue) returnvalue->gatherDeclRefExprs(refs);
-}
-
-
-void chillAST_ReturnStmt::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
-  if (returnvalue) returnvalue->gatherVarUsage(decls);
-}
-
 
 chillAST_CallExpr::chillAST_CallExpr(chillAST_Node *c) { //, int numofargs, chillAST_Node **theargs ) {
 
@@ -3188,73 +2961,23 @@ bool chillAST_CompoundStmt::findLoopIndexesToReplace(chillAST_SymbolTable *symta
 */
 }
 
-
+chillAST_ParenExpr::chillAST_ParenExpr() {
+  children.push_back(NULL);
+}
 chillAST_ParenExpr::chillAST_ParenExpr(chillAST_Node *sub) {
-  subexpr = sub;
-  subexpr->setParent(this);
+  setSubExpr(sub);
 }
-
-void chillAST_ParenExpr::gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento) {
-  subexpr->gatherArrayRefs(refs, writtento);
-}
-
-void chillAST_ParenExpr::gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {
-  subexpr->gatherScalarRefs(refs, writtento);
-}
-
-
-chillAST_Node *chillAST_ParenExpr::constantFold() {
-  subexpr = subexpr->constantFold();
-  return this;
-}
-
 
 chillAST_Node *chillAST_ParenExpr::clone() {
-  chillAST_ParenExpr *PE = new chillAST_ParenExpr(subexpr->clone());
+  chillAST_ParenExpr *PE = new chillAST_ParenExpr(getSubExpr()->clone());
   PE->setParent(getParent());
   PE->isFromSourceFile = isFromSourceFile;
   if (filename) PE->filename = strdup(filename);
   return PE;
 }
 
-void chillAST_ParenExpr::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherVarDecls(decls);
-}
-
-
-void chillAST_ParenExpr::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherScalarVarDecls(decls);
-}
-
-
-void chillAST_ParenExpr::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherArrayVarDecls(decls);
-}
-
-
-void chillAST_ParenExpr::gatherDeclRefExprs(vector<chillAST_DeclRefExpr *> &refs) {
-  subexpr->gatherDeclRefExprs(refs);
-}
-
-void chillAST_ParenExpr::replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl) {
-  subexpr->replaceVarDecls(olddecl, newdecl);
-}
-
-void chillAST_ParenExpr::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherVarUsage(decls);
-}
-
-
 chillAST_Sizeof::chillAST_Sizeof(char *athing) {
   thing = strdup(athing); // memory leak
-}
-
-void chillAST_Sizeof::gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento) {}
-
-void chillAST_Sizeof::gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {}
-
-chillAST_Node *chillAST_Sizeof::constantFold() {
-  return this;
 }
 
 chillAST_Node *chillAST_Sizeof::clone() {
@@ -3264,27 +2987,6 @@ chillAST_Node *chillAST_Sizeof::clone() {
   if (filename) SO->filename = strdup(filename);
   return SO;
 }
-
-void chillAST_Sizeof::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {  // TODO
-}
-
-
-void chillAST_Sizeof::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {  // TODO
-}
-
-
-void chillAST_Sizeof::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {  // TODO
-}
-
-
-void chillAST_Sizeof::gatherDeclRefExprs(vector<chillAST_DeclRefExpr *> &refs) {
-  // TODO
-}
-
-
-void chillAST_Sizeof::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
-}
-
 
 void insertNewDeclAtLocationOfOldIfNeeded(chillAST_VarDecl *newdecl, chillAST_VarDecl *olddecl) {
   //fprintf(stderr, "insertNewDeclAtLocationOfOldIfNeeded( new 0x%x  old 0x%x\n", newdecl, olddecl );
@@ -3375,94 +3077,31 @@ void gatherVarUsage(vector<chillAST_Node *> &code, vector<chillAST_VarDecl *> &d
 
 
 chillAST_IfStmt::chillAST_IfStmt() {
-  cond = thenpart = elsepart = NULL;
-  isFromSourceFile = true; // default
-  filename = NULL;
+  children.push_back(NULL);
+  children.push_back(NULL);
+  children.push_back(NULL);
 }
 
-chillAST_IfStmt::chillAST_IfStmt(chillAST_Node *c, chillAST_Node *t, chillAST_Node *e) {
-  cond = c;
-  if (cond) cond->setParent(this);
-  thenpart = t;
-  if (thenpart) thenpart->setParent(this);
-  elsepart = e;
-  if (elsepart) elsepart->setParent(this);
+chillAST_IfStmt::chillAST_IfStmt(chillAST_Node *c, chillAST_Node *t, chillAST_Node *e):chillAST_IfStmt() {
+  setCond(c);
+  setThen(t);
+  setElse(e);
 }
-
-void chillAST_IfStmt::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
-  if (cond) cond->gatherVarDecls(decls);
-  if (thenpart) thenpart->gatherVarDecls(decls);
-  if (elsepart) elsepart->gatherVarDecls(decls);
-}
-
-
-void chillAST_IfStmt::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
-  if (cond) cond->gatherScalarVarDecls(decls);
-  if (thenpart) thenpart->gatherScalarVarDecls(decls);
-  if (elsepart) elsepart->gatherScalarVarDecls(decls);
-}
-
-
-void chillAST_IfStmt::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
-  if (cond) cond->gatherArrayVarDecls(decls);
-  if (thenpart) thenpart->gatherArrayVarDecls(decls);
-  if (elsepart) elsepart->gatherArrayVarDecls(decls);
-}
-
-
-void chillAST_IfStmt::gatherDeclRefExprs(vector<chillAST_DeclRefExpr *> &refs) {
-  if (cond) cond->gatherDeclRefExprs(refs);
-  if (thenpart) thenpart->gatherDeclRefExprs(refs);
-  if (elsepart) elsepart->gatherDeclRefExprs(refs);
-}
-
-
-void chillAST_IfStmt::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
-  if (cond) cond->gatherVarUsage(decls);
-  if (thenpart) thenpart->gatherVarUsage(decls);
-  if (elsepart) elsepart->gatherVarUsage(decls);
-}
-
 
 void chillAST_IfStmt::gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento) {
-  cond->gatherArrayRefs(refs, 0);  // 0 ??
-  thenpart->gatherArrayRefs(refs, 0);  // 0 ??
-  if (elsepart) elsepart->gatherArrayRefs(refs, 0);  // 0 ??
+  chillAST_Node::gatherArrayRefs(refs,0);
 }
 
 void chillAST_IfStmt::gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {
-  cond->gatherScalarRefs(refs, 0);  // 0 ??
-  thenpart->gatherScalarRefs(refs, 0);  // 0 ??
-  if (elsepart) elsepart->gatherScalarRefs(refs, 0);  // 0 ??
+  chillAST_Node::gatherScalarRefs(refs,0);
 }
-
-
-chillAST_Node *chillAST_IfStmt::constantFold() {
-  if (cond) cond = cond->constantFold();
-  if (thenpart) thenpart = thenpart->constantFold();
-  if (elsepart) elsepart = elsepart->constantFold();
-  return this;
-}
-
-void chillAST_IfStmt::gatherStatements(std::vector<chillAST_Node *> &statements) {
-
-  //print(); printf("\n"); fflush(stdout);
-  thenpart->gatherStatements(statements);
-  //fprintf(stderr, "ifstmt, after then, %d statements\n", statements.size());
-  if (elsepart) {
-    //fprintf(stderr, "there is an elsepart of type %s\n", elsepart->getTypeString());
-    elsepart->gatherStatements(statements);
-  }
-  //fprintf(stderr, "ifstmt, after else, %d statements\n", statements.size());
-}
-
 
 chillAST_Node *chillAST_IfStmt::clone() {
   chillAST_Node *c, *t, *e;
   c = t = e = NULL;
-  if (cond) c = cond->clone(); // has to be one, right?
-  if (thenpart) t = thenpart->clone();
-  if (elsepart) e = elsepart->clone();
+  if (getCond()) c = getCond()->clone(); // has to be one, right?
+  if (getThen()) t = getThen()->clone();
+  if (getElse()) e = getElse()->clone();
 
   chillAST_IfStmt *IS = new chillAST_IfStmt(c, t, e);
   IS->setParent(getParent());
@@ -3472,8 +3111,8 @@ chillAST_Node *chillAST_IfStmt::clone() {
 }
 
 bool chillAST_IfStmt::findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bool forcesync) {
-  thenpart->findLoopIndexesToReplace(symtab);
-  elsepart->findLoopIndexesToReplace(symtab);
+  getThen()->findLoopIndexesToReplace(symtab);
+  getElse()->findLoopIndexesToReplace(symtab);
   return false; // ??
 }
 
