@@ -373,7 +373,7 @@ int CFamily::getPrecS(chillAST_UnaryOperator *n) {
 void CFamily::printS(std::string ident, chillAST_UnaryOperator *n, std::ostream &o) {
   int prec = getPrec(n);
   if (n->prefix) o << n->op;
-  printPrec(ident, n->subexpr, o, prec);
+  printPrec(ident, n->getSubExpr(), o, prec);
   if (!n->prefix) o << n->op;
 }
 

@@ -39,7 +39,7 @@ protected:
    * Fix the pointer reference in a source file
    * @param nameMap a mapping from string to the corresponding declarations, stack is used to mimic scoping
    */
-  void fixReference(std::map<std::string, std::stack<chillAST_Node*>> nameMap);
+  void fixReference(std::map<std::string, std::stack<chillAST_Node*> > nameMap);
 public:
   // TODO decide how to hide some data
   //! this Node's parent
@@ -303,6 +303,7 @@ public:
 
   virtual void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls);
 
+  //! Gather all variable that is used as a lefthand side operand
   virtual void gatherVarLHSUsage(std::vector<chillAST_VarDecl *> &decls) {
     fprintf(stderr, "(%s) forgot to implement gatherVarLHSUsage()\n", getTypeString());
   };

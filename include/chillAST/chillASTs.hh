@@ -973,9 +973,9 @@ public:
   char *op;
   //! true for prefix unary operator
   bool prefix;
-  chillAST_Node *subexpr;
 
   // constructors
+  chillAST_UnaryOperator();
   chillAST_UnaryOperator(const char *oper, bool pre, chillAST_Node *sub);
 
   // other methods particular to this type of node
@@ -984,28 +984,19 @@ public:
             (!strcmp(op, "--")));   // are there more ???  TODO
   }
 
+  chillAST_Node* getSubExpr() { return getChild(0); }
+  void setSubExpr(chillAST_Node* sub) { setChild(0,sub); }
+
   // required methods that I can't seem to get to inherit
   chillAST_Node *constantFold();
 
   chillAST_Node *clone();
 
-  void gatherVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
   void gatherVarDeclsMore(std::vector<chillAST_VarDecl *> &decls) { gatherVarDecls(decls); };
-
-  void gatherScalarVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls);
 
   void gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento); // chillAST_UnaryOperator
 
   void gatherVarLHSUsage(std::vector<chillAST_VarDecl *> &decls);
-
-  void replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl);
-
-  void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherDeclRefExprs(std::vector<chillAST_DeclRefExpr *> &refs);
 
   //void replaceVarDecls( chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl);
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab,

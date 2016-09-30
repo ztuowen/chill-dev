@@ -217,7 +217,7 @@ void Dump::printS(std::string ident, chillAST_TernaryOperator *n, std::ostream &
 void Dump::printS(std::string ident, chillAST_UnaryOperator *n, std::ostream &o) {
   if (n->prefix) o << "prefix ";
   else o << "postfix ";
-  print(ident, n->subexpr, o);
+  print(ident, n->getSubExpr(), o);
 }
 
 void Dump::printS(std::string ident, chillAST_VarDecl *n, std::ostream &o) {

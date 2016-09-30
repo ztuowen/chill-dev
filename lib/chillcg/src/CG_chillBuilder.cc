@@ -125,8 +125,8 @@ namespace omega {
 
   chillAST_Node *SubUnaryOperator( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
     chillAST_UnaryOperator *u = (chillAST_UnaryOperator *) n; 
-    chillAST_Node *sub = u->subexpr;
-    u->subexpr = substituteChill( oldvar, newvar, sub, u);
+    chillAST_Node *sub = u->getSubExpr();
+    u->setSubExpr(substituteChill( oldvar, newvar, sub, u));
     return u;
   }
 

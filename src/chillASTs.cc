@@ -2070,45 +2070,43 @@ chillAST_Node *chillAST_FloatingLiteral::clone() {
   return newone;
 }
 
-chillAST_UnaryOperator::chillAST_UnaryOperator(const char *oper, bool pre, chillAST_Node *sub) {
+chillAST_UnaryOperator::chillAST_UnaryOperator() {
+  children.push_back(NULL);
+}
+
+chillAST_UnaryOperator::chillAST_UnaryOperator(const char *oper, bool pre, chillAST_Node *sub):chillAST_UnaryOperator() {
   op = strdup(oper);
   prefix = pre;
-  subexpr = sub;
-  subexpr->setParent(this);
+  setSubExpr(sub);
   isFromSourceFile = true; // default
   filename = NULL;
 }
 
 void chillAST_UnaryOperator::gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool w) {
-  subexpr->gatherArrayRefs(refs, isAssignmentOp()); //
+  getSubExpr()->gatherArrayRefs(refs, isAssignmentOp()); //
 }
 
 void chillAST_UnaryOperator::gatherVarLHSUsage(vector<chillAST_VarDecl *> &decls) {
-  if ((!strcmp("++", op)) || (!strcmp("--", op))) {
-    subexpr->gatherVarUsage(decls); // do all unary modify the subexpr? (no, - )
+  if (isAssignmentOp()) {
+    getSubExpr()->gatherVarUsage(decls); // do all unary modify the subexpr? (no, - )
   }
 }
 
 
 chillAST_Node *chillAST_UnaryOperator::constantFold() {
-  //fprintf(stderr, "chillAST_UnaryOperator::constantFold() ");
-  //print(); fprintf(stderr, "\n");
+  chillAST_Node::constantFold();
 
-  subexpr = subexpr->constantFold();
   chillAST_Node *returnval = this;
-  if (subexpr->isConstant()) {
-    //fprintf(stderr, "unary op folding constants\n");
-    //print(0,stderr); fprintf(stderr, "\n");
-
+  if (getSubExpr()->isConstant()) {
     if (streq(op, "-")) {
-      if (subexpr->isIntegerLiteral()) {
-        int intval = ((chillAST_IntegerLiteral *) subexpr)->value;
+      if (getSubExpr()->isIntegerLiteral()) {
+        int intval = ((chillAST_IntegerLiteral *) getSubExpr())->value;
         chillAST_IntegerLiteral *I = new chillAST_IntegerLiteral(-intval);
         I->setParent(parent);
         returnval = I;
         //fprintf(stderr, "integer -%d becomes %d\n", intval, I->value);
       } else {
-        chillAST_FloatingLiteral *FL = (chillAST_FloatingLiteral *) subexpr;
+        chillAST_FloatingLiteral *FL = (chillAST_FloatingLiteral *) getSubExpr();
         chillAST_FloatingLiteral *F = new chillAST_FloatingLiteral(FL); // clone
         F->parent = FL->parent;
 
@@ -2125,48 +2123,18 @@ chillAST_Node *chillAST_UnaryOperator::constantFold() {
 
 
 class chillAST_Node *chillAST_UnaryOperator::clone() {
-  chillAST_UnaryOperator *UO = new chillAST_UnaryOperator(op, prefix, subexpr->clone());
+  chillAST_UnaryOperator *UO = new chillAST_UnaryOperator(op, prefix, getSubExpr()->clone());
   UO->setParent(parent);
   UO->isFromSourceFile = isFromSourceFile;
   if (filename) UO->filename = strdup(filename);
   return UO;
 }
 
-
-void chillAST_UnaryOperator::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherVarDecls(decls);
-}
-
-
-void chillAST_UnaryOperator::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherScalarVarDecls(decls);
-}
-
-
-void chillAST_UnaryOperator::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherArrayVarDecls(decls);
-}
-
-
-void chillAST_UnaryOperator::gatherDeclRefExprs(vector<chillAST_DeclRefExpr *> &refs) {
-  subexpr->gatherDeclRefExprs(refs);
-}
-
-
-void chillAST_UnaryOperator::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
-  subexpr->gatherVarUsage(decls);
-}
-
-void chillAST_UnaryOperator::replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl) {
-  subexpr->replaceVarDecls(olddecl, newdecl);
-}
-
-
 int chillAST_UnaryOperator::evalAsInt() {
-  if (!strcmp("+", op)) return subexpr->evalAsInt();
-  if (!strcmp("-", op)) return -subexpr->evalAsInt();
-  if (!strcmp("++", op)) return 1 + subexpr->evalAsInt();
-  if (!strcmp("--", op)) return subexpr->evalAsInt() - 1;
+  if (!strcmp("+", op)) return getSubExpr()->evalAsInt();
+  if (!strcmp("-", op)) return -getSubExpr()->evalAsInt();
+  if (!strcmp("++", op)) return 1 + getSubExpr()->evalAsInt();
+  if (!strcmp("--", op)) return getSubExpr()->evalAsInt() - 1;
 
   fprintf(stderr, "chillAST_UnaryOperator::evalAsInt() unhandled op '%s'\n", op);
   exit(-1);

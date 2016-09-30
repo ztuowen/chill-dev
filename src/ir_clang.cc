@@ -3085,7 +3085,7 @@ std::vector<omega::CG_outputRepr *> IR_clangCode::QueryExpOperand(const omega::C
     chillAST_UnaryOperator *uop = (chillAST_UnaryOperator *) e;
     char *op = uop->op; // TODO enum
     if (!strcmp(op, "+") || !strcmp(op, "-")) {
-      v.push_back(new omega::CG_chillRepr(uop->subexpr));
+      v.push_back(new omega::CG_chillRepr(uop->getSubExpr()));
     } else {
       CHILL_ERROR("ir_clang.cc  IR_clangCode::QueryExpOperand() Unary Operator  UNHANDLED op (%s)\n", op);
       exit(-1);
