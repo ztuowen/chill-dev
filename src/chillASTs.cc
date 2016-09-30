@@ -441,53 +441,11 @@ chillAST_FunctionDecl::chillAST_FunctionDecl(const char *rt, const char *fname, 
   forwarddecl = externfunc = builtin = false;
   parameters = new chillAST_SymbolTable();
   this->setFunctionCPU();
-  body = new chillAST_CompoundStmt();
   returnType = strdup(rt);
   this->setFunctionCPU();
+  children.push_back(new chillAST_CompoundStmt());
   uniquePtr = unique; // a quick way to check equivalence. DO NOT ACCESS THROUGH THIS
 };
-
-void chillAST_FunctionDecl::setBody(chillAST_Node *bod) {
-  if (bod->isCompoundStmt()) body = (chillAST_CompoundStmt *) bod;
-  else {
-    CHILL_ERROR("Should always be a compound statements");
-    body = new chillAST_CompoundStmt();
-    body->addChild(bod);
-  }
-  bod->setParent(this);  // well, ...
-}
-
-void chillAST_FunctionDecl::insertChild(int i, chillAST_Node *node) {
-  fprintf(stderr, "chillAST_FunctionDecl::insertChild()  ");
-  node->print(0, stderr);
-  fprintf(stderr, "\n\n");
-  body->insertChild(i, node);
-
-  if (node->isVarDecl()) {
-    chillAST_VarDecl *vd = ((chillAST_VarDecl *) node);
-    fprintf(stderr, "functiondecl %s inserting a VarDecl named %s\n", functionName, vd->varname);
-    chillAST_SymbolTable *st = getSymbolTable();
-    if (!st)
-      fprintf(stderr, "symbol table is NULL!\n");
-    else
-      fprintf(stderr, "%d entries in the symbol table\n", st->size());
-    fprintf(stderr, "\n\n");
-  }
-}
-
-void chillAST_FunctionDecl::addChild(chillAST_Node *node) {
-  CHILL_DEBUG_BEGIN
-    node->print(0, stderr);
-    fprintf(stderr, "\n\n");
-  CHILL_DEBUG_END
-  if (node->isVarDecl()) {
-    chillAST_VarDecl *vd = ((chillAST_VarDecl *) node);
-    CHILL_DEBUG_PRINT("functiondecl %s adding a VarDecl named %s\n", functionName, vd->varname);
-  }
-
-  body->addChild(node);
-  node->setParent(this); // this, or body??
-}
 
 void chillAST_FunctionDecl::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
   //fprintf(stderr, "chillAST_FunctionDecl::gatherVarDecls()\n");
@@ -497,7 +455,7 @@ void chillAST_FunctionDecl::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
   //fprintf(stderr, "after parms, %d decls\n", decls.size());
   for (int i = 0; i < children.size(); i++) children[i]->gatherVarDecls(decls);
   //fprintf(stderr, "after children, %d decls\n", decls.size());
-  body->gatherVarDecls(decls);  // todo, figure out if functiondecl has actual children
+  getBody()->gatherVarDecls(decls);  // todo, figure out if functiondecl has actual children
   //fprintf(stderr, "after body, %d decls\n", decls.size());
   //for (int d=0; d<decls.size(); d++) {
   //  decls[d]->print(0,stderr); fprintf(stderr, "\n");
@@ -510,7 +468,7 @@ void chillAST_FunctionDecl::gatherScalarVarDecls(vector<chillAST_VarDecl *> &dec
 
   for (int i = 0; i < getParameters()->size(); i++) (*getSymbolTable())[i]->gatherScalarVarDecls(decls);
   for (int i = 0; i < children.size(); i++) children[i]->gatherScalarVarDecls(decls);
-  body->gatherScalarVarDecls(decls);  // todo, figure out if functiondecl has actual children
+  getBody()->gatherScalarVarDecls(decls);  // todo, figure out if functiondecl has actual children
 }
 
 
@@ -519,7 +477,7 @@ void chillAST_FunctionDecl::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decl
 
   for (int i = 0; i < getParameters()->size(); i++) (*getSymbolTable())[i]->gatherArrayVarDecls(decls);
   for (int i = 0; i < children.size(); i++) children[i]->gatherArrayVarDecls(decls);
-  body->gatherArrayVarDecls(decls);  // todo, figure out if functiondecl has actual children
+  getBody()->gatherArrayVarDecls(decls);  // todo, figure out if functiondecl has actual children
 }
 
 
@@ -529,7 +487,7 @@ chillAST_VarDecl *chillAST_FunctionDecl::findArrayDecl(const char *name) {
   //if (p) fprintf(stderr, "function %s has parameter named %s\n", functionName, name );
   if (p && p->isArray()) return p;
 
-  chillAST_VarDecl *v = body->getVariableDeclaration(name);
+  chillAST_VarDecl *v = getBody()->getVariableDeclaration(name);
   //if (v) fprintf(stderr, "function %s has symbol table variable named %s\n", functionName, name );
   if (v && v->isArray()) return v;
 
@@ -548,13 +506,13 @@ chillAST_VarDecl *chillAST_FunctionDecl::findArrayDecl(const char *name) {
 
 void chillAST_FunctionDecl::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
   for (int i = 0; i < children.size(); i++) children[i]->gatherVarUsage(decls);
-  body->gatherVarUsage(decls);  // todo, figure out if functiondecl has actual children
+  getBody()->gatherVarUsage(decls);  // todo, figure out if functiondecl has actual children
 }
 
 
 void chillAST_FunctionDecl::gatherDeclRefExprs(vector<chillAST_DeclRefExpr *> &refs) {
   for (int i = 0; i < children.size(); i++) children[i]->gatherDeclRefExprs(refs);
-  body->gatherDeclRefExprs(refs);  // todo, figure out if functiondecl has actual children
+  getBody()->gatherDeclRefExprs(refs);  // todo, figure out if functiondecl has actual children
 }
 
 
@@ -626,13 +584,13 @@ void chillAST_FunctionDecl::cleanUpVarDecls() {
 
 
 bool chillAST_FunctionDecl::findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bool forcesync) {
-  if (body) body->findLoopIndexesToReplace(symtab, false);
+  if (getBody()) getBody()->findLoopIndexesToReplace(symtab, false);
   return false;
 }
 
 
 chillAST_Node *chillAST_FunctionDecl::constantFold() {
-  if (body) body = (chillAST_CompoundStmt *) body->constantFold();
+  if (getBody()) setBody((chillAST_CompoundStmt *) getBody()->constantFold());
   return this;
 }
 

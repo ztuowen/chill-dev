@@ -125,10 +125,10 @@ void Dump::printS(std::string ident, chillAST_FloatingLiteral *n, std::ostream &
 }
 
 void Dump::printS(std::string ident, chillAST_ForStmt *n, std::ostream &o) {
-  print(ident, n->init, o);
-  print(ident, n->cond, o);
-  print(ident, n->incr, o);
-  print(ident, n->body, o);
+  print(ident, n->getInit(), o);
+  print(ident, n->getCond(), o);
+  print(ident, n->getInc(), o);
+  print(ident, n->getBody(), o);
 }
 
 void Dump::printS(std::string ident, chillAST_Free *n, std::ostream &o) {}

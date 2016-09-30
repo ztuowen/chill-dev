@@ -364,7 +364,6 @@ public:
 
 class chillAST_FunctionDecl : public chillAST_Node {
 private:
-  chillAST_CompoundStmt *body; // always a compound statement?
   CHILLAST_FUNCTION_TYPE function_type;  // CHILLAST_FUNCTION_CPU or  CHILLAST_FUNCTION_GPU
   bool externfunc;   // function is external 
   bool builtin;      // function is a builtin
@@ -405,12 +404,9 @@ public:
 
   void addDecl(chillAST_VarDecl *vd);  // just adds to symbol table?? TODO
 
-  void addChild(chillAST_Node *node); // special because inserts into BODY
-  void insertChild(int i, chillAST_Node *node); // special because inserts into BODY
+  void setBody(chillAST_Node *bod) { if (bod->isCompoundStmt()) { children[0] = bod; bod->setParent(this); }}
 
-  void setBody(chillAST_Node *bod);
-
-  chillAST_CompoundStmt *getBody() { return (body); }
+  chillAST_CompoundStmt *getBody() { return (chillAST_CompoundStmt*)children[0]; }
 
   void gatherVarDecls(std::vector<chillAST_VarDecl *> &decls);
 
@@ -435,10 +431,7 @@ public:
 
   chillAST_Node *constantFold();
 
-  void replaceChild(chillAST_Node *old, chillAST_Node *newchild) {
-    body->replaceChild(old, newchild);
-  }
-};  // end FunctionDecl 
+};  // end FunctionDecl
 
 class chillAST_SourceFile : public chillAST_Node {
   // TODO included source file
@@ -493,6 +486,7 @@ public:
 
 };
 
+//! A Macro definition
 class chillAST_MacroDefinition : public chillAST_Node {
 private:
   chillAST_Node *body; // rhs      always a compound statement?
@@ -538,14 +532,15 @@ public:
 };
 
 class chillAST_ForStmt : public chillAST_Node {
-public:
-  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_FORSTMT; }
-
-  // variables that are special for this type of node
+private:
   chillAST_Node *init;
   chillAST_Node *cond;
   chillAST_Node *incr;
   chillAST_Node *body; // always a compoundstmt?
+public:
+  virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_FORSTMT; }
+
+  // variables that are special for this type of node
   IR_CONDITION_TYPE conditionoperator;  // from ir_code.hh
 
   bool hasSymbolTable() { return true; };
@@ -561,20 +556,17 @@ public:
   void removeSyncComment();
 
   chillAST_Node *getInit() { return init; };
+  void setInit(chillAST_Node *i) { init = i; i->parent = this; }
 
   chillAST_Node *getCond() { return cond; };
+  void setCond(chillAST_Node *c) { cond = c; c->parent = this; }
 
   chillAST_Node *getInc() { return incr; };
+  void setInc(chillAST_Node *i) { incr = i; i->parent = this; }
 
-  chillAST_Node *
-  getBody() { //fprintf(stderr, "chillAST_ForStmt::getBody(), returning a chillAST_Node of type %s\n", body->getTypeString());
-    return body;
-  };
+  chillAST_Node *getBody() { return body; };
+  void setBody(chillAST_Node *b) { body = b; b->parent = this; };
 
-  void setBody(chillAST_Node *b) {
-    body = b;
-    b->parent = this;
-  };
 
   bool isNotLeaf() { return true; };
 
