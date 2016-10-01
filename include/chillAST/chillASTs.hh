@@ -83,7 +83,6 @@ public:
   chillAST_TypedefDecl(char *t, const char *nt, char *a);
 
   const char *getUnderlyingType() {
-    fprintf(stderr, "TypedefDecl getUnderLyingType()\n");
     return underlyingtype;
   };
 };
@@ -178,17 +177,11 @@ public:
 
   void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls);
 
-  void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls) {}; // does nothing
-  void gatherDeclRefExprs(std::vector<chillAST_DeclRefExpr *> &refs) {}; // does nothing
-  void replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl) {};
-
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab,
                                 bool forcesync = false) { return false; }; // no loops under here
   const char *getUnderlyingType() {  /* fprintf(stderr, "VarDecl getUnderLyingType()\n"); */return underlyingtype; };
 
   virtual chillAST_VarDecl *getUnderlyingVarDecl() { return this; };
-
-  chillAST_Node *constantFold();
 
   chillAST_Node *clone();
 
@@ -231,23 +224,12 @@ public:
   };
 
   // required methods that I can't seem to get to inherit
-  chillAST_Node *constantFold();
-
   chillAST_Node *clone();
 
-  void gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento) {}; // do nothing
   void gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento);
 
-  // this is the AST node where these 2 differ 
-  void gatherVarDecls(
-      std::vector<chillAST_VarDecl *> &decls) {};  // does nothing, to get the cvardecl using this method, the actual vardecl must be in the AST
-  void gatherVarDeclsMore(
-      std::vector<chillAST_VarDecl *> &decls); // returns the decl this declrefexpr references, even if the decl is not in the AST
-
-
-  void gatherScalarVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls);
+  //! returns the decl this declrefexpr references, even if the decl is not in the AST
+  void gatherVarDeclsMore(std::vector<chillAST_VarDecl *> &decls);
 
   void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls);
 

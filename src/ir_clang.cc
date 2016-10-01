@@ -2265,22 +2265,15 @@ IR_clangCode::IR_clangCode(const char *fname, const char *proc_name) : IR_Code()
 IR_clangCode::~IR_clangCode() {
   //func_->print(llvm::outs(), 4); // printing as part of the destructor !! 
   CHILL_DEBUG_PRINT("\n\toutput happening as part of the destructor !!\n");
-  //chillfunc->dump(); 
-  //chillfunc->print(); 
 
-  //fprintf(stderr, "Constant Folding before\n"); 
   chillfunc->constantFold();
-  //fprintf(stderr, "\nConstant Folding after\n"); 
-  //chillfunc->print(); 
 
   chillfunc->cleanUpVarDecls();
-  //chillfunc->dump();
 
   // TODO should output the entire file, not just the function we're working on
   chillAST_SourceFile *src = chillfunc->getSourceFile();
-  //chillAST_Node *p = chillfunc->parent; // should be translationDeclUnit
   if (src) {
-    //src->print(); // tmp
+    src->dump();
     if (src->isSourceFile()) src->printToFile();
   }
 }
@@ -2408,7 +2401,7 @@ IR_ScalarRef *IR_clangCode::CreateScalarRef(const IR_ScalarSymbol *sym) {
   //DeclRefExpr *de = new (vd->getASTContext())DeclRefExpr(static_cast<ValueDecl*>(vd), vd->getType(), SourceLocation());
   //fprintf(stderr, "sym 0x%x\n", sym); 
 
-  IR_chillScalarRef *sr = new IR_chillScalarRef(this, buildDeclRefExpr(
+  IR_chillScalarRef *sr = new IR_chillScalarRef(this, new chillAST_DeclRefExpr(
       ((IR_chillScalarSymbol *) sym)->chillvd)); // uses VarDecl to mak a declrefexpr
   //fprintf(stderr, "returning ScalarRef with dre 0x%x\n", sr->dre); 
   return sr;

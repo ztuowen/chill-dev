@@ -206,8 +206,6 @@ void chillindent(int i, FILE *fp);
 
 void insertNewDeclAtLocationOfOldIfNeeded(chillAST_VarDecl *newdecl, chillAST_VarDecl *olddecl);
 
-chillAST_DeclRefExpr *buildDeclRefExpr(chillAST_VarDecl *);
-
 chillAST_FunctionDecl *findFunctionDecl(chillAST_Node *node, const char *procname);
 
 #endif

@@ -1683,7 +1683,6 @@ chillAST_VarDecl *chillAST_MemberExpr::multibase() {
 }
 
 chillAST_DeclRefExpr::chillAST_DeclRefExpr(const char *vartype, const char *varname, chillAST_Node *d) {
-  //fprintf(stderr, "DRE::DRE2 0x%x   %s %s  0x%x\n", this, vartype, varname, d );
   if (vartype) declarationType = strdup(vartype);
   else declarationType = strdup("UNKNOWN");
   if (varname) declarationName = strdup(varname);
@@ -1691,37 +1690,20 @@ chillAST_DeclRefExpr::chillAST_DeclRefExpr(const char *vartype, const char *varn
   decl = d;
 }
 
-chillAST_DeclRefExpr::chillAST_DeclRefExpr(chillAST_VarDecl *vd) { // variable def
-  //fprintf(stderr, "DRE::DRE3 (VD)  0x%x   %s %s  0x%x\n", this, vd->vartype, vd->varname, vd );
-
+chillAST_DeclRefExpr::chillAST_DeclRefExpr(chillAST_VarDecl *vd) {
   declarationType = strdup(vd->vartype);
   declarationName = strdup(vd->varname);
   decl = vd;
-  isFromSourceFile = true; // default
-  filename = NULL;
 }
 
 
-chillAST_DeclRefExpr::chillAST_DeclRefExpr(chillAST_FunctionDecl *fd) { // function def
+chillAST_DeclRefExpr::chillAST_DeclRefExpr(chillAST_FunctionDecl *fd) {
   declarationType = strdup(fd->returnType);
   declarationName = strdup(fd->functionName);
   decl = fd;
-  isFromSourceFile = true; // default
-  filename = NULL;
-}
-
-
-chillAST_DeclRefExpr *buildDeclRefExpr(chillAST_VarDecl *vd) {
-  chillAST_DeclRefExpr *dre = new chillAST_DeclRefExpr(vd);
-  return dre;
-}
-
-class chillAST_Node *chillAST_DeclRefExpr::constantFold() {  // can never do anything?
-  return this;
 }
 
 class chillAST_Node *chillAST_DeclRefExpr::clone() {
-  //fprintf(stderr, "chillAST_DeclRefExpr::clone()\n");
   chillAST_DeclRefExpr *DRE = new chillAST_DeclRefExpr(declarationType, declarationName, decl);
   DRE->setParent(parent);
   DRE->isFromSourceFile = isFromSourceFile;
@@ -1731,24 +1713,8 @@ class chillAST_Node *chillAST_DeclRefExpr::clone() {
 
 
 void chillAST_DeclRefExpr::gatherVarDeclsMore(vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "chillAST_DeclRefExpr::gatherVarDeclsMore()\n");
   decl->gatherVarDeclsMore(decls);
 }
-
-
-void chillAST_DeclRefExpr::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "chillAST_DeclRefExpr::gatherScalarVarDecls()\n");
-  decl->gatherScalarVarDecls(decls);
-  //fprintf(stderr, "now %d scalar vardecls\n", decls.size());
-}
-
-
-void chillAST_DeclRefExpr::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "chillAST_DeclRefExpr::gatherArrayVarDecls()\n");
-  decl->gatherArrayVarDecls(decls);
-  //fprintf(stderr, "now %d Array vardecls\n", decls.size());
-}
-
 
 void chillAST_DeclRefExpr::gatherDeclRefExprs(vector<chillAST_DeclRefExpr *> &refs) {
   refs.push_back(this);
@@ -1759,37 +1725,30 @@ void chillAST_DeclRefExpr::gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> 
 }
 
 void chillAST_DeclRefExpr::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "chillAST_DeclRefExpr::gatherVarUsage()\n");
   for (int i = 0; i < decls.size(); i++) {
     if (decls[i] == decl) {
-      //fprintf(stderr, "decl was already there\n");
       return;
     }
     if (streq(declarationName, decls[i]->varname)) {
       if (streq(declarationType, decls[i]->vartype)) {
-        //fprintf(stderr, "decl was already there\n");
+        CHILL_ERROR("Deprecated\n");
         return;
       }
     }
   }
   chillAST_VarDecl *vd = getVarDecl();  // null for functiondecl
   if (vd) decls.push_back(vd);
-
 }
 
 
 void chillAST_DeclRefExpr::replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl) {
-  //fprintf(stderr, "chillAST_DeclRefExpr::replaceVarDecls()\n");
   if (decl == olddecl) {
-    //fprintf(stderr, "replacing old %s with %s\n", olddecl->varname, newdecl->varname);
-    //fprintf(stderr, "DRE was "); print();
     decl = newdecl;
     declarationType = strdup(newdecl->vartype);
     declarationName = strdup(newdecl->varname);
-    //fprintf(stderr, "\nDRE  is "); print(); fprintf(stderr, "\n\n");
   } else {
+    CHILL_ERROR("Deprecated\n");
     if (!strcmp(olddecl->varname, declarationName)) {
-      //fprintf(stderr, "uhoh, chillAST_DeclRefExpr::replaceVarDecls()\n");
       decl = newdecl;
       declarationType = strdup(newdecl->vartype);
       declarationName = strdup(newdecl->varname);
@@ -1809,15 +1768,13 @@ chillAST_VarDecl *chillAST_DeclRefExpr::multibase() {
 
 
 void chillAST_VarDecl::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "chillAST_VarDecl::gatherVarDecls()\n");
   for (int i = 0; i < decls.size(); i++) {
     if (decls[i] == this) {
-      //fprintf(stderr, "decl was already there\n");
       return;
     }
     if (streq(decls[i]->varname, varname)) {
       if (streq(decls[i]->vartype, vartype)) {
-        //fprintf(stderr, "VarDecl (direct) decl was already there\n");
+        CHILL_ERROR("Wrong\n");
         return;
       }
     }
@@ -1827,52 +1784,41 @@ void chillAST_VarDecl::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
 
 
 void chillAST_VarDecl::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "chillAST_VarDecl::gatherScalarVarDecls(), %s numdimensions %d\n", varname, numdimensions);
-
   if (numdimensions != 0) return; // not a scalar
 
   for (int i = 0; i < decls.size(); i++) {
     if (decls[i] == this) {
-      //fprintf(stderr, "decl was already there\n");
       return;
     }
-
     if (streq(decls[i]->varname, varname)) {      // wrong. scoping.  TODO
       if (streq(decls[i]->vartype, vartype)) {
-        //fprintf(stderr, "VarDecl (direct) decl was already there\n");
+        CHILL_ERROR("Wrong\n");
         return;
       }
     }
   }
-  //fprintf(stderr, "adding vardecl for %s to decls\n", varname);
   decls.push_back(this);
 }
 
 
 void chillAST_VarDecl::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "chillAST_VarDecl::gatherScalarVarDecls(), %s numdimensions %d\n", varname, numdimensions);
-
   if (numdimensions == 0) return; // not an array
 
   for (int i = 0; i < decls.size(); i++) {
     if (decls[i] == this) {
-      //fprintf(stderr, "decl was already there\n");
       return;
     }
 
     if (streq(decls[i]->varname, varname)) {      // wrong. scoping.  TODO
       if (streq(decls[i]->vartype, vartype)) {
-        //fprintf(stderr, "VarDecl (direct) decl was already there\n");
+        CHILL_ERROR("Wrong\n");
         return;
       }
     }
   }
-  //fprintf(stderr, "adding vardecl for %s to decls\n", varname);
   decls.push_back(this);
 }
 
-
-chillAST_Node *chillAST_VarDecl::constantFold() { return this; }
 
 chillAST_Node *chillAST_VarDecl::clone() {
   fprintf(stderr, "\nchillAST_VarDecl::clone()  cloning vardecl for %s\n", varname);

@@ -322,7 +322,7 @@ void CFamily::printS(std::string ident, chillAST_Sizeof *n, std::ostream &o) {
 
 void CFamily::printS(std::string ident, chillAST_SourceFile *n, std::ostream &o) {
   o << "// this source is derived from CHILL AST originally from file '"
-    << n->filename << "' as parsed by frontend compiler " << n->frontend << "\n\n";
+    << n->SourceFileName <<"' as parsed by frontend compiler " << n->frontend << "\n\n";
   int nchild = n->getChildren()->size();
   for (int i = 0; i < nchild; ++i) {
     if (n->getChild(i)->isFromSourceFile) {

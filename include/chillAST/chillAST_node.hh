@@ -318,6 +318,7 @@ public:
   //! Actual declaration
   virtual void gatherScalarVarDecls(std::vector<chillAST_VarDecl *> &decls);
 
+  //! Actual declaration
   virtual void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls);
 
   virtual chillAST_VarDecl *findArrayDecl(const char *name) { // scoping TODO
