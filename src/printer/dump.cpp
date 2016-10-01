@@ -70,8 +70,8 @@ void Dump::printS(std::string ident, chillAST_BinaryOperator *n, std::ostream &o
 }
 
 void Dump::printS(std::string ident, chillAST_CallExpr *n, std::ostream &o) {
-  if (n->callee)
-    print(ident, n->callee, o);
+  if (n->getCallee())
+    print(ident, n->getCallee(), o);
 }
 
 void Dump::printS(std::string ident, chillAST_CompoundStmt *n, std::ostream &o) {
@@ -88,7 +88,7 @@ void Dump::printS(std::string ident, chillAST_CStyleCastExpr *n, std::ostream &o
 }
 
 void Dump::printS(std::string ident, chillAST_CudaFree *n, std::ostream &o) {
-  o << n->variable->varname << " ";
+  print(ident, n->getPointer(), o);
 }
 
 void Dump::printS(std::string ident, chillAST_CudaKernelCall *n, std::ostream &o) {
@@ -102,9 +102,9 @@ void Dump::printS(std::string ident, chillAST_CudaMalloc *n, std::ostream &o) {
 
 void Dump::printS(std::string ident, chillAST_CudaMemcpy *n, std::ostream &o) {
   o << n->cudaMemcpyKind << " ";
-  print(ident, n->dest, o);
-  print(ident, n->src, o);
-  print(ident, n->size, o);
+  print(ident, n->getDest(), o);
+  print(ident, n->getSrc(), o);
+  print(ident, n->getSize(), o);
 }
 
 void Dump::printS(std::string ident, chillAST_CudaSyncthreads *n, std::ostream &o) {}

@@ -24,6 +24,7 @@ public:
   virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_PREPROCESSING; }
 
   chillAST_Preprocessing();
+
   chillAST_Preprocessing(CHILLAST_PREPROCESSING_POSITION pos, CHILLAST_PREPROCESSING_TYPE t, char *text);
 };
 
@@ -400,9 +401,14 @@ public:
 
   void addDecl(chillAST_VarDecl *vd);  // just adds to symbol table?? TODO
 
-  void setBody(chillAST_Node *bod) { if (bod->isCompoundStmt()) { children[0] = bod; bod->setParent(this); }}
+  void setBody(chillAST_Node *bod) {
+    if (bod->isCompoundStmt()) {
+      children[0] = bod;
+      bod->setParent(this);
+    }
+  }
 
-  chillAST_CompoundStmt *getBody() { return (chillAST_CompoundStmt*)children[0]; }
+  chillAST_CompoundStmt *getBody() { return (chillAST_CompoundStmt *) children[0]; }
 
   void gatherVarDecls(std::vector<chillAST_VarDecl *> &decls);
 
@@ -411,8 +417,6 @@ public:
   void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls);
 
   chillAST_VarDecl *findArrayDecl(const char *name);
-  //void gatherArrayRefs( std::vector<chillAST_ArraySubscriptExpr*> &refs, bool writtento ); 
-  //void gatherScalarRefs( std::vector<chillAST_DeclRefExpr*> &refs, bool writtento ) 
 
   void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls);
 
@@ -458,23 +462,16 @@ public:
 
   void addMacro(chillAST_MacroDefinition *md) {
     macrodefinitions.push_back(md);
-    //fprintf(stderr, "addMacro(), now %d macros\n", macrodefinitions.size()); 
   }
 
   void addFunc(chillAST_FunctionDecl *fd) {
-    //fprintf(stderr, "chillAST_SourceFile::addFunc( %s %p)\n", fd->functionName, fd);
-
     bool already = false;
     for (int i = 0; i < functions.size(); i++) {
-      //fprintf(stderr, "function %d is %s %p\n", i, functions[i]->functionName, functions[i]); 
       if (functions[i] == fd) {
-        //fprintf(stderr, "function %s was already in source functions\n", fd->functionName); 
         already = true;
       }
     }
     if (!already) functions.push_back(fd);
-
-    // PROBABLY fd was created with sourcefile as its parent. Don't add it twice
     addChild((chillAST_Node *) fd);
   }
 
@@ -489,13 +486,9 @@ public:
 
   char *macroName;
 
-  // parameters - these will be odd, in that they HAVE NO TYPE
   void setName(char *n) { macroName = strdup(n); /* probable memory leak */ };
 
   chillAST_MacroDefinition(const char *name, const char *rhs);
-
-  void addChild(chillAST_Node *node); // special because inserts into BODY
-  void insertChild(int i, chillAST_Node *node); // special because inserts into BODY
 
   void setBody(chillAST_Node *bod);
 
@@ -504,23 +497,9 @@ public:
   chillAST_Node *clone();
 
   // none of these make sense for macros 
-  void gatherVarDecls(std::vector<chillAST_VarDecl *> &decls) {};
-
-  void gatherScalarVarDecls(std::vector<chillAST_VarDecl *> &decls) {};
-
-  void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls) {};
-
   chillAST_VarDecl *findArrayDecl(const char *name) {};
 
-  void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls) {};
-
-  void gatherDeclRefExprs(std::vector<chillAST_DeclRefExpr *> &refs) {};
-
-  void cleanUpVarDecls();
-
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bool forcesync = false) {};
-
-  chillAST_Node *constantFold() {};
 };
 
 class chillAST_ForStmt : public chillAST_Node {
@@ -543,16 +522,20 @@ public:
   void removeSyncComment();
 
   chillAST_Node *getInit() { return getChild(0); };
-  void setInit(chillAST_Node *i) { setChild(0,i); }
+
+  void setInit(chillAST_Node *i) { setChild(0, i); }
 
   chillAST_Node *getCond() { return getChild(1); };
-  void setCond(chillAST_Node *c) { setChild(1,c); }
+
+  void setCond(chillAST_Node *c) { setChild(1, c); }
 
   chillAST_Node *getInc() { return getChild(2); };
-  void setInc(chillAST_Node *i) { setChild(2,i); }
+
+  void setInc(chillAST_Node *i) { setChild(2, i); }
 
   chillAST_Node *getBody() { return getChild(3); };
-  void setBody(chillAST_Node *b) { setChild(3,b); };
+
+  void setBody(chillAST_Node *b) { setChild(3, b); };
 
 
   bool isNotLeaf() { return true; };
@@ -635,11 +618,11 @@ public:
 
   chillAST_Node *getLHS() { return getChild(2); };
 
-  void setCond(chillAST_Node *newc) { setChild(0,newc); }
+  void setCond(chillAST_Node *newc) { setChild(0, newc); }
 
-  void setLHS(chillAST_Node *newlhs) { setChild(1,newlhs); }
+  void setLHS(chillAST_Node *newlhs) { setChild(1, newlhs); }
 
-  void setRHS(chillAST_Node *newrhs) { setChild(2,newrhs); }
+  void setRHS(chillAST_Node *newrhs) { setChild(2, newrhs); }
 
   // required methods that I can't seem to get to inherit
   chillAST_Node *constantFold();
@@ -662,6 +645,7 @@ public:
 
   // constructors
   chillAST_BinaryOperator();
+
   chillAST_BinaryOperator(chillAST_Node *lhs, const char *op, chillAST_Node *rhs);
 
   // other methods particular to this type of node
@@ -677,9 +661,9 @@ public:
 
   chillAST_Node *getRHS() { return getChild(1); };
 
-  void setLHS(chillAST_Node *newlhs) { setChild(0,newlhs); }
+  void setLHS(chillAST_Node *newlhs) { setChild(0, newlhs); }
 
-  void setRHS(chillAST_Node *newrhs) { setChild(1,newrhs); }
+  void setRHS(chillAST_Node *newrhs) { setChild(1, newrhs); }
 
   char *getOp() { return op; };  // dangerous. could get changed!
   bool isAugmentedAssignmentOp() {
@@ -717,7 +701,6 @@ public:
   bool isMultDivOp() { return (!strcmp(op, "*")) || (!strcmp(op, "/")); };
 
   bool isStructOp() { return (!strcmp(op, ".")) || (!strcmp(op, "->")); };
-
 
   // required methods that I can't seem to get to inherit
   chillAST_Node *constantFold();
@@ -882,18 +865,6 @@ public:
 
   chillAST_Node *clone();
 
-  void gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool w) {}; // does nothing
-  void gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {}; // does nothing
-
-  void gatherVarDecls(std::vector<chillAST_VarDecl *> &decls) {}; // does nothing
-
-  void gatherScalarVarDecls(std::vector<chillAST_VarDecl *> &decls) {}; // does nothing
-  void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls) {}; // does nothing
-
-  void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls) {}; // does nothing
-  void gatherDeclRefExprs(std::vector<chillAST_DeclRefExpr *> &refs) {};  // does nothing
-  void replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl) {};
-
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab,
                                 bool forcesync = false) { return false; }; // no loops under here
 
@@ -926,17 +897,6 @@ public:
 
   chillAST_Node *clone();
 
-  void gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool w) {}; // does nothing
-  void gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {}; // does nothing
-
-  void gatherVarDecls(std::vector<chillAST_VarDecl *> &decls) {}; // does nothing
-  void gatherScalarVarDecls(std::vector<chillAST_VarDecl *> &decls) {}; // does nothing ;
-  void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls) {}; // does nothing ;
-
-  void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls) {}; // does nothing
-  void gatherDeclRefExprs(std::vector<chillAST_DeclRefExpr *> &refs) {}; // does nothing
-  void replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl) {};
-
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab,
                                 bool forcesync = false) { return false; }; // no loops under here
   chillAST_Node *findref() { return this; };// find the SINGLE constant or data reference at this node or below
@@ -955,6 +915,7 @@ public:
 
   // constructors
   chillAST_UnaryOperator();
+
   chillAST_UnaryOperator(const char *oper, bool pre, chillAST_Node *sub);
 
   // other methods particular to this type of node
@@ -963,8 +924,9 @@ public:
             (!strcmp(op, "--")));   // are there more ???  TODO
   }
 
-  chillAST_Node* getSubExpr() { return getChild(0); }
-  void setSubExpr(chillAST_Node* sub) { setChild(0,sub); }
+  chillAST_Node *getSubExpr() { return getChild(0); }
+
+  void setSubExpr(chillAST_Node *sub) { setChild(0, sub); }
 
   // required methods that I can't seem to get to inherit
   chillAST_Node *constantFold();
@@ -989,6 +951,7 @@ public:
 
   // constructors
   chillAST_ImplicitCastExpr();
+
   chillAST_ImplicitCastExpr(chillAST_Node *sub);
 
   // other methods particular to this type of node
@@ -996,8 +959,9 @@ public:
 
   bool isLeaf() { return false; };
 
-  chillAST_Node* getSubExpr() { return getChild(0); }
-  void setSubExpr(chillAST_Node* sub) { return setChild(0,sub); }
+  chillAST_Node *getSubExpr() { return getChild(0); }
+
+  void setSubExpr(chillAST_Node *sub) { return setChild(0, sub); }
 
   // required methods that I can't seem to get to inherit
   chillAST_Node *clone();
@@ -1019,14 +983,16 @@ public:
 
   // constructors
   chillAST_CStyleCastExpr();
+
   chillAST_CStyleCastExpr(const char *to, chillAST_Node *sub);
 
   // other methods particular to this type of node
 
 
   // required methods that I can't seem to get to inherit
-  chillAST_Node* getSubExpr() { return getChild(0); }
-  void setSubExpr(chillAST_Node* sub) { return setChild(0,sub); }
+  chillAST_Node *getSubExpr() { return getChild(0); }
+
+  void setSubExpr(chillAST_Node *sub) { return setChild(0, sub); }
 
   chillAST_Node *clone();
 
@@ -1044,12 +1010,14 @@ public:
 
   // constructors
   chillAST_CStyleAddressOf();
+
   chillAST_CStyleAddressOf(chillAST_Node *sub);
 
   // other methods particular to this type of node
 
-  chillAST_Node* getSubExpr() { return getChild(0); }
-  void setSubExpr(chillAST_Node* sub) { return setChild(0,sub); }
+  chillAST_Node *getSubExpr() { return getChild(0); }
+
+  void setSubExpr(chillAST_Node *sub) { return setChild(0, sub); }
 
   // required methods that I can't seem to get to inherit
   chillAST_Node *clone();
@@ -1067,13 +1035,17 @@ public:
 
   // constructors
   chillAST_CudaMalloc();
+
   chillAST_CudaMalloc(chillAST_Node *devmemptr, chillAST_Node *size);
 
   // other methods particular to this type of node
-  chillAST_Node* getDevPtr() {return getChild(0);}
-  void setDevPtr(chillAST_Node* devptr) { setChild(0,devptr);}
-  chillAST_Node* getSize() {return getChild(1);}
-  void setSize(chillAST_Node* size) { setChild(1,size);}
+  chillAST_Node *getDevPtr() { return getChild(0); }
+
+  void setDevPtr(chillAST_Node *devptr) { setChild(0, devptr); }
+
+  chillAST_Node *getSize() { return getChild(1); }
+
+  void setSize(chillAST_Node *size) { setChild(1, size); }
 
 
   // required methods that I can't seem to get to inherit
@@ -1093,35 +1065,20 @@ class chillAST_CudaFree : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_CUDAFREE; }
 
-  // variables that are special for this type of node
-  // TODO Seriously wrong, this is not a new variable declaration
-  chillAST_VarDecl *variable;
-
   // constructors
-  chillAST_CudaFree(chillAST_VarDecl *var);
+  chillAST_CudaFree();
+
+  chillAST_CudaFree(chillAST_Node *var);
 
   // other methods particular to this type of node
+  chillAST_Node *getPointer() { return getChild(0); }
+
+  void setPointer(chillAST_Node *ptr) { setChild(0, ptr); }
 
 
   // required methods that I can't seem to get to inherit
-  chillAST_Node *constantFold();
-
   chillAST_Node *clone();
 
-  void gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento);
-
-  void gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento);
-
-  void gatherVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherScalarVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls);
-
-  //void gatherDeclRefExprs( std::vector<chillAST_DeclRefExpr *>&refs );
-  //void replaceVarDecls( chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl);
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab,
                                 bool forcesync = false) { return false; }; // no loops under here
 
@@ -1135,11 +1092,13 @@ public:
 
   // constructors
   chillAST_Malloc();
+
   chillAST_Malloc(chillAST_Node *numthings); // malloc (sizeof(int) *1024)
 
   // other methods particular to this type of node
-  chillAST_Node* getSize() { return getChild(0); }
-  void setSize(chillAST_Node* size) { setChild(0,size); }
+  chillAST_Node *getSize() { return getChild(0); }
+
+  void setSize(chillAST_Node *size) { setChild(0, size); }
 
   // required methods that I can't seem to get to inherit
   chillAST_Node *clone();
@@ -1160,37 +1119,28 @@ public:
   virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_CUDAMEMCPY; }
 
   // variables that are special for this type of node
-  // TODO Very wrong, this is not a declaration
-  chillAST_VarDecl *dest;  // Pointer to allocated device memory 
-  chillAST_VarDecl *src;
-  chillAST_Node *size;
   char *cudaMemcpyKind;  // could use the actual enum
 
   // constructors
-  chillAST_CudaMemcpy(chillAST_VarDecl *d, chillAST_VarDecl *s, chillAST_Node *size, char *kind);
+  chillAST_CudaMemcpy();
+  chillAST_CudaMemcpy(chillAST_Node *d, chillAST_Node *s, chillAST_Node *size, char *kind);
 
   // other methods particular to this type of node
+  chillAST_Node *getDest() {return getChild(0);}
+  void setDest(chillAST_Node* dest) { setChild(0,dest); }
+  chillAST_Node *getSrc() {return getChild(1);}
+  void setSrc(chillAST_Node* src) { setChild(1,src); }
+  chillAST_Node *getSize() {return getChild(2);}
+  void setSize(chillAST_Node* size) { setChild(2,size); }
 
 
   // required methods that I can't seem to get to inherit
-  chillAST_Node *constantFold();
-
   chillAST_Node *clone();
 
   void gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento);
 
   void gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento);
 
-  void gatherVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherScalarVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls);
-
-  //void gatherDeclRefExprs( std::vector<chillAST_DeclRefExpr *>&refs );
-  //void replaceVarDecls( chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl);
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab,
                                 bool forcesync = false) { return false; }; // no loops under here
 
@@ -1199,6 +1149,7 @@ public:
 class chillAST_CudaSyncthreads : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_CUDASYNCTHREADS; }
+
   // constructors
   chillAST_CudaSyncthreads();
 };
@@ -1206,13 +1157,16 @@ public:
 class chillAST_ReturnStmt : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_RETURNSTMT; }
+
   // constructors
   chillAST_ReturnStmt();
+
   chillAST_ReturnStmt(chillAST_Node *retval);
 
   // other methods particular to this type of node
-  chillAST_Node* getRetVal() { return getChild(0); }
-  void setRetVal(chillAST_Node *ret) { setChild(0,ret); }
+  chillAST_Node *getRetVal() { return getChild(0); }
+
+  void setRetVal(chillAST_Node *ret) { setChild(0, ret); }
 
   // required methods that I can't seem to get to inherit
   chillAST_Node *clone();
@@ -1229,39 +1183,22 @@ public:
   virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_CALLEXPR; }
 
   // variables that are special for this type of node
-  chillAST_Node *callee;   // the function declaration (what about builtins?)
-  int numargs;
-  std::vector<class chillAST_Node *> args;
   chillAST_VarDecl *grid;
   chillAST_VarDecl *block;
 
   // constructors
+  chillAST_CallExpr();
   chillAST_CallExpr(chillAST_Node *function);
 
-  void addArg(chillAST_Node *newarg);
+  void addArg(chillAST_Node *newarg) { addChild(newarg); }
 
   // other methods particular to this type of node
   // TODO get/set grid, block
+  chillAST_Node *getCallee() { return getChild(0); }
+
+  void setCallee(chillAST_Node *c) { setChild(0, c); }
 
   // required methods that I can't seem to get to inherit
-  chillAST_Node *constantFold();
-
-  void gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento);
-
-  void gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento);
-
-  void gatherVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherScalarVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherDeclRefExprs(std::vector<chillAST_DeclRefExpr *> &refs);
-
-  void replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl);
-
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab,
                                 bool forcesync = false) { return false; }; // no loops under here
   chillAST_Node *clone();
@@ -1270,13 +1207,16 @@ public:
 class chillAST_ParenExpr : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_PARENEXPR; }
+
   // constructors
   chillAST_ParenExpr();
+
   chillAST_ParenExpr(chillAST_Node *sub);
 
   // other methods particular to this type of node
-  chillAST_Node* getSubExpr() { return getChild(0); }
-  void setSubExpr(chillAST_Node* sub) { setChild(0, sub); }
+  chillAST_Node *getSubExpr() { return getChild(0); }
+
+  void setSubExpr(chillAST_Node *sub) { setChild(0, sub); }
 
   // required methods that I can't seem to get to inherit
   chillAST_Node *clone();
@@ -1334,6 +1274,7 @@ public:
 
   // constructors
   chillAST_IfStmt();
+
   chillAST_IfStmt(chillAST_Node *c, chillAST_Node *t, chillAST_Node *e);
 
   // other methods particular to this type of node
@@ -1343,11 +1284,11 @@ public:
 
   chillAST_Node *getElse() { return getChild(2); };
 
-  void setCond(chillAST_Node *b) { setChild(0,b); };
+  void setCond(chillAST_Node *b) { setChild(0, b); };
 
-  void setThen(chillAST_Node *b) { setChild(1,b); };
+  void setThen(chillAST_Node *b) { setChild(1, b); };
 
-  void setElse(chillAST_Node *b) { setChild(2,b); };
+  void setElse(chillAST_Node *b) { setChild(2, b); };
 
   // required methods that I can't seem to get to inherit
   chillAST_Node *clone();
@@ -1356,7 +1297,6 @@ public:
 
   void gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento);
 
-  //void replaceVarDecls( chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl);
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bool forcesync = false);
 
 };
@@ -1364,6 +1304,7 @@ public:
 class chillAST_something : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_UNKNOWN; }
+
   // constructors
   chillAST_something();
 };

@@ -83,7 +83,7 @@ public:
   virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_UNKNOWN; };
 
   //! Get the human readable type name
-  const char *getTypeString() { return ChillAST_Node_Names[getType()]; };
+  const char *getTypeString();
 
   bool isSourceFile() { return (getType() == CHILLAST_NODE_SOURCEFILE); };
 
@@ -299,7 +299,6 @@ public:
   // TODO gather loop init and cond (and if cond) like gatherloopindeces
   //! gather both scalar and array references
   virtual void gatherDeclRefExprs(std::vector<chillAST_DeclRefExpr *> &refs);
-
 
   virtual void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls);
 

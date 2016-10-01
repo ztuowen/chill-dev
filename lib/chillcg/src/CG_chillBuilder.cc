@@ -238,9 +238,9 @@ namespace omega {
     //fprintf(stderr, "substituting for oldvar %s in ", oldvar );
     //CE->print(); printf("\n"); fflush(stdout); 
     
-    int nargs = CE->numargs;
-    for (int i=0; i<nargs; i++) {
-      CE->args[i] = substituteChill( oldvar, newvar, CE->args[i], CE); 
+    int nargs = CE->getNumChildren();
+    for (int i=1; i<nargs; i++) {
+      CE->setChild(i,substituteChill( oldvar, newvar, CE->getChild(i), CE));
     }
     return CE; 
   }

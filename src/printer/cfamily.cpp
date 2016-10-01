@@ -70,8 +70,8 @@ int CFamily::getPrecS(chillAST_CallExpr *n) {
 void CFamily::printS(std::string ident, chillAST_CallExpr *n, std::ostream &o) {
   chillAST_FunctionDecl *FD = NULL;
   chillAST_MacroDefinition *MD = NULL;
-  if (n->callee->isDeclRefExpr()) {
-    chillAST_DeclRefExpr *DRE = (chillAST_DeclRefExpr *) (n->callee);
+  if (n->getCallee()->isDeclRefExpr()) {
+    chillAST_DeclRefExpr *DRE = (chillAST_DeclRefExpr *) (n->getCallee());
     if (!(DRE->decl)) {
       o << DRE->declarationName;
       return;
@@ -79,23 +79,23 @@ void CFamily::printS(std::string ident, chillAST_CallExpr *n, std::ostream &o) {
     if (DRE->decl->isFunctionDecl()) FD = (chillAST_FunctionDecl *) (DRE->decl);
     else
       CHILL_ERROR("Function DRE of type %s\n", DRE->decl->getTypeString());
-  } else if (n->callee->isFunctionDecl())
-    FD = (chillAST_FunctionDecl *) n->callee;
-  else if (n->callee->isMacroDefinition())
-    MD = (chillAST_MacroDefinition *) n->callee;
+  } else if (n->getCallee()->isFunctionDecl())
+    FD = (chillAST_FunctionDecl *) n->getCallee();
+  else if (n->getCallee()->isMacroDefinition())
+    MD = (chillAST_MacroDefinition *) n->getCallee();
   if (FD) {
     o << FD->functionName;
     if (n->grid && n->block)
       o << "<<<" << n->grid->varname << "," << n->block->varname << ">>>";
     o << "(";
   }
-  if (MD && n->args.size())
+  if (MD && n->getNumChildren()-1)
     o << "(";
-  for (int i = 0; i < n->args.size(); ++i) {
+  for (int i = 1; i < n->getNumChildren(); ++i) {
     if (i != 0) o << ", ";
-    print(ident, n->args[i], o);
+    print(ident, n->getChild(i), o);
   }
-  if (FD || n->args.size())
+  if (FD || n->getNumChildren()-1)
     o << ")";
 }
 
@@ -130,7 +130,9 @@ void CFamily::printS(std::string ident, chillAST_CStyleCastExpr *n, std::ostream
 }
 
 void CFamily::printS(std::string ident, chillAST_CudaFree *n, std::ostream &o) {
-  o << "cudaFree(" << n->variable->varname << ")";
+  o << "cudaFree(";
+  print(ident, n->getPointer(), o);
+  o << ")";
 }
 
 void CFamily::printS(std::string ident, chillAST_CudaKernelCall *n, std::ostream &o) {
@@ -146,8 +148,12 @@ void CFamily::printS(std::string ident, chillAST_CudaMalloc *n, std::ostream &o)
 }
 
 void CFamily::printS(std::string ident, chillAST_CudaMemcpy *n, std::ostream &o) {
-  o << "cudaMemcpy(" << n->dest->varname << ", " << n->src->varname << ", ";
-  print(ident, n->size, o);
+  o << "cudaMemcpy(";
+  print(ident, n->getDest(), o);
+  o << ", ";
+  print(ident, n->getSrc(), o);
+  o << ", ";
+  print(ident, n->getSize(), o);
   o << ", " << n->cudaMemcpyKind << ")";
 }
 
@@ -161,7 +167,7 @@ void CFamily::printS(std::string ident, chillAST_DeclRefExpr *n, std::ostream &o
 
 void CFamily::printS(std::string ident, chillAST_FloatingLiteral *n, std::ostream &o) {
   if (n->allthedigits)
-    o<<n->allthedigits;
+    o << n->allthedigits;
   else {
     o << showpoint << n->value;
     if (n->getPrecision() == 1)

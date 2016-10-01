@@ -9,11 +9,59 @@
 
 using namespace std;
 
+int chillAST_Node::chill_scalar_counter = 0;
+int chillAST_Node::chill_array_counter = 1;
+
+const char *ChillAST_Node_Names[] = {
+    "Unknown AST node type",
+    "SourceFile",
+    "TypedefDecl",
+    "VarDecl",
+    //  "ParmVarDecl",  not used any more
+    "FunctionDecl",
+    "RecordDecl",
+    "MacroDefinition",
+    "CompoundStmt",
+    "ForStmt",
+    "TernaryOperator",
+    "BinaryOperator",
+    "UnaryOperator",
+    "ArraySubscriptExpr",
+    "MemberExpr",
+    "DeclRefExpr",
+    "IntegerLiteral",
+    "FloatingLiteral",
+    "ImplicitCastExpr", // not sure we need this
+    "ReturnStmt",
+    "CallExpr",
+    "DeclStmt",
+    "ParenExpr",
+    "CStyleCastExpr",
+    "CStyleAddressOf",
+    "IfStmt",
+    "SizeOf",
+    "Malloc",
+    "Free",
+    "NoOp",
+// CUDA specific
+    "CudaMalloc",
+    "CudaFree",
+    "CudaMemcpy",
+    "CudaKernelCall",
+    "CudaSyncthreads",
+    "fake1",
+    "fake2",
+    "fake3"
+};
+
+const char* chillAST_Node::getTypeString() {
+  return ChillAST_Node_Names[getType()];
+};
+
 void chillAST_Node::fixChildInfo() {}
 
 void chillAST_Node::addChild(chillAST_Node *c) {
   c->parent = this;
-  // check to see if it's already there
   for (int i = 0; i < children.size(); i++) {
     if (c == children[i]) {
       CHILL_ERROR("addchild ALREADY THERE\n");
@@ -47,27 +95,13 @@ int chillAST_Node::findChild(chillAST_Node *c) {
 }
 
 void chillAST_Node::replaceChild(chillAST_Node *old, chillAST_Node *newchild) {
-  CHILL_DEBUG_PRINT("(%s) forgot to implement replaceChild() ... using generic\n", getTypeString());
-  CHILL_DEBUG_PRINT("%d children\n", children.size());
-  for (int i = 0; i < children.size(); i++) {
-    if (children[i] == old) {
-      children[i] = newchild;
-      newchild->setParent(this);
+  for (int i = 0; i < getNumChildren(); i++) {
+    if (getChild(i) == old) {
+      setChild(i,newchild);
       return;
     }
   }
-  CHILL_ERROR("%s %p generic replaceChild called with oldchild that was not a child\n",
-              getTypeString(), this);
-  CHILL_DEBUG_BEGIN
-    fprintf(stderr, "printing\n");
-    print();
-    fprintf(stderr, "\nchild: ");
-    if (!old) fprintf(stderr, "oldchild NULL!\n");
-    old->print();
-    fprintf(stderr, "\nnew: ");
-    newchild->print();
-    fprintf(stderr, "\n");
-  CHILL_DEBUG_END
+  CHILL_ERROR("Replace Child Falure, oldchild not a child\n");
   exit(-1);
 };
 
@@ -78,9 +112,7 @@ void chillAST_Node::loseLoopWithLoopVar(char *var) {
   }
 }
 
-//! recursive walk parent links, looking for loops, and grabbing the declRefExpr in the loop init and cond.
-void chillAST_Node::gatherLoopIndeces(
-    std::vector<chillAST_VarDecl *> &indeces) {
+void chillAST_Node::gatherLoopIndeces(std::vector<chillAST_VarDecl *> &indeces) {
   // you can quit when you get to certain nodes
 
   CHILL_DEBUG_PRINT("%s::gatherLoopIndeces()\n", getTypeString());
