@@ -39,13 +39,11 @@ namespace omega {
 
     CG_chillRepr(chillAST_Node *chillast) {
       stmtclassname = strdup(chillast->getTypeString());
-      //fprintf(stderr, "made new chillRepr of class %s\n", stmtclassname);
       if (chillast->getType() == CHILLAST_NODE_COMPOUNDSTMT) {
         std::vector<chillAST_Node *> &children = *(chillast->getChildren());
         int numchildren = children.size();
         for (int i = 0; i < numchildren; i++) {
           chillnodes.push_back(children[i]);
-          //fprintf(stderr, "adding a statement from a CompoundStmt\n");
         }
       } else { // for now, assume it's a single statement
         chillnodes.push_back(chillast);  // ??
@@ -72,12 +70,9 @@ namespace omega {
     void dump() const { printChillNodes(); };
 
     void Dump() const;
-    //void DumpToFile(FILE *fp = stderr) const;
   private:
 
-
     char *stmtclassname;    // chill
-
   };
 
 

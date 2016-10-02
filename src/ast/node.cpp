@@ -356,5 +356,11 @@ void chillAST_Node::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
   }
 }
 
-
+chillAST_Node* chillAST_Node::findContainingStmt() {
+  chillAST_Node* p = getParent();
+  if (p->isCompoundStmt()) return this;
+  if (p->isForStmt()) return this;
+  if (p->isIfStmt()) return this;
+  return p->findContainingStmt();
+}
 

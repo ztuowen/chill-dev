@@ -536,7 +536,6 @@ test_data_dependences(IR_Code *ir,
 
 
 //Manu:: This function tests if two references are from the same statement
-//CG_outputRepr * from_same_statement(IR_Code *ir, IR_ArrayRef *a, IR_ArrayRef *b) {
 bool from_same_statement(IR_Code *ir, IR_ArrayRef *a, IR_ArrayRef *b) {
   return ir->FromSameStmt(a, b);
 }

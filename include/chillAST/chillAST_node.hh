@@ -405,6 +405,8 @@ public:
 
   //! Public interface for fixing child info, which can be called from anynode.
   void fixChildInfo();
+
+  chillAST_Node* findContainingStmt();
 };
 
 

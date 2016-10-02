@@ -2247,10 +2247,8 @@ IR_clangCode::IR_clangCode(const char *fname, const char *proc_name) : IR_Code()
       localFD->dump();
     CHILL_DEBUG_END
 
-    chillAST_Node *b = localFD->getBody();  // we do this just because it will get done next
-
     CHILL_DEBUG_PRINT("calling new CG_chillBuilder() umwut?\n");
-    ocg_ = new omega::CG_chillBuilder();  // ocg == omega code gen
+    ocg_ = new omega::CG_chillBuilder(localFD->getSourceFile(),localFD);  // ocg == omega code gen
     chillfunc = localFD;
 
   }
@@ -2408,6 +2406,9 @@ IR_ScalarRef *IR_clangCode::CreateScalarRef(const IR_ScalarSymbol *sym) {
   //return (IR_ScalarRef *)NULL;
 }
 
+bool IR_clangCode::FromSameStmt(IR_ArrayRef *A, IR_ArrayRef *B) {
+  return ((IR_chillArrayRef*)A)->chillASE->findContainingStmt() == ((IR_chillArrayRef*)A)->chillASE->findContainingStmt();
+}
 
 IR_ArrayRef *IR_clangCode::CreateArrayRef(const IR_ArraySymbol *sym, std::vector<omega::CG_outputRepr *> &index) {
   fprintf(stderr, "IR_clangCode::CreateArrayRef()   ir_clang.cc\n");

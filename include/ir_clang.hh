@@ -224,22 +224,13 @@ struct IR_chillScalarRef : public IR_ScalarRef {
 
 
 struct IR_chillArrayRef : public IR_ArrayRef {
-  //DeclRefExpr *as_; 
-  //chillAST_DeclRefExpr *chillDRE;
   chillAST_ArraySubscriptExpr *chillASE;
   int iswrite;
 
-
-  //  IR_chillArrayRef(const IR_Code *ir, DeclRefExpr *as, ParentMap *pMap = NULL) {
-  //  ir_ = ir;
-  //  fprintf(stderr, "new IR_chillArrayRef()   CLANG ERROR\n");  exit(-1); 
-  //} 
-
   IR_chillArrayRef(const IR_Code *ir, chillAST_ArraySubscriptExpr *ase, int write) {
-    //fprintf(stderr, "IR_chillArrayRef::IR_chillArrayRef()  write %d\n", write); 
     ir_ = ir;
     chillASE = ase;
-    iswrite = write;  // ase->imwrittento;
+    iswrite = write;
   }
 
   bool is_write() const;
@@ -491,6 +482,8 @@ public:
   IR_ScalarRef *CreateScalarRef(const IR_ScalarSymbol *sym);
 
   IR_ArrayRef *CreateArrayRef(const IR_ArraySymbol *sym, std::vector<omega::CG_outputRepr *> &index);
+
+  virtual bool FromSameStmt(IR_ArrayRef *A, IR_ArrayRef *B);
 
   int ArrayIndexStartAt() { return 0; } // TODO FORTRAN
 

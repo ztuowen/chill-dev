@@ -117,12 +117,12 @@ public:
   Loop(const IR_Control *control);
   ~Loop();
   
-  omega::CG_outputRepr *getCode(int effort = 3) const; // TODO was 1
+  omega::CG_outputRepr *getCode(int effort = 1) const; // TODO was 1
   //chillAST_Node* getCode(int effort, std::set<int> stmts) const;
 
   void stencilASEPadded(int stmt_num); 
   
-  void printCode(int effort = 3) const;
+  void printCode(int effort = 1) const;
   void addKnown(const omega::Relation &cond);
   void print_internal_loop_structure() const;
   bool isInitialized() const;

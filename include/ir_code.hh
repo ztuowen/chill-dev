@@ -360,7 +360,7 @@ public:
   virtual IR_ScalarSymbol *CreateScalarSymbol(const IR_Symbol *sym, int memory_type) = 0;
 
   virtual IR_ScalarSymbol *CreateScalarSymbol(IR_CONSTANT_TYPE type, int memory_type, std::string name = "") {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
@@ -370,26 +370,26 @@ public:
 
   virtual IR_ArraySymbol *CreateArraySymbol(omega::CG_outputRepr *type,
                                             std::vector<omega::CG_outputRepr *> &size_repr) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
   virtual IR_PointerSymbol *CreatePointerSymbol(const IR_Symbol *sym,
                                                 std::vector<omega::CG_outputRepr *> &size_repr) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
   virtual IR_PointerSymbol *CreatePointerSymbol(const IR_CONSTANT_TYPE type,
                                                 std::vector<omega::CG_outputRepr *> &size_repr,
                                                 std::string name = "") {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
   virtual IR_PointerSymbol *CreatePointerSymbol(omega::CG_outputRepr *type,
                                                 std::vector<omega::CG_outputRepr *> &size_repr) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
@@ -399,46 +399,46 @@ public:
 
   virtual omega::CG_outputRepr *CreateArrayRefRepr(const IR_ArraySymbol *sym,
                                                    std::vector<omega::CG_outputRepr *> &index) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
   virtual IR_PointerArrayRef *CreatePointerArrayRef(IR_PointerSymbol *sym,
                                                     std::vector<omega::CG_outputRepr *> &index) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
   virtual int ArrayIndexStartAt() { return 0; }
 
   virtual void CreateDefineMacro(std::string s, std::string args, omega::CG_outputRepr *repr) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
   }
 
   virtual void CreateDefineMacro(std::string s, std::string args, std::string repr) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
   }
 
   virtual void CreateDefineMacro(std::string s, std::vector<std::string> args,
                                  omega::CG_outputRepr *repr) {};  // TODO make pure virtual
 
   virtual omega::CG_outputRepr *CreateArrayType(IR_CONSTANT_TYPE type, omega::CG_outputRepr *size) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
   virtual omega::CG_outputRepr *CreatePointerType(IR_CONSTANT_TYPE type) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
   virtual omega::CG_outputRepr *CreatePointerType(omega::CG_outputRepr *type) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
   virtual omega::CG_outputRepr *CreateScalarType(IR_CONSTANT_TYPE type) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
@@ -450,6 +450,7 @@ public:
 
   virtual std::vector<IR_PointerArrayRef *> FindPointerArrayRef(const omega::CG_outputRepr *repr) const {
     fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return std::vector<IR_PointerArrayRef *>();
   }
 
@@ -457,6 +458,7 @@ public:
 
   virtual bool parent_is_array(IR_ArrayRef *a) {
     fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return false;
   }
 
@@ -471,7 +473,7 @@ public:
   virtual IR_Block *GetCode() const = 0;
 
   virtual IR_Control *GetCode(omega::CG_outputRepr *code) const {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
@@ -488,66 +490,65 @@ public:
   virtual IR_Ref *Repr2Ref(const omega::CG_outputRepr *repr) const = 0;
 
   // Manu:: Added functions required for reduction operation
-  // virtual omega::CG_outputRepr * FromSameStmt(IR_ArrayRef *A, IR_ArrayRef *B) = 0;
   virtual bool FromSameStmt(IR_ArrayRef *A, IR_ArrayRef *B) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
   virtual void printStmt(const omega::CG_outputRepr *repr) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
   }
 
   virtual int getStmtType(const omega::CG_outputRepr *repr) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return 0;
   }
 
   virtual IR_OPERATION_TYPE getReductionOp(const omega::CG_outputRepr *repr) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return IR_OP_MINUS;
   }
 
   virtual IR_Control *FromForStmt(const omega::CG_outputRepr *repr) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
   // Manu:: Added functions for scalar expansion
   virtual IR_ArraySymbol *CreateArraySymbol(omega::CG_outputRepr *size, const IR_Symbol *sym) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
   virtual bool ReplaceRHSExpression(omega::CG_outputRepr *code, IR_Ref *ref) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
   virtual omega::CG_outputRepr *GetRHSExpression(omega::CG_outputRepr *code) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
   virtual omega::CG_outputRepr *GetLHSExpression(omega::CG_outputRepr *code) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
   virtual omega::CG_outputRepr *CreateMalloc(const IR_CONSTANT_TYPE type, std::string lhs,
                                              omega::CG_outputRepr *size_repr) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
   virtual omega::CG_outputRepr *CreateMalloc(omega::CG_outputRepr *type, std::string variable,
                                              omega::CG_outputRepr *size_repr) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 
   virtual omega::CG_outputRepr *CreateFree(omega::CG_outputRepr *exp) {
-    fprintf(stderr, "ir_code.hh  SOME SUBCLASS OF ir_code did not implement CreateArrayRefRepr()\n");
+    CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
 

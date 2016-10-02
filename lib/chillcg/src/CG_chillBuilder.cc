@@ -36,13 +36,6 @@ namespace omega {
   chillAST_Node *SubCompoundStmt(       const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent );
   chillAST_Node *SubMemberExpr(         const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent );
   
-  
-  
-  //  chillAST_Node *Sub( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent ); // fwd decl
-  
-  
-  
-  
   chillAST_Node *substituteChill( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
     if (n == NULL) {
       fprintf(stderr, "substituteChill() pointer n == NULL\n"); // DIE 
@@ -235,9 +228,6 @@ namespace omega {
   chillAST_Node *SubCallExpr( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
     chillAST_CallExpr *CE = (chillAST_CallExpr *) n;
     
-    //fprintf(stderr, "substituting for oldvar %s in ", oldvar );
-    //CE->print(); printf("\n"); fflush(stdout); 
-    
     int nargs = CE->getNumChildren();
     for (int i=1; i<nargs; i++) {
       CE->setChild(i,substituteChill( oldvar, newvar, CE->getChild(i), CE));
@@ -248,8 +238,6 @@ namespace omega {
   
   
   chillAST_Node *SubReturnStmt( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
-    //fprintf(stderr, "SubReturnStmt()\n");
-    
     chillAST_ReturnStmt *RS = (chillAST_ReturnStmt *)n;
     if (RS->getRetVal()) RS->setRetVal(substituteChill(oldvar, newvar, RS->getRetVal(), RS));
     return RS;
@@ -261,17 +249,18 @@ namespace omega {
     chillAST_IfStmt *IS = (chillAST_IfStmt *)n;
     //IS->print(0, stderr); fprintf(stderr, "\n\n"); 
     chillAST_Node *sub;
-    if ( sub = IS->getCond() ) IS->setCond( substituteChill(oldvar, newvar, sub, IS)); 
-    if ( sub = IS->getThen() ) IS->setThen( substituteChill(oldvar, newvar, sub, IS)); 
-    sub = IS->getElse(); //fprintf(stderr, "sub(else) = %p\n", sub); 
-    if ( sub = IS->getElse() ) IS->setElse( substituteChill(oldvar, newvar, sub, IS)); 
+    sub = IS->getCond();
+    if ( sub ) IS->setCond( substituteChill(oldvar, newvar, sub, IS));
+    sub = IS->getThen();
+    if ( sub ) IS->setThen( substituteChill(oldvar, newvar, sub, IS));
+    sub = IS->getElse();
+    if ( sub ) IS->setElse( substituteChill(oldvar, newvar, sub, IS));
     
     return IS; 
   }
   
   
   chillAST_Node *SubCompoundStmt( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
-    //fprintf(stderr, "SubCompoundStmt()\n");
     chillAST_CompoundStmt *CS = (chillAST_CompoundStmt *)n;
     
     int numchildren = CS->getNumChildren(); 
@@ -285,14 +274,9 @@ namespace omega {
   
   
   chillAST_Node *SubMemberExpr( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
-    //fprintf(stderr, "SubMemberExpr(   oldvar %s   ) \n", oldvar);
     chillAST_MemberExpr *ME = (chillAST_MemberExpr *)n;
-    
-    ME->base =  substituteChill(oldvar, newvar, ME->base, ME ); 
-    
-    
-    // 
-    return ME; 
+    ME->base =  substituteChill(oldvar, newvar, ME->base, ME );
+    return ME;
   }
   
   
@@ -304,19 +288,11 @@ namespace omega {
   }
   
   CG_chillBuilder::CG_chillBuilder(chillAST_SourceFile *top, chillAST_FunctionDecl *func) { 
-    //fprintf(stderr, "\nCG_chillBuilder::CG_chillBuilder()\n"); 
     toplevel = top;
     currentfunction = func;
     
-    //fprintf(stderr, "\nfunction is:\n"); currentfunction->print(); printf("\n\n"); fflush(stdout); 
-
-    symtab_  = currentfunction->getSymbolTable();
+    symtab_  = currentfunction->getParameters();
     symtab2_ = currentfunction->getBody()->getSymbolTable();
-    
-    //printf("\nsymtab_:\n"); fflush(stdout); 
-    //printSymbolTable( symtab_ ); 
-    //printf("\n\nsymtab2_:\n"); fflush(stdout); 
-    //printSymbolTable( symtab2_ ); 
   }
   
   CG_chillBuilder::~CG_chillBuilder() {
