@@ -23,9 +23,11 @@ class CG_outputRepr {
 public:
   
   CG_outputRepr() {}
-  virtual ~CG_outputRepr() { /* shallow delete */ }
+  //! shallow delete
+  virtual ~CG_outputRepr() { }
   virtual CG_outputRepr *clone() const = 0;
-  virtual void clear() { /* delete actual IR code wrapped inside */ }
+  //! delete actual IR code wrapped inside
+  virtual void clear() { }
   virtual void dump() const {}
   virtual char *type() const = 0; 
 };

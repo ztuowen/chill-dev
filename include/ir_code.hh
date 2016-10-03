@@ -23,40 +23,48 @@
 #define IR_CODE_HH
 
 #include <ir_enums.hh>
-
 #include <chillAST/chillASTs.hh>
-
 #include <vector>
-
-// needed for omega::coef_t below
-#include <basic/util.h>   // in omega ... why is this not in CG_output*.h?
-
 #include <code_gen/CG_outputRepr.h>
 #include <code_gen/CG_outputBuilder.h>
 
+/*!
+ * \file
+ * \brief CHiLL's compiler intermediate representation interface that extends Omega's builder interface to accomodate compiler analyses and extra code generation.
+ *
+ * Unlike CG_outputRepr, IR_Symbol,IR_Ref and IR_Control are place holders
+ * to the underlying code, thus deleting or duplicating them does not affect
+ * the actual code.  Similar to Omega builder's memory allocation strategy,
+ * all non-const pointer parameters of CG_outputRepr/IR_Symbol/IR_Ref/IR_Control
+ * are destroyed after the call.
+ */
 
 class IR_Code; // forward declaration
 
-
-// Base abstract class for scalar and array symbols.  This is a place
-// holder for related declaration in IR code.
+/*!
+ * @brief Base abstract class for scalar and array symbols.
+ *
+ * This is a place holder for related declaration in IR code.
+ */
 struct IR_Symbol {
   const IR_Code *ir_;
 
-  virtual ~IR_Symbol() {/* ir_ is not the responsibility of this object */}
+  //! ir_ is not the responsibility of this object
+  virtual ~IR_Symbol() { }
 
-  virtual int n_dim() const = 0; // IR_Symbol
+  virtual int n_dim() const = 0;
   virtual std::string name() const = 0;
 
   virtual bool operator==(const IR_Symbol &that) const = 0;
 
   virtual bool operator!=(const IR_Symbol &that) const { return !(*this == that); }
 
-  virtual IR_Symbol *clone() const = 0;  /* shallow copy */
+  //! shallow copy
+  virtual IR_Symbol *clone() const = 0;
 
-  virtual bool isScalar() const { return false; } // default
-  virtual bool isArray() const { return false; } // default
-  virtual bool isPointer() const { return false; } // default
+  virtual bool isScalar() const { return false; }
+  virtual bool isArray() const { return false; }
+  virtual bool isPointer() const { return false; }
 
   //IR_SYMBOL_TYPE symtype; // base type: int, float, double, struct, .... typedef'd something
   //IR_SYMBOL_TYPE getDatatype() ; 
@@ -87,7 +95,6 @@ struct IR_ArraySymbol : public IR_Symbol {
   bool isArray() const { return true; }
 };
 
-
 struct IR_PointerSymbol : public IR_Symbol {
   virtual ~IR_PointerSymbol() {}
 
@@ -100,14 +107,18 @@ struct IR_PointerSymbol : public IR_Symbol {
   bool isPointer() const { return true; }
 };
 
-// Base abstract class for scalar and array references.  This is a
-// place holder for related code in IR code.
+
+/*!
+ * @brief Base abstract class for scalar and array references.
+ *
+ * This is a place holder for related code in IR code.
+ */
 struct IR_Ref {
   const IR_Code *ir_;
+  //! ir_ is not the responsibility of this object
+  virtual ~IR_Ref() { }
 
-  virtual ~IR_Ref() {/* ir_ is not the responsibility of this object */}
-
-  virtual int n_dim() const = 0; // IR_Ref
+  virtual int n_dim() const = 0;
   virtual bool is_write() const = 0;
 
   virtual std::string name() const = 0;
@@ -118,7 +129,8 @@ struct IR_Ref {
 
   virtual omega::CG_outputRepr *convert() = 0;
 
-  virtual IR_Ref *clone() const = 0;  /* shallow copy */
+  //! shallow copy
+  virtual IR_Ref *clone() const = 0;
   virtual void Dump() const {
     fprintf(stderr, "some IR_*Ref needs to implement Dump()\n");
     int *i = 0;
@@ -236,15 +248,17 @@ struct IR_PointerArrayRef : public IR_Ref {
 
 struct IR_Block;
 
-// Base abstract class for code structures.  This is a place holder
-// for the actual structure in the IR code.  However, in cases that
-// original source code may be transformed during loop initialization
-// such as converting a while loop to a for loop or reconstructing the
-// loop from low level IR code, the helper loop class (NOT
-// IMPLEMENTED) must contain the transformed code that needs to be
-// freed when out of service.
+//! Base abstract class for code structures.
+/*!
+ * This is a place holder for the actual structure in the IR code.
+ * However, in cases that original source code may be transformed during
+ * loop initialization such as converting a while loop to a for loop or
+ * reconstructing the loop from low level IR code, the helper loop class (NOT
+ * IMPLEMENTED) must contain the transformed code that needs to be
+ * freed when out of service.
+ */
 struct IR_Control {
-  const IR_Code *ir_; // hate this
+  const IR_Code *ir_;
 
   virtual ~IR_Control() {/* ir_ is not the responsibility of this object */}
 
@@ -306,16 +320,14 @@ struct IR_While : public IR_Control {
 };
 
 
-// Abstract class for compiler IR.
 // TODO made a lot of definition to pass instantiation for IR_clangCode
+//! Abstract class for compiler IR.
 class IR_Code {
 protected:
-  // the only data members in IR_Code are Omega classes
-  omega::CG_outputBuilder *ocg_;    // Omega Code Gen
+  omega::CG_outputBuilder *ocg_;
   omega::CG_outputRepr *init_code_;
   omega::CG_outputRepr *cleanup_code_;
 
-  // OK, I lied
   static int ir_pointer_counter;
   static int ir_array_counter;
 
@@ -338,8 +350,7 @@ public:
     return ir_array_counter - 1;
   }
 
-  // if all flavors of ir_code use chillAST internally ... 
-  chillAST_FunctionDecl *func_defn;     // the function we're modifying
+  chillAST_FunctionDecl *func_defn;     //!< the function we're modifying
   chillAST_FunctionDecl *GetChillFuncDefinition() { return func_defn; };
 
   IR_Code() {
@@ -355,8 +366,11 @@ public:
 
   omega::CG_outputRepr *init_code() { return init_code_; }
 
-  // memory_type is for differentiating the location of where the new memory is allocated.
-  // this is useful for processors with heterogeneous memory hierarchy.
+  /*!
+   * \param memory_type is for differentiating the location of
+   *    where the new memory is allocated. this is useful for
+   *    processors with heterogeneous memory hierarchy.
+   */
   virtual IR_ScalarSymbol *CreateScalarSymbol(const IR_Symbol *sym, int memory_type) = 0;
 
   virtual IR_ScalarSymbol *CreateScalarSymbol(IR_CONSTANT_TYPE type, int memory_type, std::string name = "") {
@@ -441,11 +455,15 @@ public:
     CHILL_ERROR("NOT IMPLEMENTED\n");
     return NULL;
   }
-
-  // Array references should be returned in their accessing order.
-  // e.g. s1: A[i] = A[i-1]
-  //      s2: B[C[i]] = D[i] + E[i]
-  // return A[i-1], A[i], D[i], E[i], C[i], B[C[i]] in this order.
+  /*!
+  * Array references should be returned in their accessing order.
+  *
+  * ~~~
+  * e.g. s1: A[i] = A[i-1]
+  *      s2: B[C[i]] = D[i] + E[i]
+  * return A[i-1], A[i], D[i], E[i], C[i], B[C[i]] in this order.
+  * ~~~
+  */
   virtual std::vector<IR_ArrayRef *> FindArrayRef(const omega::CG_outputRepr *repr) const = 0;
 
   virtual std::vector<IR_PointerArrayRef *> FindPointerArrayRef(const omega::CG_outputRepr *repr) const {
@@ -461,13 +479,15 @@ public:
     CHILL_ERROR("NOT IMPLEMENTED\n");
     return false;
   }
-
-  // If there is no sub structure interesting inside the block, return empty,
-  // so we know when to stop looking inside.
+  /*!
+   * If there is no sub structure interesting inside the block, return empty,
+   * so we know when to stop looking inside.
+   */
   virtual std::vector<IR_Control *> FindOneLevelControlStructure(const IR_Block *block) const = 0;
-
-  // All controls must be in the same block, at the same level and in
-  // contiguous lexical order as appeared in parameter vector.
+  /*!
+   * All controls must be in the same block, at the same level and in
+   * contiguous lexical order as appeared in parameter vector.
+   */
   virtual IR_Block *MergeNeighboringControlStructures(const std::vector<IR_Control *> &controls) const = 0;
 
   virtual IR_Block *GetCode() const = 0;
@@ -552,11 +572,7 @@ public:
     return NULL;
   }
 
-  //void Dump() { ocg_->Dump(); }; 
-  //---------------------------------------------------------------------------
-  // CC Omega code builder interface here
-
-  //---------------------------------------------------------------------------
+  //! Codegen Omega code builder interface
   omega::CG_outputBuilder *builder() const { return ocg_; }
 
 };

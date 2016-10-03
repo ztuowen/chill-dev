@@ -412,7 +412,7 @@ test_data_dependences(IR_Code *ir,
           // Manu:: check if the array references belong to the same statement
           // If yes, set the flag in the dependence vector
           //----------------------------------------------
-          if (DEP_DEBUG) {
+          CHILL_DEBUG_BEGIN
             std::cout << "Size of the dependence vector '" << a->name().c_str() << "'  -- " << dv.first.size() << "\n";
             std::cout << "------------ Printing dependence vector START ---------------\n";
 
@@ -446,7 +446,7 @@ test_data_dependences(IR_Code *ir,
               }
             }
             std::cout << "------------ Printing dependence vector END---------------\n";
-          }
+          CHILL_DEBUG_END
           checkReductionDependence(i, j, nestLeveli, lbound, ubound, ref2Stmt, rMap, dv, trMap, nrStmts);
           //----------------------------------------------
 
@@ -708,10 +708,10 @@ checkReductionDependence(int i, int j, int nestLeveli, omega::coef_t lbound[], o
     }
 
 //            if ((rMap.find(ref2Stmt[i])->second).size() == 3) {
-    if (DEP_DEBUG) {
+    CHILL_DEBUG_BEGIN
       std::cout << "lbounds: " << lbound[0] << ", " << lbound[1] << ", " << lbound[2] << "\n";
       std::cout << "ubounds: " << ubound[0] << ", " << ubound[1] << ", " << ubound[2] << "\n";
-    }
+    CHILL_DEBUG_END
     if (((rMap.find(ref2Stmt[i])->second).size() == 3) && (lbound[0] == lbound[1]) && (lbound[1] == lbound[2])
         && (ubound[0] == ubound[1]) && (ubound[1] == ubound[2])) {
 //              std::cout << "Manu:: All dependences present 1 \n";

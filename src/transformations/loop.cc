@@ -1002,8 +1002,7 @@ Loop::Loop(const IR_Control *control) {
   }
 
   // printing out stuff for debugging
-
-  if (DEP_DEBUG) {
+  CHILL_DEBUG_BEGIN
     std::cout << "STATEMENTS THAT CAN BE REDUCED: \n";
     for (int i = 0; i < canReduce.size(); i++) {
       std::cout << "------- " << canReduce[i] << " ------- "
@@ -1020,7 +1019,7 @@ Loop::Loop(const IR_Control *control) {
       else
         std::cout << "Unknown reduction type\n";
     }
-  }
+  CHILL_DEBUG_END
   // cleanup the IR tree
 
   fprintf(stderr, "init dumb transformation relations\n");

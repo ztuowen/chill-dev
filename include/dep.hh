@@ -6,6 +6,19 @@
 #include "ir_code.hh"
 #include "chill_error.hh"
 
+/*!
+ * \file
+ * \brief Data dependence vector and graph.
+ *
+ * All dependence vectors are normalized, i.e., the first non-zero distance
+ * must be positve. Thus the correct dependence meaning can be given based on
+ * source/destination pair's read/write type. Suppose for a dependence vector
+ * 1, 0~5, -3), we want to permute the first and the second dimension,
+ * the result would be two dependence vectors (0, 1, -3) and (1~5, 1, -3).
+ * All operations on dependence vectors are non-destructive, i.e., new
+ * dependence vectors are returned.
+ */
+
 enum DependenceType {
   DEP_W2R, DEP_R2W, DEP_W2W, DEP_R2R, DEP_CONTROL, DEP_UNKNOWN
 };
@@ -21,8 +34,8 @@ struct DependenceVector {
   bool from_same_stmt; // Manu
   bool is_reduction_cand; // Manu
 
-  bool is_reduction; // used to identify a class of flow dependence
-  // that can be broken
+  bool is_reduction; //!< used to identify a class of flow dependencies that can be broken
+
   std::vector<omega::coef_t> lbounds;
   std::vector<omega::coef_t> ubounds;
 
@@ -54,7 +67,7 @@ struct DependenceVector {
 
   bool has_been_carried_before(int dim) const;
 
-  // the following functions will be cleaned up or removed later
+  // TODO the following functions will be cleaned up or removed later
   bool isZero() const;
 
   bool isPositive() const;

@@ -15,24 +15,44 @@
 
 #include "stencil.hh"
 
+/*!
+ * \file
+ * \brief Core loop transformation functionality.
+ *
+ * "level" (starting from 1) means loop level and it corresponds to "dim"
+ * (starting from 0) in transformed iteration space [c_1,l_1,c_2,l_2,....,
+ * c_n,l_n,c_(n+1)], e.g., l_2 is loop level 2 in generated code, dim 3
+ * in transformed iteration space, and variable 4 in Omega relation.
+ * All c's are constant numbers only and they will not show up as actual loops.
+ *
+ * Formula:
+ *
+ * ~~~
+ *   dim = 2*level - 1
+ *   var = dim + 1
+ * ~~~
+ */
 
 class IR_Code;
 
 enum TilingMethodType { StridedTile, CountedTile };
 enum LoopLevelType { LoopLevelOriginal, LoopLevelTile, LoopLevelUnknown };
 
-
-// Describes properties of each loop level of a statement. "payload"
-// for LoopLevelOriginal means iteration space dimension, for
-// LoopLevelTile means tiled loop level.  Special value -1 for
-// LoopLevelTile means purely derived loop. For dependence dimension
-// payloads, the values must be in an increasing order.
-// "parallel_level" will be used by code generation to support
-// multi-level parallelization (default 0 means sequential loop under
-// the current parallelization level).
+//! Describes properties of each loop level of a statement.
 struct LoopLevel {
   LoopLevelType type;
-  int payload;  
+  /*!
+   * For LoopLevelOriginal means iteration space dimension
+   * For LoopLevelTile means tiled loop level. Special value -1 for
+   * LoopLevelTile means purely derived loop. For dependence dimension
+   * payloads, the values must be in an increasing order.
+   */
+  int payload;
+  /*!
+   * Used by code generation to support
+   * multi-level parallelization (default 0 means sequential loop under
+   * the current parallelization level).
+   */
   int parallel_level;
   bool segreducible;
   std::string segment_descriptor;
@@ -46,14 +66,15 @@ struct Statement {
   std::vector<LoopLevel> loop_level;
   ir_tree_node *ir_stmt_node;
   bool has_inspector;
-  int reduction; // Manu:: 0 == reduction not possible, 1 == reduction possible, 2 == reduction with some processing
+  /*!
+   * @brief Whether reduction is possible
+   *
+   * 0 == reduction not possible, 1 == reduction possible, 2 == reduction with some processing
+   */
+  int reduction;
   IR_OPERATION_TYPE reductionOp; // Manu
 
   class stencilInfo *statementStencil;
-
-  //protonu--temporarily putting this back here
-  //omega::Tuple<int> nonSplitLevels;
-  //end--protonu.
 };
 
 
@@ -118,7 +139,6 @@ public:
   ~Loop();
   
   omega::CG_outputRepr *getCode(int effort = 1) const; // TODO was 1
-  //chillAST_Node* getCode(int effort, std::set<int> stmts) const;
 
   void stencilASEPadded(int stmt_num); 
   
@@ -133,15 +153,12 @@ public:
   void dump() const;
   
   std::vector<std::set <int > > sort_by_same_loops(std::set<int > active, int level);
-  //
-  // legacy unimodular transformations for perfectly nested loops
-  // e.g. M*(i,j)^T = (i',j')^T or M*(i,j,1)^T = (i',j')^T
-  //
+  //! legacy unimodular transformations for perfectly nested loops
+  /*!
+   * e.g. \f$M*(i,j)^T = (i',j')^T or M*(i,j,1)^T = (i',j')^T\f$
+   */
   bool nonsingular(const std::vector<std::vector<int> > &M);
   
-  //
-  // high-level loop transformations
-  //
   void permute(const std::set<int> &active, const std::vector<int> &pi);
   void permute(int stmt_num, int level, const std::vector<int> &pi);
   void permute(const std::vector<int> &pi);
@@ -150,14 +167,43 @@ public:
   void tile(int stmt_num, int level, int tile_size, int outer_level = 1, TilingMethodType method = StridedTile, int alignment_offset = 0, int alignment_multiple = 1);
   std::set<int> split(int stmt_num, int level, const omega::Relation &cond);
   std::set<int> unroll(int stmt_num, int level, int unroll_amount, std::vector< std::vector<std::string> >idxNames= std::vector< std::vector<std::string> >(), int cleanup_split_level = 0);
-  
+
+  //! Datacopy function by reffering arrays by numbers
+  /*!
+   * for example
+   * ~~~
+   * A[i] = A[i-1] + B[i];
+   * ~~~
+   * parameter array_ref_num=[0,2] means to copy data touched by A[i-1] and A[i]
+   *
+   * @param array_ref_nums
+   * @param level
+   * @param allow_extra_read
+   * @param fastest_changing_dimension
+   * @param padding_stride
+   * @param padding_alignment
+   * @param memory_type
+   * @return
+   */
   bool datacopy(const std::vector<std::pair<int, std::vector<int> > > &array_ref_nums, int level, bool allow_extra_read = false, int fastest_changing_dimension = -1, int padding_stride = 1, int padding_alignment = 4, int memory_type = 0);
+  //! Datacopy function by reffering arrays by name
+  /*!
+   * parameter array_name=A means to copy data touched by A[i-1] and A[i]
+   * @param stmt_num
+   * @param level
+   * @param array_name
+   * @param allow_extra_read
+   * @param fastest_changing_dimension
+   * @param padding_stride
+   * @param padding_alignment
+   * @param memory_type
+   * @return
+   */
   bool datacopy(int stmt_num, int level, const std::string &array_name, bool allow_extra_read = false, int fastest_changing_dimension = -1, int padding_stride = 1, int padding_alignment = 4, int memory_type = 0);
   bool datacopy_privatized(int stmt_num, int level, const std::string &array_name, const std::vector<int> &privatized_levels, bool allow_extra_read = false, int fastest_changing_dimension = -1, int padding_stride = 1, int padding_alignment = 1, int memory_type = 0);
   bool datacopy_privatized(const std::vector<std::pair<int, std::vector<int> > > &array_ref_nums, int level, const std::vector<int> &privatized_levels, bool allow_extra_read = false, int fastest_changing_dimension = -1, int padding_stride = 1, int padding_alignment = 1, int memory_type = 0);
   bool datacopy_privatized(const std::vector<std::pair<int, std::vector<IR_ArrayRef *> > > &stmt_refs, int level, const std::vector<int> &privatized_levels, bool allow_extra_read, int fastest_changing_dimension, int padding_stride, int padding_alignment, int memory_type = 0);
-  //std::set<int> scalar_replacement_inner(int stmt_num);
-  bool find_stencil_shape( int stmt_num ); 
+  bool find_stencil_shape( int stmt_num );
   
   
   Graph<std::set<int>, bool> construct_induced_graph_at_level(std::vector<std::set<int> > s, DependenceGraph dep, int dep_dim);
@@ -170,9 +216,6 @@ public:
   void scale(const std::set<int> &stmt_nums, int level, int scale_amount);
   void reverse(const std::set<int> &stmt_nums, int level);
   void peel(int stmt_num, int level, int peel_amount = 1);
-  //
-  // more fancy loop transformations
-  //
   void modular_shift(int stmt_num, int level, int shift_amount) {}
   void diagonal_map(int stmt_num, const std::pair<int, int> &levels, int offset) {}
   void modular_partition(int stmt_num, int level, int stride) {}
@@ -183,9 +226,6 @@ public:
   
 
 
-  //
-  // derived loop transformations
-  //
   void shift_to(int stmt_num, int level, int absolute_position);
   std::set<int> unroll_extra(int stmt_num, int level, int unroll_amount, int cleanup_split_level = 0);
   bool is_dependence_valid_based_on_lex_order(int i, int j,
@@ -193,7 +233,6 @@ public:
   void split_with_alignment(int stmt_num, int level, int alignment,
       int direction=0);
 
-  // Manu:: reduction operation
   void reduce(int stmt_num, std::vector<int> &level, int param, std::string func_name, std::vector<int> &seq_levels, std::vector<int> cudaized_levels = std::vector<int>(), int bound_level = -1);
   void scalar_expand(int stmt_num, const std::vector<int> &levels, std::string arrName, int memory_type =0, int padding_alignment=0, int assign_then_accumulate = 1, int padding_stride = 0);
   void ELLify(int stmt_num, std::vector<std::string> arrays_to_pad, int pad_to, bool dense_pad = false, std::string dense_pad_pos_array = "");
@@ -203,11 +242,7 @@ public:
   void set_array_size(std::string name, int size );
   omega::CG_outputRepr * iegen_parser(std::string &str, std::vector<std::string> &index_names);
 
-  //
-  // other public operations
-  //
   void pragma(int stmt_num, int level, const std::string &pragmaText);
   void prefetch(int stmt_num, int level, const std::string &arrName, int hint);
-  //void prefetch(int stmt_num, int level, const std::string &arrName, const std::string &indexName, int offset, int hint);
 };
 #endif

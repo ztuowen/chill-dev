@@ -26,9 +26,6 @@ struct CG_result {
   CG_outputRepr *printRepr(CG_outputBuilder *ocg, const std::vector<CG_outputRepr *> &stmts, std::vector<std::map<std::string,std::vector<CG_outputRepr *> > >uninterpreted_symbols, bool printString = false) const;
   std::string printString(std::vector<std::map<std::string, std::vector<CG_outputRepr *> > >uninterpreted_symbols = std::vector<std::map<std::string, std::vector<CG_outputRepr *> > >()) const;
 
-  //virtual CG_outputRepr *printRepr(int indent, CG_outputBuilder *ocg, const std::vector<CG_outputRepr *> &stmts, const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly) const = 0;
-  //CG_outputRepr *printRepr(CG_outputBuilder *ocg, const std::vector<CG_outputRepr *> &stmts) const;
-  //std::string printString() const;
   int num_level() const;
   virtual CG_result *clone() const = 0;
   virtual void dump(int indent) const {}
@@ -57,7 +54,6 @@ struct CG_split: public CG_result {
   Relation hoistGuard();
   void removeGuard(const Relation &guard);
   CG_outputRepr *printRepr(int indent, CG_outputBuilder *ocg, const std::vector<CG_outputRepr *> &stmts, const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly, std::vector<std::map<std::string, std::vector<CG_outputRepr *> > > unin, bool printString=false) const;
-  //  CG_outputRepr *printRepr(int indent, CG_outputBuilder *ocg, const std::vector<CG_outputRepr *> &stmts, const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly) const;
   CG_result *clone() const;
   void dump(int indent) const;
 
@@ -92,9 +88,6 @@ struct CG_loop: public CG_result {
   void removeGuard(const Relation &guard);
   CG_outputRepr *printRepr(int indent, CG_outputBuilder *ocg, const std::vector<CG_outputRepr *> &stmts, const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly,std::vector<std::map<std::string, std::vector<CG_outputRepr *> > >unin, bool printString = false) const;
   CG_outputRepr *printRepr(bool do_print_guard, int indent, CG_outputBuilder *ocg, const std::vector<CG_outputRepr *> &stmts, const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly, std::vector<std::map<std::string, std::vector<CG_outputRepr *> > > unin, bool printString = false) const;
-
-  //  CG_outputRepr *printRepr(int indent, CG_outputBuilder *ocg, const std::vector<CG_outputRepr *> &stmts, const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly) const;
-  //CG_outputRepr *printRepr(bool do_print_guard, int indent, CG_outputBuilder *ocg, const std::vector<CG_outputRepr *> &stmts, const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly) const;
   CG_result *clone() const;
   void dump(int indent) const;
 };
@@ -117,7 +110,6 @@ struct CG_leaf: public CG_result {
   Relation hoistGuard();
   void removeGuard(const Relation &guard);
   CG_outputRepr *printRepr(int indent, CG_outputBuilder *ocg, const std::vector<CG_outputRepr *> &stmts, const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly, std::vector<std::map<std::string, std::vector<CG_outputRepr *> > > unin, bool printString = false) const;
-  //  CG_outputRepr *printRepr(int indent, CG_outputBuilder *ocg, const std::vector<CG_outputRepr *> &stmts, const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly) const;
   CG_result *clone() const;
   void dump(int indent) const;
 };

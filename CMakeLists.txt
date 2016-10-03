@@ -67,7 +67,7 @@ set(clang_libs
 
 set(COMMON_FLAGS "-DCHILL_BUILD_DATE=\"${build_date}\" -DCHILL_BUILD_VERSION=\"\\\"${CHILL_VERSION}\\\"\"")
 
-set(CMAKE_CXX_FLAGS "-std=c++11 ${COMMON_FLAGS} ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-std=gnu++11 ${COMMON_FLAGS} ${CMAKE_CXX_FLAGS}")
 
 if (DEFINED OMEGAHOME)
     link_directories(${OMEGAHOME}/lib)
