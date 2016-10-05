@@ -140,494 +140,13 @@ SourceManager *globalSRCMAN;  // ugly. shame.
 
 char *splitTypeInfo(char *underlyingtype);
 
-void printsourceline(const char *filename, int line);
-
-void printlines(SourceLocation &S, SourceLocation &E, SourceManager *SRCMAN);
-
-void PrintBinaryOperator(Stmt *s, SourceManager *SRCMAN, int level);
-
-void PrintDeclStmt(Stmt *s, SourceManager *SRCMAN, int level);
-
-void PrintALoop(Stmt *L, SourceManager *SRCMAN, int level);
-
-void PrintAUnaryOperator(Stmt *s, SourceManager *SRCMAN, int level);
-
-void PrintAnIfStmt(Stmt *s, SourceManager *SRCMAN, int level);
-
-void PrintCompoundStmt(Stmt *s, SourceManager *SRCMAN, int level);
-
-void PrintDeclRefExpr(Stmt *s, SourceManager *SRCMAN, int level);
-
-void PrintImplicitCastExpr(Stmt *s, SourceManager *SRCMAN, int level);
-
-void PrintReturnStmt(Stmt *s, SourceManager *SRCMAN, int level);
-
-void PrintStmt(Stmt *s, SourceManager *SRCMAN, int level);
-
-void PrintAnIntegerLiteral(Stmt *I);
-
-void PrintAFloatingLiteral(Stmt *s);
-
-void PrintFunctionDecl(FunctionDecl *D, SourceManager *SRCMAN, int level);
-
-void PrintTypeDefDecl(TypedefDecl *D, SourceManager *SRCMAN, int level);
-
-void PrintVarDecl(VarDecl *D, SourceManager *SRCMAN, int level);
-
 chillAST_Node* unwrap(chillAST_NodeList* nl){
   chillAST_Node* n = (*nl)[0];
   delete nl;
   return n;
 }
 
-void printlines(SourceLocation &S, SourceLocation &E, SourceManager *SRCMAN) {
-  unsigned int startlineno = SRCMAN->getPresumedLineNumber(S);
-  unsigned int endlineno = SRCMAN->getPresumedLineNumber(E);
-  const char *filename = SRCMAN->getBufferName(S);
-  fprintf(stderr, "\n");
-  for (int l = startlineno; l <= endlineno; l++) printsourceline(filename, l);
-}
-
-
-void Indent(int level) {
-  for (int i = 0; i < level; i++) fprintf(stderr, "    ");
-}
-
-
-// really slow and bad. but I'm debugging
-void printsourceline(const char *filename, int line) {
-  FILE *fp = fopen(filename, "r");
-
-  // Now read lines up to and including the line we want.
-  char buf[10240];
-  int l = 0;
-  while (l < line) {
-    if (fgets(buf, sizeof(buf), fp))
-      ++l;
-    else
-      break;
-  }
-  fclose(fp);
-
-  fprintf(stderr, "*  %s", buf);
-}
-
-
-void PrintBinaryOperator(Stmt *s, SourceManager *SRCMAN, int level) {  // SOMETIMES SHOULD HAVE ; + return
-  //rintf(stderr, "\nBinaryOperator(%d) ", level); 
-  BinaryOperator *b = cast<BinaryOperator>(s);
-
-  BinaryOperator::Opcode op = b->getOpcode();
-  Expr *lhs = b->getLHS();
-  Expr *rhs = b->getRHS();
-
-  //fprintf(stderr, "binaryoperator lhs has type %s\n",   lhs->getStmtClassName());
-  //fprintf(stderr, "binaryoperator rhs has type %s\n\n", rhs->getStmtClassName()); 
-
-  PrintStmt(lhs, SRCMAN, level + 1);
-  fprintf(stderr, " %s ", binops[op].c_str());
-  PrintStmt(rhs, SRCMAN, level + 1);
-  if (level == 1) fprintf(stderr, ";\n");
-}
-
-
-void PrintDeclStmt(Stmt *s, SourceManager *SRCMAN, int level) {
-  fprintf(stderr, "\nDeclaration Statement(%d)", level);
-  DeclStmt *D = cast<DeclStmt>(s);
-
-  //QualType QT = D->getType();
-  //string TypeStr = QT.getAsString();
-  //fprintf(stderr, "type %s\n", TypeStr,c_str());
-
-  //SourceLocation S = D->getStartLoc();
-  //SourceLocation E = D->getEndLoc();
-  //printlines(S, E, SRCMAN);
-
-  if (D->isSingleDecl()) {
-    fprintf(stderr, "this is a single definition\n");
-    Decl *d = D->getSingleDecl();
-  } else {
-    fprintf(stderr, "this is NOT a single definition\n");
-    DeclGroupRef dg = D->getDeclGroup();
-  }
-
-  for (DeclStmt::decl_iterator DI = D->decl_begin(), DE = D->decl_end(); DI != DE; ++DI) {
-    //fprintf(stderr, "a def\n");
-    Decl *d = *DI;
-    //fprintf(stderr, "\nstatement of type %s\n", d->getStmtClassName());
-    //std::cout << (void *) d << "?";
-    if (ValueDecl *VD = dyn_cast<ValueDecl>(d)) {
-      if (VarDecl *V = dyn_cast<VarDecl>(VD)) {
-        if (V->getStorageClass() != SC_None) {
-          fprintf(stderr, "%s ", VarDecl::getStorageClassSpecifierString(V->getStorageClass()));
-        }
-        // else fprintf(stderr, "no storage class? ");
-
-        QualType T = V->getType();
-        string TypeStr = T.getAsString();
-        std::string Name = VD->getNameAsString();
-        //VD->getType().getAsStringInternal(Name,
-        //                                  PrintingPolicy(VD->getASTContext().getLangOpts()));
-        fprintf(stderr, "%s %s ", TypeStr.c_str(), Name.c_str());
-        // If this is a vardecl with an initializer, emit it.
-        if (Expr *E = V->getInit()) {
-          fprintf(stderr, " = ");
-
-          Stmt *s = dyn_cast<Stmt>(E);
-          PrintStmt(s, SRCMAN, level + 1);
-          //fprintf(stderr, ";\n");
-
-        }
-
-      }
-
-    }
-    if (level <= 1) fprintf(stderr, ";\n");           // TODO wrong
-
-  } // for each actual declaration
-}
-
-
-void PrintAFloatingLiteral(Stmt *s) {
-  FloatingLiteral *F = dyn_cast<FloatingLiteral>(s);
-  fprintf(stderr, "%f", F->getValueAsApproximateDouble()); // TODO approximate? 
-}
-
-
-void PrintALoop(Stmt *L, SourceManager *SRCMAN, int level) {
-  //fprintf(stderr, "\nA LOOP L=0x%x  SRCMAN 0x%x", L, &SRCMAN); 
-  ForStmt *ForStatement = cast<ForStmt>(L);
-
-  SourceLocation srcloc = ForStatement->getForLoc();
-  unsigned int lineno = SRCMAN->getPresumedLineNumber(srcloc);
-  const char *filename = SRCMAN->getBufferName(srcloc);
-  //fprintf(stderr, " in file %s  at line %d   ", filename, lineno); 
-  //printsourceline( filename, lineno); 
-
-  Stmt *init = ForStatement->getInit();
-  Expr *cond = ForStatement->getCond();
-  Expr *incr = ForStatement->getInc();
-  Stmt *body = ForStatement->getBody();
-
-  fprintf(stderr, "for (");
-  PrintStmt(init, SRCMAN, 0);
-  fprintf(stderr, "; ");
-  PrintStmt(cond, SRCMAN, 0);
-  fprintf(stderr, "; ");
-  PrintStmt(incr, SRCMAN, 0);
-  fprintf(stderr, " )\n");
-  Indent(level);
-  fprintf(stderr, "{\n");
-  PrintStmt(body, SRCMAN, level + 1);
-  fprintf(stderr, "}\n\n");
-
-}
-
-
-void PrintAUnaryOperator(Stmt *s, SourceManager *SRCMAN, int level) {
-  //fprintf(stderr, "UnaryOperator  "); 
-  UnaryOperator *u = cast<UnaryOperator>(s);
-
-  const char *op = unops[u->getOpcode()].c_str();
-
-  if (u->isPrefix()) {
-    fprintf(stderr, "%s", op);
-  }
-
-  PrintStmt(u->getSubExpr(), SRCMAN, level + 1);
-
-  if (u->isPostfix()) {
-    fprintf(stderr, "%s", op);
-  }
-}
-
-
-void PrintAnIfStmt(Stmt *s, SourceManager *SRCMAN, int level) {
-  //fprintf(stderr, "an IF statement\n"); 
-  //    SourceLocation S = s->getLocStart();
-  //    SourceLocation E = s->getLocEnd();
-  //    printlines( S, E, SRCMAN);
-
-  IfStmt *IfStatement = cast<IfStmt>(s);
-
-  Stmt *Cond = IfStatement->getCond();
-  Stmt *Then = IfStatement->getThen();
-  Stmt *Else = IfStatement->getElse();
-
-  fprintf(stderr, "if (");
-  PrintStmt(Cond, SRCMAN, level + 1);
-  fprintf(stderr, ") {\n");
-  PrintStmt(Then, SRCMAN, level + 1);
-  fprintf(stderr, "\n}\nelse\n{\n");
-  PrintStmt(Else, SRCMAN, level + 1);
-  fprintf(stderr, "\n}\n\n");
-}
-
-
-void PrintAnIntegerLiteral(Stmt *s) {
-  IntegerLiteral *I = dyn_cast<IntegerLiteral>(s);
-  bool isSigned = I->getType()->isSignedIntegerType();
-  fprintf(stderr, "%s", I->getValue().toString(10, isSigned).c_str());
-}
-
-
-void PrintArraySubscriptExpr(Stmt *s, SourceManager *SRCMAN, int level) {
-  ArraySubscriptExpr *ASE = dyn_cast<ArraySubscriptExpr>(s);
-
-  Expr *Base = ASE->getBase();
-  Expr *Index = ASE->getIdx();
-
-  PrintStmt(Base, SRCMAN, level + 1);
-  fprintf(stderr, "[");
-  PrintStmt(Index, SRCMAN, level + 1);
-  fprintf(stderr, "]");
-}
-
-
-void PrintCompoundStmt(Stmt *s, SourceManager *SRCMAN, int level) {
-  //fprintf(stderr, "\nCompoundStmt(%d)", level);
-  CompoundStmt *cs = dyn_cast<CompoundStmt>(s);
-  int numchildren = cs->size();
-  //fprintf(stderr, "CompoundStmt has %d children\n", numchildren);
-
-
-  CHILL_DEBUG_BEGIN
-    for (Stmt::child_iterator I = cs->child_begin(); I!=cs->child_end(); ++I) {
-      const char *classname =  I->getStmtClassName();
-      if (!strcmp(classname, "BinaryOperator")) {
-        BinaryOperator *b = cast<BinaryOperator>(*I);
-        BinaryOperator::Opcode op = b->getOpcode();
-        if (op == BO_Assign)  {
-          fprintf(stderr, "compound statement has child of type ASSIGNMENT STATEMENT  ");
-          SourceLocation S = I->getLocStart();
-          SourceLocation E = I->getLocEnd();
-          unsigned int startlineno = SRCMAN->getPresumedLineNumber( S );
-          unsigned int   endlineno = SRCMAN->getPresumedLineNumber( E );
-          fprintf(stderr, "(%d-%d)\n", startlineno, endlineno );
-        }
-        else
-          fprintf(stderr, "compound statement has child of type %s\n", I->getStmtClassName());
-      }
-      else
-        fprintf(stderr, "compound statement has child of type %s\n", I->getStmtClassName());
-    }
-  CHILL_DEBUG_END
-
-
-  for (auto I = cs->child_begin(); I != cs->child_end(); ++I) {
-    Stmt *child = *I;
-    PrintStmt(child, SRCMAN, level);   // NOTE not level + 1
-
-    fprintf(stderr, "\n"); // ***\n\n");
-  }
-
-}
-
-
-void PrintDeclRefExpr(Stmt *s, SourceManager *SRCMAN, int level) {
-  DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(s);
-
-  //if (NestedNameSpecifier *Qualifier = DRE->getQualifier())
-  //  Qualifier->print( raw_ostream nonstandard of course ); 
-  DeclarationNameInfo DNI = DRE->getNameInfo();
-  DeclarationName DN = DNI.getName();
-  fprintf(stderr, "%s", DN.getAsString().c_str());
-
-}
-
-
-void PrintFunctionDecl(FunctionDecl *D, SourceManager *SRCMAN, int level) {
-  //rintf(stderr, "\nFunctionDecl(%d)  %s\n", level,  D->getNameInfo().getAsString().c_str()); 
-  // Type name as string
-  QualType QT = D->getReturnType();
-  string TypeStr = QT.getAsString();
-
-  // Function name
-  DeclarationName DeclName = D->getNameInfo().getName();
-  string FuncName = DeclName.getAsString();
-  //fprintf(stderr, "function %s has type %s ", FuncName.c_str(),  TypeStr.c_str()); 
-
-
-  fprintf(stderr, "\n%s %s(", TypeStr.c_str(), FuncName.c_str());
-
-  int numparams = D->getNumParams();
-  //fprintf(stderr, "and %d parameters\n", numparams);
-  for (int i = 0; i < numparams; i++) {
-    if (i) fprintf(stderr, ", ");
-    ParmVarDecl *clangVardecl = D->getParamDecl(i);
-
-    // from  DeclPrinter::VisitVarDecl(VarDecl *D)
-    StorageClass SCAsWritten = clangVardecl->getStorageClass();
-    if (SCAsWritten != SC_None) {
-      fprintf(stderr, "%s ", VarDecl::getStorageClassSpecifierString(SCAsWritten));
-    }
-    //else fprintf(stderr, "(no storage class?) ");
-
-    QualType T = clangVardecl->getType();
-    if (ParmVarDecl *Parm = dyn_cast<ParmVarDecl>(clangVardecl))
-      T = Parm->getOriginalType();
-
-    string Name = clangVardecl->getName();
-    char *td = strdup(T.getAsString().c_str());
-    fprintf(stderr, "td = '%s'\n", td);
-    char *arraypart = splitTypeInfo(td);
-    fprintf(stderr, "%s %s%s ", td, Name.c_str(), arraypart);
-
-  }
-
-  fprintf(stderr, ")\n{\n"); // beginning of function body 
-
-  Stmt *body = D->getBody();
-  PrintStmt(body, SRCMAN, level + 1);
-  fprintf(stderr, "}\n\n");   // end of function body
-}
-
-
-void PrintImplicitCastExpr(Stmt *s, SourceManager *SRCMAN, int level) {
-  ImplicitCastExpr *ICE = dyn_cast<ImplicitCastExpr>(s);
-  PrintStmt(ICE->getSubExpr(), SRCMAN, level + 1);
-}
-
-
-void PrintReturnStmt(Stmt *s, SourceManager *SRCMAN, int level) {
-  ReturnStmt *r = dyn_cast<ReturnStmt>(s);
-
-  fprintf(stderr, "return");
-  if (r->getRetValue()) {
-    fprintf(stderr, " ");
-    PrintStmt(r->getRetValue(), SRCMAN, level + 1);
-  }
-  fprintf(stderr, ";\n");
-}
-
-
-void PrintStmt(Stmt *s, SourceManager *SRCMAN, int level) {
-  //fprintf(stderr, "\nprint statement 0x%x of type %s\n", s, s->getStmtClassName()); 
-
-
-  //fprintf(stderr, "*"); 
-  //SourceLocation srcloc = s->getStartLoc();
-  //unsigned int lineno = SRCMAN->getPresumedLineNumber( srcloc ); 
-  //const char *filename = SRCMAN->getBufferName( srcloc );
-
-  //StmtClass getStmtClass() 
-  if (isa<DeclStmt>(s)) {
-    PrintDeclStmt(s, SRCMAN, level);
-  } else if (isa<FloatingLiteral>(s)) {
-    PrintAFloatingLiteral(s);
-  } else if (isa<IntegerLiteral>(s)) {
-    PrintAnIntegerLiteral(s);
-  } else if (isa<UnaryOperator>(s)) {
-    PrintAUnaryOperator(s, SRCMAN, level);
-  } else if (isa<BinaryOperator>(s)) {
-    PrintBinaryOperator(s, SRCMAN, level);
-  } else if (isa<ForStmt>(s)) {
-    PrintALoop(s, SRCMAN, level);
-  } else if (isa<IfStmt>(s)) {
-    PrintAnIfStmt(s, SRCMAN, level);
-  } else if (isa<CompoundStmt>(s)) {
-    PrintCompoundStmt(s, SRCMAN, level);
-  } else if (isa<ImplicitCastExpr>(s)) {
-    PrintImplicitCastExpr(s, SRCMAN, level);
-  } else if (isa<DeclRefExpr>(s)) {
-    PrintDeclRefExpr(s, SRCMAN, level);
-  } else if (isa<ArraySubscriptExpr>(s)) {
-    PrintArraySubscriptExpr(s, SRCMAN, level);
-  } else if (isa<ReturnStmt>(s)) {
-    PrintReturnStmt(s, SRCMAN, level);
-  } else {
-    fprintf(stderr, "\nPrintStmt() UNHANDLED statement of type %s\n", s->getStmtClassName());
-    exit(-1);
-  }
-  //int numchildren=0;
-  //for (Stmt::child_range I = s->children(); I; ++I, numchildren++) ;
-  //if (numchildren) fprintf(stderr, "has %d children\n", numchildren);
-  //if (numchildren) {
-  //  for (Stmt::child_range I = s->children(); I; ++I
-  //}
-}
-
-
-void PrintTranslationUnit(TranslationUnitDecl *TUD, ASTContext &CTX) {
-  // TUD derived from Decl and DeclContext
-  static DeclContext *DC = TUD->castToDeclContext(TUD);
-  //SourceManager  SM =  CTX.getSourceManager();
-
-  for (DeclContext::decl_iterator DI = DC->decls_begin(), DE = DC->decls_end(); DI != DE; ++DI) {
-    Decl *D = *DI;
-
-    if (isa<FunctionDecl>(D)) { //fprintf(stderr, "FunctionDecl\n");
-      PrintFunctionDecl(dyn_cast<FunctionDecl>(D), &CTX.getSourceManager(), 0);
-    } else if (isa<VarDecl>(D)) { //fprintf(stderr, "VarDecl\n");
-      PrintVarDecl(dyn_cast<VarDecl>(D), &CTX.getSourceManager(), 0);
-    } else if (isa<TypedefDecl>(D)) { //fprintf(stderr, "TypedefDecl\n");
-      PrintTypeDefDecl(dyn_cast<TypedefDecl>(D), &CTX.getSourceManager(), 0);
-    } else if (isa<TypeAliasDecl>(D)) {
-      fprintf(stderr, "TypeAliasDecl\n");
-    } else {
-      fprintf(stderr, "\na declaration of type %s (%d) which I have no idea how to handle\n", D->getDeclKindName(),
-              D->getKind());
-      exit(-1);
-    }
-
-    //else if (isa<TypedefNameDecl>(D)) { fprintf(stderr, "TypedefNameDecl\n");}
-  }
-}
-
-
-void PrintTypeDefDecl(TypedefDecl *D, SourceManager *SRCMAN, int level) {
-
-  /* internal typedefs do not have a source file and this will die!
-  SourceLocation S = D->getLocStart();  // NOT getStartLoc(), that's class DeclStmt
-  SourceLocation E = D->getLocEnd();
-  unsigned int startlineno = SRCMAN->getPresumedLineNumber( S ); 
-  unsigned int   endlineno = SRCMAN->getPresumedLineNumber( E ); 
-  const char *filename = SRCMAN-> etBufferName( S );
-  fprintf(stderr, " in file %s  at lines %d-%d", filename, startlineno, endlineno); 
-  for (int l=startlineno; l<= endlineno; l++) printsourceline( filename, l);
-  */
-
-  // arrays suck
-  char *td = strdup(D->getUnderlyingType().getAsString().c_str());
-  //fprintf(stderr, "td = '%s'\n", td); 
-  char *arraypart = splitTypeInfo(td);
-  fprintf(stderr, "typedef %s %s%s;\n", td, D->getName().str().c_str(), arraypart);
-
-  free(td);
-  free(arraypart);
-}
-
-
-void PrintVarDecl(VarDecl *D, SourceManager *SRCMAN, int level) {
-  // arrays suck
-  char *td = strdup(D->getType().getAsString().c_str());  // leak
-  //fprintf(stderr, "td = '%s'\n", td); 
-  char *arraypart = splitTypeInfo(td);
-  fprintf(stderr, "%s %s%s", td, D->getName().str().c_str(), arraypart);
-
-  Expr *Init = D->getInit();
-  if (Init) {
-    //fprintf(stderr," = (TODO)");
-    PrintStmt(Init, SRCMAN, level + 1);
-  }
-  fprintf(stderr, ";\n");
-
-  free(td);
-  free(arraypart);
-} //PrintVarDecl
-
-
-
-
-
-
-
-
 chillAST_NodeList* ConvertVarDecl(VarDecl *D) {
-  //fprintf(stderr, "\nConvertVarDecl()\n"); 
-  //fprintf(stderr, "Decl has type %s\n", D->getDeclKindName()); 
-  //PrintVarDecl( D, globalSRCMAN, 0 );
-
   bool isParm = false;
 
   QualType T0 = D->getType();
@@ -637,39 +156,14 @@ chillAST_NodeList* ConvertVarDecl(VarDecl *D) {
     isParm = true;
   }
 
-  // arrays suck
   char *vartype = strdup(T.getAsString().c_str());
-  //fprintf(stderr, "vartype = '%s'   T0  '%s\n", vartype, T0.getAsString().c_str() ); 
   char *arraypart = splitTypeInfo(vartype);
-  //fprintf(stderr, "arraypart = '%s'\n", arraypart);
-
 
   char *varname = strdup(D->getName().str().c_str());
-  //fprintf(stderr, "VarDecl (clang 0x%x) for %s %s%s\n", D, vartype,  varname, arraypart);
 
   chillAST_VarDecl *chillVD = new chillAST_VarDecl(vartype, varname, arraypart, (void *) D);
 
   chillVD->isAParameter = isParm;
-  //fprintf(stderr, "\nthis is the vardecl\n"); 
-  //chillVD->print();  printf("\n\n"); fflush(stdout); 
-
-  //clang::QualType qtyp = D->getType(); 
-  //clang::Expr *e = D->getInit();
-  //fprintf(stderr, "e 0x%x\n", e); 
-
-  //if (qtyp->isPointerType()) { 
-  //  fprintf(stderr, "pointer type\n"); 
-  //  clang::QualType ptyp = qtyp->getPointeeType(); 
-  //  fprintf(stderr, "%s\n", ptyp.getAsString().c_str());  
-  //} 
-
-  //if (qtyp->isArrayType()) fprintf(stderr, "Array type\n"); 
-  //if (qtyp->isConstantArrayType()) fprintf(stderr, "constant array type\n"); 
-
-  //const clang::Type *typ = qtyp.getTypePtr(); 
-  //clang::Expr *e = ((clang::VariableArrayType *)typ)->getSizeExpr();
-  //e->dump(); 
-
 
   int numdim = 0;
   chillVD->knownArraySizes = true;
@@ -679,7 +173,6 @@ chillAST_NodeList* ConvertVarDecl(VarDecl *D) {
   // note: vartype here, arraypart in next code..    is that right?
   if (index(vartype, '*')) {
     for (int i = 0; i < strlen(vartype); i++) if (vartype[i] == '*') numdim++;
-    //fprintf(stderr, "numd %d\n", numd);
     chillVD->numdimensions = numdim;
   }
 
@@ -688,8 +181,6 @@ chillAST_NodeList* ConvertVarDecl(VarDecl *D) {
 
     int len = strlen(arraypart);
     for (int i = 0; i < len; i++) if (dupe[i] == '[') numdim++;
-
-    //fprintf(stderr, "numdim %d\n", numdim);
 
     chillVD->numdimensions = numdim;
     int *as = (int *) malloc(sizeof(int *) * numdim);
@@ -701,25 +192,15 @@ chillAST_NodeList* ConvertVarDecl(VarDecl *D) {
 
 
     char *ptr = dupe;
-    //fprintf(stderr, "dupe '%s'\n", ptr);
     while (ptr = index(ptr, '[')) {
       ptr++;
-      //fprintf(stderr, "tmp '%s'\n", ptr);
       int dim;
       sscanf(ptr, "%d", &dim);
-      //fprintf(stderr, "dim %d\n", dim);
       *as++ = dim;
 
       ptr = index(ptr, ']');
-      //fprintf(stderr, "bottom of loop, ptr = '%s'\n", ptr); 
     }
     free(dupe);
-    //for (int i=0; i<numdim; i++) { 
-    //  fprintf(stderr, "dimension %d = %d\n", i,  chillVD->arraysizes[i]); 
-    //} 
-
-    //fprintf(stderr, "need to handle [] array to determine num dimensions\n");
-    //exit(-1); 
   }
 
   Expr *Init = D->getInit();
@@ -727,16 +208,10 @@ chillAST_NodeList* ConvertVarDecl(VarDecl *D) {
     fprintf(stderr, " = VARDECL HAS INIT.  (TODO) (RIGHT NOW)");
     exit(-1);
   }
-  //fprintf(stderr, ";\n");
-
-
-  //fprintf(stderr, "calling chillVD->print()\n"); 
-  //chillVD->print();  // debugging only
 
   free(vartype);
   free(varname);
 
-  // store this away for declrefexpr that references it! 
   VariableDeclarations.push_back(chillVD);
 
   NL_RET(chillVD);
@@ -1254,18 +729,7 @@ chillAST_NodeList* ConvertParenExpr(ParenExpr *clangPE) {
 
 
 chillAST_NodeList* ConvertTranslationUnit(TranslationUnitDecl *TUD, char *filename) {
-  //fprintf(stderr, "ConvertTranslationUnit( filename %s )\n\n", filename); 
-  // TUD derived from Decl and DeclContext
   static DeclContext *DC = TUD->castToDeclContext(TUD);
-
-
-  // TODO this was to get the filename without having to pass it in
-  //ASTContext CTX = TUD->getASTContext (); 
-  //SourceManager  SM =  CTX.getSourceManager();
-  //SourceLocation srcloc = ForStatement->getForLoc();
-  //unsigned int lineno   = SRCMAN->getPresumedLineNumber( srcloc );
-  //const char *filename  = SRCMAN->getBufferName( srcloc ); 
-
 
   chillAST_SourceFile *topnode = new chillAST_SourceFile(filename);
   topnode->setFrontend("clang");
@@ -1273,18 +737,18 @@ chillAST_NodeList* ConvertTranslationUnit(TranslationUnitDecl *TUD, char *filena
   topnode->chill_scalar_counter = 0;
 
   // now recursively build clang AST from the children of TUD
-  //for (DeclContext::decl_iterator DI = DC->decls_begin(), DE = DC->decls_end(); DI != DE; ++DI)
   DeclContext::decl_iterator start = DC->decls_begin();
   DeclContext::decl_iterator end = DC->decls_end();
   for (DeclContext::decl_iterator DI = start; DI != end; ++DI) {
     Decl *D = *DI;
+    // Skip internal declarations of clang
+    if (D->isImplicit()) continue;
 
-    if (isa<FunctionDecl>(D)) { //fprintf(stderr, "\nTUD FunctionDecl\n");
+    if (isa<FunctionDecl>(D)) {
       topnode->addChild(unwrap(ConvertFunctionDecl(dyn_cast<FunctionDecl>(D))));
-    } else if (isa<VarDecl>(D)) { //fprintf(stderr, "\nTUD VarDecl\n");
+    } else if (isa<VarDecl>(D)) {
       topnode->addChild(unwrap(ConvertVarDecl(dyn_cast<VarDecl>(D))));
-      //fflush(stdout);  fprintf(stderr, "\nTUD VarDecl DONE\n");  
-    } else if (isa<TypedefDecl>(D)) { //fprintf(stderr, "\nTUD TypedefDecl\n");
+    } else if (isa<TypedefDecl>(D)) {
       topnode->addChild(unwrap(ConvertTypeDefDecl(dyn_cast<TypedefDecl>(D))));
     } else if (isa<RecordDecl>(D)) {
       CHILL_DEBUG_PRINT("\nTUD RecordDecl\n");
@@ -1297,10 +761,7 @@ chillAST_NodeList* ConvertTranslationUnit(TranslationUnitDecl *TUD, char *filena
       exit(-1);
     }
   }
-  //fflush(stdout);  fprintf(stderr, "leaving ConvertTranslationUnit()\n\n");
 
-  //fprintf(stderr, "in ConvertTranslationUnit(), dumping the file\n");  
-  //topnode->dump();
   NL_RET(topnode);
 }
 
@@ -1308,10 +769,7 @@ chillAST_NodeList* ConvertTranslationUnit(TranslationUnitDecl *TUD, char *filena
 chillAST_NodeList* ConvertGenericClangAST(Stmt *s) {
 
   if (s == NULL) return NULL;
-  //fprintf(stderr, "\nConvertGenericClangAST() Stmt of type %d (%s)\n", s->getStmtClass(),s->getStmtClassName());
   Decl *D = (Decl *) s;
-  //if (isa<Decl>(D)) fprintf(stderr, "Decl of kind %d (%s)\n",  D->getKind(),D->getDeclKindName() );
-
 
   chillAST_NodeList *ret = NULL;    // find the SINGLE constant or data reference at this node or below
 
@@ -1428,7 +886,7 @@ int IR_chillArraySymbol::elem_size() const {
   fprintf(stderr, "IR_chillArraySymbol::elem_size()  TODO\n");
   exit(-1);
   return 8;  // TODO 
-  //const ArrayType *at = dyn_cast<ArrayType>(vd_->getType()); 
+  //const ArrayType *at = dyn_cast<ArrayType>(vd_->getType());
   //if(at) {
   //  return (vd_->getASTContext().getTypeSize(at->getElementType())) / 8;
   //} else
@@ -2261,8 +1719,7 @@ IR_clangCode::IR_clangCode(const char *fname, const char *proc_name) : IR_Code()
 
 
 IR_clangCode::~IR_clangCode() {
-  //func_->print(llvm::outs(), 4); // printing as part of the destructor !! 
-  CHILL_DEBUG_PRINT("\n\toutput happening as part of the destructor !!\n");
+  CHILL_DEBUG_PRINT("output happening as part of the destructor !!\n");
 
   chillfunc->constantFold();
 
@@ -2651,10 +2108,8 @@ std::vector<IR_Control *> IR_clangCode::FindOneLevelControlStructure(const IR_Bl
       }
     } // for each child
     ns = basicblock->numstatements();
-      if (ns!=0 && ns != numchildren) {
-        //fprintf(stderr, "end of body ends the run of %d statements in the Basic Block\n", ns); 
+      if (ns!=0)
         controls.push_back(basicblock);
-      }
   } else
     CHILL_DEBUG_PRINT("Single statement block of type %s\n", blockast->getTypeString());
 
@@ -3143,8 +2598,6 @@ IR_Ref *IR_clangCode::Repr2Ref(const omega::CG_outputRepr *repr) const {
   CG_chillRepr *crepr = (CG_chillRepr *) repr;
   chillAST_Node *node = crepr->chillnodes[0];
 
-  //Expr *e = static_cast<const omega::CG_chillRep *>(repr)->GetExpression();
-
   if (node->isIntegerLiteral()) {
     // FIXME: Not sure if it'll work in all cases (long?)
     int val = ((chillAST_IntegerLiteral *) node)->value;
@@ -3153,33 +2606,21 @@ IR_Ref *IR_clangCode::Repr2Ref(const omega::CG_outputRepr *repr) const {
     float val = ((chillAST_FloatingLiteral *) node)->value;
     return new IR_chillConstantRef(this, val);
   } else if (node->isDeclRefExpr()) {
-    //fprintf(stderr, "ir_clang.cc  IR_clangCode::Repr2Ref()  declrefexpr TODO\n"); exit(-1); 
     return new IR_chillScalarRef(this, (chillAST_DeclRefExpr *) node);  // uses DRE
   } else {
     fprintf(stderr, "ir_clang.cc IR_clangCode::Repr2Ref() UNHANDLED node type %s\n", node->getTypeString());
     exit(-1);
-    //assert(0);
   }
 }
 
 chillAST_NodeList* ConvertMemberExpr(clang::MemberExpr *clangME) {
-  fprintf(stderr, "ConvertMemberExpr()\n");
-
-  clang::Expr *E = clangME->getBase();
-  E->dump();
-
   chillAST_Node *base = unwrap(ConvertGenericClangAST(clangME->getBase()));
 
   DeclarationNameInfo memnameinfo = clangME->getMemberNameInfo();
   DeclarationName DN = memnameinfo.getName();
   const char *member = DN.getAsString().c_str();
-  //fprintf(stderr, "%s\n", DN.getAsString().c_str());  
 
   chillAST_MemberExpr *ME = new chillAST_MemberExpr(base, member, clangME);
-
-  fprintf(stderr, "this is the Member Expresion\n");
-  ME->print();
-  fprintf(stderr, "\n");
 
   NL_RET(ME);
 

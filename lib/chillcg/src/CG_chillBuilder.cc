@@ -935,7 +935,7 @@ namespace omega {
     //static_cast<CG_chillRepr*>(stmtList)->printChillNodes(); printf("\n"); fflush(stdout);
     
     chillAST_CompoundStmt *cs = new chillAST_CompoundStmt();
-    for (int i=0; i<statements.size(); i++) { 
+    for (int i=0; i<statements.size(); i++) {
       cs->addChild( statements[i] );
     }
     

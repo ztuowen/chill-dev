@@ -3,6 +3,7 @@
 
 #include <chilldebug.h>
 #include <stack>
+#include <fstream>
 #include "chillAST.h"
 #include "printer/dump.h"
 #include "printer/cfamily.h"
@@ -218,13 +219,13 @@ void chillAST_SourceFile::printToFile(char *filename) {
     }
   } else strcpy(fn, filename);
 
-  FILE *fp = fopen(fn, "w");
-  if (!fp) {
-    fprintf(stderr, "can't open file '%s' for writing\n", fn);
+  std::ofstream fo(fn);
+  if (fo.fail()) {
+    CHILL_ERROR("can't open file '%s' for writing\n", fn);
     exit(-1);
   }
-  fprintf(fp, "\n\n");
-  print(0, fp);
+  chill::printer::CFamily cp;
+  cp.print("",this,fo);
 
 }
 

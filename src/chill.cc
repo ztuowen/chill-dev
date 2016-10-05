@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
     int lnum_end;
     lnum_start = get_loop_num_start();
     lnum_end = get_loop_num_end();
-    CHILL_DEBUG_PRINT("calling ROSE code gen?    loop num %d\n", lnum_start);
+    finalize_loop(lnum_start,lnum_end);
     delete ir_code;
   }
   Py_Finalize();
