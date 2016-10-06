@@ -741,18 +741,18 @@ chillAST_NodeList* ConvertTranslationUnit(TranslationUnitDecl *TUD, char *filena
   DeclContext::decl_iterator end = DC->decls_end();
   for (DeclContext::decl_iterator DI = start; DI != end; ++DI) {
     Decl *D = *DI;
+    chillAST_Node *child;
     // Skip internal declarations of clang
-    if (D->isImplicit()) continue;
 
     if (isa<FunctionDecl>(D)) {
-      topnode->addChild(unwrap(ConvertFunctionDecl(dyn_cast<FunctionDecl>(D))));
+      child = unwrap(ConvertFunctionDecl(dyn_cast<FunctionDecl>(D)));
     } else if (isa<VarDecl>(D)) {
-      topnode->addChild(unwrap(ConvertVarDecl(dyn_cast<VarDecl>(D))));
+      child = unwrap(ConvertVarDecl(dyn_cast<VarDecl>(D)));
     } else if (isa<TypedefDecl>(D)) {
-      topnode->addChild(unwrap(ConvertTypeDefDecl(dyn_cast<TypedefDecl>(D))));
+      child = unwrap(ConvertTypeDefDecl(dyn_cast<TypedefDecl>(D)));
     } else if (isa<RecordDecl>(D)) {
       CHILL_DEBUG_PRINT("\nTUD RecordDecl\n");
-      topnode->addChild(unwrap(ConvertRecordDecl(dyn_cast<RecordDecl>(D))));
+      child = unwrap(ConvertRecordDecl(dyn_cast<RecordDecl>(D)));
     } else if (isa<TypeAliasDecl>(D)) {
       CHILL_ERROR("TUD TypeAliasDecl  TODO \n");
       exit(-1);
@@ -760,6 +760,8 @@ chillAST_NodeList* ConvertTranslationUnit(TranslationUnitDecl *TUD, char *filena
       CHILL_ERROR("\nTUD a declaration of type %s (%d) which I can't handle\n", D->getDeclKindName(), D->getKind());
       exit(-1);
     }
+    topnode -> addChild(child);
+    if (D->isImplicit()) child->isFromSourceFile = false;
   }
 
   NL_RET(topnode);
@@ -2256,36 +2258,23 @@ void IR_clangCode::ReplaceCode(IR_Control *old, omega::CG_outputRepr *repr) {
   chillAST_Node *par;
   switch (old->type()) {
     case IR_CONTROL_LOOP: {
-      //fprintf(stderr, "old is IR_CONTROL_LOOP\n"); 
       cloop = (struct IR_chillLoop *) old;
       chillAST_ForStmt *forstmt = cloop->chillforstmt;
 
-      fprintf(stderr, "old was\n");
-      forstmt->print();
-      printf("\n");
-      fflush(stdout);
-
-      //fprintf(stderr, "\nnew code is\n");
-      //for (int i=0; i<numnew; i++) { newcode[i]->print(); printf("\n"); } 
-      //fflush(stdout);
-
-
       par = forstmt->parent;
       if (!par) {
-        fprintf(stderr, "old parent was NULL\n");
-        fprintf(stderr, "ir_clang.cc that will not work very well.\n");
+        CHILL_ERROR("old parent was NULL\n");
+        CHILL_ERROR("ir_clang.cc that will not work very well.\n");
         exit(-1);
       }
 
-
-      fprintf(stderr, "\nold parent was\n\n{\n");
-      par->print();
-      printf("\n");
-      fflush(stdout);
-      fprintf(stderr, "\n}\n");
+      CHILL_DEBUG_BEGIN
+        fprintf(stderr, "\nold parent was\n\n{\n");
+        par->print();
+        fprintf(stderr, "\n}\n");
+      CHILL_DEBUG_END
 
       std::vector<chillAST_Node *> *oldparentcode = par->getChildren(); // probably only works for compoundstmts
-      //fprintf(stderr, "ir_clang.cc oldparentcode\n"); 
 
       // find loop in the parent
       int index = -1;
@@ -2295,31 +2284,24 @@ void IR_clangCode::ReplaceCode(IR_Control *old, omega::CG_outputRepr *repr) {
         fprintf(stderr, "ir_clang.cc can't find the loop in its parent\n");
         exit(-1);
       }
-      //fprintf(stderr, "loop is index %d\n", index); 
-
       // insert the new code
       par->setChild(index, newcode[0]);    // overwrite old stmt
-      //fprintf(stderr, "inserting %s 0x%x as index %d of 0x%x\n", newcode[0]->getTypeString(), newcode[0], index, par); 
-      // do we need to update the IR_cloop? 
+      // do we need to update the IR_cloop?
       cloop->chillforstmt = (chillAST_ForStmt *) newcode[0]; // ?? DFL
 
-
-
-      //printf("inserting "); newcode[0]->print(); printf("\n"); 
       if (numnew > 1) {
-        //oldparentcode.insert( oldparentcode.begin()+index+1, numnew-1, NULL); // allocate in bulk
-
         // add the rest of the new statements
-        for (int i = 1; i < numnew; i++) {
-          printf("inserting ");
-          newcode[i]->print();
-          printf("\n");
+        CHILL_DEBUG_BEGIN
+          for (int i = 1; i < numnew; i++) {
+            fprintf(stderr, "inserting \n");
+            newcode[i]->print(0, stderr);
+          }
+        CHILL_DEBUG_END
+        for (int i = 1; i < numnew; i++)
           par->insertChild(index + i, newcode[i]);  // sets parent
-        }
       }
 
       // TODO add in (insert) variable declarations that go with the new loops
-
 
       fflush(stdout);
     }
@@ -2335,16 +2317,11 @@ void IR_clangCode::ReplaceCode(IR_Control *old, omega::CG_outputRepr *repr) {
   }
 
   fflush(stdout);
-  //fprintf(stderr, "\nafter inserting %d statements into the Clang IR,", numnew);
   CHILL_DEBUG_BEGIN
     fprintf(stderr, "new parent2 is\n\n{\n");
     std::vector<chillAST_Node *> *newparentcode = par->getChildren();
     for (int i = 0; i < newparentcode->size(); i++) {
-      fflush(stdout);
-      //fprintf(stderr, "%d ", i);
       (*newparentcode)[i]->print();
-      printf(";\n");
-      fflush(stdout);
     }
     fprintf(stderr, "}\n");
   CHILL_DEBUG_END

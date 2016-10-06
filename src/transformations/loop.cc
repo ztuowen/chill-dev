@@ -795,13 +795,13 @@ bool Loop::init_loop(std::vector<ir_tree_node *> &ir_tree,
     CG_outputRepr *code =
         static_cast<IR_Block *>(ir_stmt[loc]->content)->extract();
     fprintf(stderr, "code =  ocg->CreateSubstitutedStmt(...)\n");
-    ((CG_chillRepr *) code)->Dump();
+    ((CG_chillRepr *) code)->dump();
     fflush(stdout);
 
     code = ocg->CreateSubstitutedStmt(0, code, vars_to_be_reversed,
                                       reverse_expr);
     fprintf(stderr, "stmt\n");
-    ((CG_chillRepr *) code)->Dump();
+    ((CG_chillRepr *) code)->dump();
     fflush(stdout);
 
     stmt[loc].code = code;

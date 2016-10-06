@@ -1233,147 +1233,85 @@ class chillAST_Node *chillAST_TernaryOperator::clone() {
   chillAST_Node *c = getCond()->clone();
   chillAST_Node *l = getLHS()->clone();
   chillAST_Node *r = getRHS()->clone();
-  chillAST_TernaryOperator *to = new chillAST_TernaryOperator(op, l, r, parent);
+  chillAST_TernaryOperator *to = new chillAST_TernaryOperator(op, c, l, r);
   to->isFromSourceFile = isFromSourceFile;
   filename = NULL;
   return to;
 }
 
+chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr() {
+  children.push_back(NULL); // Base
+  children.push_back(NULL); // Index
+  basedecl = NULL;
+}
+
 chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr(chillAST_Node *bas, chillAST_Node *indx, bool writtento,
-                                                         void *unique) {
-  base = index = NULL;
-  basedecl = NULL; //fprintf(stderr, "setting basedecl NULL for ASE %p\n", this);
+                                                         void *unique):chillAST_ArraySubscriptExpr() {
   imwrittento = writtento; // ??
   imreadfrom = false; // ??
-  parent = NULL;
-  metacomment = NULL;
   if (bas) {
-    if (bas->isImplicitCastExpr()) base = ((chillAST_ImplicitCastExpr *) bas)->getSubExpr(); // probably wrong
-    else base = bas;
-    base->setParent(this);
+    if (bas->isImplicitCastExpr()) setBase(((chillAST_ImplicitCastExpr *) bas)->getSubExpr()); // probably wrong
+    else setBase(bas);
     basedecl = multibase();
   }
   if (indx) {
-    if (indx->isImplicitCastExpr()) index = ((chillAST_ImplicitCastExpr *) indx)->getSubExpr(); // probably wrong
-    else index = indx;
-    index->setParent(this);
+    if (indx->isImplicitCastExpr()) setIndex(((chillAST_ImplicitCastExpr *) indx)->getSubExpr()); // probably wrong
+    else setIndex(indx);
   }
   uniquePtr = unique;
 }
 
-chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr(chillAST_VarDecl *v, std::vector<chillAST_Node *> indeces) {
-  //fprintf(stderr, "\nchillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr() 4\n");
-  //fprintf(stderr,"chillAST_ArraySubscriptExpr( chillAST_VarDecl *v, std::vector<int> indeces)\n");
-  //if (parent == NULL) {
-  //  fprintf(stderr, "dammit.  ASE %p has no parent\n", this);
-  //}
-
-
+chillAST_ArraySubscriptExpr::chillAST_ArraySubscriptExpr(chillAST_VarDecl *v, std::vector<chillAST_Node *> indeces):chillAST_ArraySubscriptExpr() {
   int numindeces = indeces.size();
   for (int i = 0; i < numindeces; i++) {
     fprintf(stderr, "ASE index %d  ", i);
     indeces[i]->print(0, stderr);
     fprintf(stderr, "\n");
-    //  printf("[");
-    //  indeces[i]->print();
-    //  printf("]");
   }
-  //fflush(stdout);
-  //fprintf(stderr, "\n");
-
   chillAST_DeclRefExpr *DRE = new chillAST_DeclRefExpr(v->vartype, v->varname, v);
   basedecl = v; // ??
-  //fprintf(stderr, "%p  ASE 3 basedecl = %p   ", this, basedecl);
-  //fprintf(stderr, "of type %s\n", basedecl->getTypeString());
-  //basedecl->print(); printf("\n");
-  //basedecl->dump(); printf("\n"); fflush(stdout);
-  //fprintf(stderr, "basedecl varname %s\n", basedecl->varname);
 
   chillAST_ArraySubscriptExpr *rent = this; // parent for subnodes
 
   // these are on the top level ASE that we're creating here
-  base = (chillAST_Node *) DRE;
-  index = indeces[numindeces - 1];
-
-  base->setParent(this);
-  index->setParent(this);
+  setBase(DRE);
+  setIndex(indeces[numindeces - 1]);
 
   for (int i = numindeces - 2; i >= 0; i--) {
 
     chillAST_ArraySubscriptExpr *ASE = new chillAST_ArraySubscriptExpr(DRE, indeces[i], rent, 0);
-    rent->base = ASE; //
-    rent = ASE;
+    rent->setBase(ASE);
   }
 
   imwrittento = false;
   imreadfrom = false;
-  //fprintf(stderr, "ASE is "); print(); printf("\n\n"); fflush(stdout);
-  isFromSourceFile = true; // default
+  isFromSourceFile = true;
   filename = NULL;
-
-  //fprintf(stderr, "\nASE %p   parent %p  ", this, parent); print(0,stderr); fprintf(stderr, "\n\n");
 }
-
-
-chillAST_Node *chillAST_Node::getEnclosingStatement(int level) {  // TODO do for subclasses?
-
-  //fprintf(stderr, "chillAST_Node::getEnclosingStatement( level %d ) node type %s\n", level, getTypeString());
-  //print(); printf("\n"); fflush(stdout);
-
-  // so far, user will ONLY call this directly on an array subscript expression
-  if (isArraySubscriptExpr()) return parent->getEnclosingStatement(level + 1);
-
-  if (level != 0) {
-    if (isBinaryOperator() ||
-        isUnaryOperator() ||
-        isTernaryOperator() ||
-        isReturnStmt() ||
-        isCallExpr()
-        )
-      return this;
-
-
-    // things that are not endpoints. recurse through parent
-    if (isMemberExpr()) return parent->getEnclosingStatement(level + 1);
-    if (isImplicitCastExpr()) return parent->getEnclosingStatement(level + 1);
-    if (isSizeof()) return parent->getEnclosingStatement(level + 1);
-    if (isCStyleCastExpr()) return parent->getEnclosingStatement(level + 1);
-    return NULL;
-  }
-
-  CHILL_ERROR("level %d type %s, returning NULL\n", level, getTypeString());
-  exit(-1);
-
-  return NULL;
-}
-
 
 void chillAST_ArraySubscriptExpr::gatherIndeces(std::vector<chillAST_Node *> &ind) {
-  if (base->isArraySubscriptExpr()) ((chillAST_ArraySubscriptExpr *) base)->gatherIndeces(ind);
-  ind.push_back(index);
+  if (getBase()->isArraySubscriptExpr()) ((chillAST_ArraySubscriptExpr*)getBase())->gatherIndeces(ind);
+  ind.push_back(getIndex());
 }
 
 chillAST_VarDecl *chillAST_ArraySubscriptExpr::multibase() {
-  //this should probably be a chillAST_Node function instead of having all these ifs
-  return base->multibase();
+  return getBase()->multibase();
 }
 
 
 chillAST_Node *chillAST_ArraySubscriptExpr::getIndex(int dim) {
   CHILL_DEBUG_PRINT("chillAST_ArraySubscriptExpr::getIndex( %d )\n", dim);
-
-  chillAST_Node *b = base;
-
+  chillAST_Node *b = getBase();
   int depth = 0;
   std::vector<chillAST_Node *> ind;
-  chillAST_Node *curindex = index;
+  chillAST_Node *curindex = getIndex();
   for (;;) {
     if (b->getType() == CHILLAST_NODE_IMPLICITCASTEXPR)
       b = ((chillAST_ImplicitCastExpr *) b)->getSubExpr();
     else if (b->getType() == CHILLAST_NODE_ARRAYSUBSCRIPTEXPR) {
       ind.push_back(curindex);
-      curindex = ((chillAST_ArraySubscriptExpr *) b)->index;
-      b = ((chillAST_ArraySubscriptExpr *) b)->base;
+      curindex = ((chillAST_ArraySubscriptExpr *) b)->getIndex();
+      b = ((chillAST_ArraySubscriptExpr *) b)->getBase();
       depth++;
     } else {
       ind.push_back(curindex);
@@ -1383,123 +1321,26 @@ chillAST_Node *chillAST_ArraySubscriptExpr::getIndex(int dim) {
   return ind[depth - dim];
 }
 
-
-class chillAST_Node *chillAST_ArraySubscriptExpr::constantFold() {
-  base = base->constantFold();
-  index = index->constantFold();
-  return this;
-}
-
 class chillAST_Node *chillAST_ArraySubscriptExpr::clone() {
-  if (base->isDeclRefExpr()) {
-    chillAST_VarDecl *vd = (chillAST_VarDecl *) (((chillAST_DeclRefExpr *) base)->decl);
-  }
-  chillAST_Node *b = base->clone();
-
-  chillAST_Node *i = index->clone();
-
+  chillAST_Node *b = getBase()->clone();
+  chillAST_Node *i = getIndex()->clone();
   chillAST_ArraySubscriptExpr *ASE = new chillAST_ArraySubscriptExpr(b, i, imwrittento, uniquePtr);
   ASE->setParent(parent);
-
   ASE->imreadfrom = false; // don't know this yet
-
   ASE->isFromSourceFile = isFromSourceFile;
   if (filename) ASE->filename = strdup(filename);
   return ASE;
 }
 
 void chillAST_ArraySubscriptExpr::gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento) {
-  //fprintf(stderr, "chillAST_ArraySubscriptExpr::gatherArrayRefs setting imwrittento %d for ", writtento);
-//fprintf(stderr, "%s ", base->getTypeString());
-//base->print(); printf("\n"); fflush(stdout);
-
-  //fprintf(stderr, "found an array subscript. &refs 0x%x   ", refs);
-  if (!imwrittento) imwrittento = writtento;   // may be both written and not for +=
-  fflush(stdout);
-
-  //fprintf(stderr, "recursing on index ");  index->print(0,stderr); fprintf(stderr, "\n");
-  index->gatherArrayRefs(refs, 0); // recurse first
-  //fprintf(stderr, "adding this "); print(0,stderr); fprintf(stderr, "\n");
-  //fprintf(stderr, "refs[%d] = 0x%x  = ", refs.size(), this); print(); fflush(stdout);
+  if (!imwrittento) imwrittento = writtento;   // may be both written and not for += TODO Purpose unclear
+  getIndex()->gatherArrayRefs(refs, 0); // recurse first
   refs.push_back(this);
-
-  //fprintf(stderr, " size now %d\n", refs.size());
-
 }
 
 void chillAST_ArraySubscriptExpr::gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {
-  index->gatherScalarRefs(refs, 0);
+  chillAST_Node::gatherScalarRefs(refs, false);
 }
-
-void chillAST_ArraySubscriptExpr::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "chillAST_ArraySubscriptExpr::gatherVarDecls()\n");
-
-  base->gatherVarDecls(decls);
-  index->gatherVarDecls(decls);
-}
-
-
-void chillAST_ArraySubscriptExpr::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "chillAST_ArraySubscriptExpr::gatherScalarVarDecls()\n");
-  //fprintf(stderr, "base %s   index %s\n", base->getTypeString(), index->getTypeString());
-  base->gatherScalarVarDecls(decls);
-  index->gatherScalarVarDecls(decls);
-}
-
-
-void chillAST_ArraySubscriptExpr::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "chillAST_ArraySubscriptExpr::gatherArrayVarDecls()\n");
-  //fprintf(stderr, "base %s   index %s\n", base->getTypeString(), index->getTypeString());
-  base->gatherArrayVarDecls(decls);
-  index->gatherArrayVarDecls(decls);
-}
-
-
-void chillAST_ArraySubscriptExpr::gatherDeclRefExprs(vector<chillAST_DeclRefExpr *> &refs) {
-  base->gatherDeclRefExprs(refs);
-  index->gatherDeclRefExprs(refs);
-}
-
-
-void chillAST_ArraySubscriptExpr::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
-  base->gatherVarUsage(decls);
-  index->gatherVarUsage(decls);
-}
-
-
-void chillAST_ArraySubscriptExpr::replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl) {
-  base->replaceVarDecls(olddecl, newdecl);
-  index->replaceVarDecls(olddecl, newdecl);
-}
-
-
-void chillAST_ArraySubscriptExpr::replaceChild(chillAST_Node *old, chillAST_Node *newchild) {
-
-  if (old == index) {
-    index = newchild;
-    index->parent = this;
-    return;
-  }
-
-  if (old == base) {
-    base = newchild;
-    base->parent = this;
-    return;
-  }
-
-  CHILL_DEBUG_BEGIN
-    fprintf(stderr, "chillAST_ArraySubscriptExpr::replaceChild() old is not base or index\n");
-    print(0, stderr);
-    fprintf(stderr, "\nchild: ");
-    if (!old) fprintf(stderr, "oldchild NULL!\n");
-    old->print(0, stderr);
-    fprintf(stderr, "\nnew: ");
-    newchild->print(0, stderr);
-    fprintf(stderr, "\n");
-  CHILL_DEBUG_END
-  exit(-1); // make easier for gdb
-};
-
 
 bool chillAST_ArraySubscriptExpr::operator!=(const chillAST_ArraySubscriptExpr &other) {
   bool opposite = *this == other;
@@ -1511,97 +1352,30 @@ bool chillAST_ArraySubscriptExpr::operator==(const chillAST_ArraySubscriptExpr &
   return this->uniquePtr == other.uniquePtr;
 }
 
-
+chillAST_MemberExpr::chillAST_MemberExpr() {
+  children.push_back(NULL);
+}
 chillAST_MemberExpr::chillAST_MemberExpr(chillAST_Node *bas, const char *mem, void *unique,
-                                         CHILLAST_MEMBER_EXP_TYPE t) {
-  base = bas;
-  if (bas)
-    base->setParent(this);
+                                         CHILLAST_MEMBER_EXP_TYPE t):chillAST_MemberExpr() {
+  setBase(bas);
   if (mem) member = strdup(mem);
   else
     member = NULL;
   uniquePtr = unique;
   exptype = t;
 
-  return;  // ignore tests below ?? TODO ??
-
-
-  // base needs to RESOLVE to a decl ref expr but may not BE one
-  //   A.b . c   lhs is a binop or memberexpr
-
-  if (bas->isBinaryOperator()) {
-    //fprintf(stderr, "checking binop to see if it resolved to a declrefexpr\n");
-    // cheat for now or just remove the check below
-    return;
-  }
-
-  if (!(bas->isDeclRefExpr() || bas->isArraySubscriptExpr())) {
-    fprintf(stderr, "chillAST_MemberExpr::chillAST_MemberExpr(), base is of type %s\n", bas->getTypeString());
-    fprintf(stderr, "chillAST_MemberExpr::chillAST_MemberExpr(), base is not DeclRefExpr\n");
-
-    base->print();
-    printf(".%s\n", mem);
-    fflush(stdout);
-    exit(-1);
-  }
+  return;
 }
 
 // TODO member can be another member expression, Right?
 
-class chillAST_Node *chillAST_MemberExpr::constantFold() {
-  base = base->constantFold();
-  //member = member->constantFold();
-  return this;
-}
-
 class chillAST_Node *chillAST_MemberExpr::clone() {
-  chillAST_Node *b = base->clone();
-  char *m = strdup(member); // ??
-  chillAST_MemberExpr *ME = new chillAST_MemberExpr(b, m, uniquePtr /* ?? */ );
+  chillAST_Node *b = getBase()->clone();
+  char *m = strdup(member);
+  chillAST_MemberExpr *ME = new chillAST_MemberExpr(b, m, uniquePtr);
   ME->isFromSourceFile = isFromSourceFile;
   if (filename) ME->filename = strdup(filename);
   return ME;
-}
-
-void chillAST_MemberExpr::gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento) {
-  fprintf(stderr, "chillAST_MemberExpr::gatherArrayRefs()   ");
-  print(0, stderr);
-  fprintf(stderr, "\n");
-  fprintf(stderr, "base of of type %s\n", base->getTypeString());
-  base->gatherArrayRefs(refs, writtento); //
-
-}
-
-void chillAST_MemberExpr::gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {
-  base->gatherScalarRefs(refs, writtento);
-}
-
-void chillAST_MemberExpr::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
-  base->gatherVarDecls(decls);
-}
-
-void chillAST_MemberExpr::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
-  base->gatherScalarVarDecls(decls);
-}
-
-
-void chillAST_MemberExpr::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
-  base->gatherArrayVarDecls(decls);
-}
-
-
-void chillAST_MemberExpr::gatherDeclRefExprs(vector<chillAST_DeclRefExpr *> &refs) {
-  base->gatherDeclRefExprs(refs);
-}
-
-
-void chillAST_MemberExpr::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
-  base->gatherVarUsage(decls);
-}
-
-
-void chillAST_MemberExpr::replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl) {
-  base->replaceVarDecls(olddecl, newdecl);
 }
 
 bool chillAST_MemberExpr::operator!=(const chillAST_MemberExpr &other) {
@@ -1613,28 +1387,10 @@ bool chillAST_MemberExpr::operator==(const chillAST_MemberExpr &other) {
   return this->uniquePtr == other.uniquePtr;
 }
 
-
-void chillAST_MemberExpr::replaceChild(chillAST_Node *old, chillAST_Node *newchild) {
-  //printf("\nMemberExpr::replaceChild(  )\n");
-  //printf("old: ");
-  //old->print();
-  //printf("\nnew: ");
-  //newchild->print();
-  //printf("\n"); fflush(stdout);
-
-  // will pointers match??
-  if (base == old) {
-    //fprintf(stderr, "old matches base of MemberExpr\n");
-    base = newchild;
-  } else {
-    base->replaceChild(old, newchild);
-  }
-}
-
 chillAST_Node *chillAST_MemberExpr::multibase2() {  /*fprintf(stderr, "ME MB2\n" );*/ return (chillAST_Node *) this; }
 
 chillAST_VarDecl *chillAST_MemberExpr::getUnderlyingVarDecl() {
-  fprintf(stderr, "chillAST_MemberExpr:getUnderlyingVarDecl()\n");
+  CHILL_ERROR("chillAST_MemberExpr:getUnderlyingVarDecl()\n");
   print();
   exit(-1);
   // find the member with the correct name
@@ -1643,18 +1399,7 @@ chillAST_VarDecl *chillAST_MemberExpr::getUnderlyingVarDecl() {
 
 
 chillAST_VarDecl *chillAST_MemberExpr::multibase() {
-  //c.i[c.count]    we want i member of c
-  //fprintf(stderr, "ME MB\n" );
-
-  //fprintf(stderr, "chillAST_MemberExpr::multibase()\n");
-  //print(); printf("\n"); fflush(stdout);
-  //fprintf(stderr, "MemberExpr base is type %s,  member %s\n", base->getTypeString(), member);
-
-  //chillAST_VarDecl *vd = base->getUnderlyingVarDecl(); // this is the only thing that ever calls this ???
-  chillAST_VarDecl *vd = base->multibase(); // ??
-
-
-  //fprintf(stderr, "vd "); vd->print(); printf("\n"); fflush(stdout);
+  chillAST_VarDecl *vd = getBase()->multibase(); // ??
 
   chillAST_RecordDecl *rd = vd->getStructDef();
   if (!rd) {
@@ -1665,22 +1410,14 @@ chillAST_VarDecl *chillAST_MemberExpr::multibase() {
     vd->dump();
     exit(-1);
   }
-
   // OK, we have the recorddecl that defines the structure
   // now find the member with the correct name
   chillAST_VarDecl *sub = rd->findSubpart(member);
-  //fprintf(stderr, "sub %s:\n", member);
   if (!sub) {
     fprintf(stderr, "can't find member %s in \n", member);
     rd->print();
   }
-  //sub->print(); printf("\n");  fflush(stdout);
-  //sub->dump() ; printf("\n");  fflush(stdout);
-
   return sub;
-  //find vardecl of member in def of base
-
-
 }
 
 chillAST_DeclRefExpr::chillAST_DeclRefExpr(const char *vartype, const char *varname, chillAST_Node *d) {

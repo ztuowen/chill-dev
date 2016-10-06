@@ -17,270 +17,55 @@
 #include <iostream>
 #include <stack>
 #include <code_gen/CG_chillBuilder.h>
+#include <code_gen/CGdebug.h>
+#include <code_gen/codegen_error.h>
 
 namespace omega {
   
   // substitute at chill AST level
-  // forward declarations
-  chillAST_Node *substituteChill(       const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent );
-  chillAST_Node *SubABinaryOperator(    const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent );
-  chillAST_Node *SubUnaryOperator(      const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent );
-  chillAST_Node *SubDeclRefExpr(        const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent );
-  chillAST_Node *SubArraySubscriptExpr( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent );
-  chillAST_Node *SubImplicitCastExpr(   const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent );
-  chillAST_Node *SubCStyleCastExpr(     const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent );
-  chillAST_Node *SubParenExpr(          const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent );
-  chillAST_Node *SubCallExpr(           const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent );
-  chillAST_Node *SubReturnStmt(         const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent );
-  chillAST_Node *SubIfStmt(             const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent );
-  chillAST_Node *SubCompoundStmt(       const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent );
-  chillAST_Node *SubMemberExpr(         const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent );
-  
   chillAST_Node *substituteChill( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
     if (n == NULL) {
-      fprintf(stderr, "substituteChill() pointer n == NULL\n"); // DIE 
-      int *crash = 0;
-      crash[0] = 1; 
+      CG_ERROR(" pointer n == NULL\n");
       exit(-1);
     }
-    
-    //fprintf(stderr, "substituteChill()    subbing statement of type ");
-    //fprintf(stderr, "%s\n", n->getTypeString());
-    //if (n->isImplicitCastExpr()) { 
-    //  chillAST_ImplicitCastExpr *ICE = (chillAST_ImplicitCastExpr *) n;
-    //  fprintf(stderr, "ICE subexpr type %s\n", ICE->subexpr->getTypeString());
-    //} 
-    //fprintf(stderr, "subbing '%s' in statement ", oldvar); n->print(0, stderr); fprintf(stderr, "\n"); 
     
     chillAST_Node *r = n;
-    if        (n->isBinaryOperator())     {r=   SubABinaryOperator(oldvar, newvar, n, parent ); 
-    } else if (n->isUnaryOperator())      {r=     SubUnaryOperator(oldvar, newvar, n, parent ); 
-    } else if (n->isDeclRefExpr())        {r=       SubDeclRefExpr(oldvar, newvar, n, parent ); 
-    } else if (n->isArraySubscriptExpr()) {r=SubArraySubscriptExpr(oldvar, newvar, n, parent ); 
-    } else if (n->isImplicitCastExpr())   {r=  SubImplicitCastExpr(oldvar, newvar, n, parent ); 
-    } else if (n->isParenExpr())          {r=         SubParenExpr(oldvar, newvar, n, parent ); 
-    } else if (n->isCStyleCastExpr())     {r=    SubCStyleCastExpr(oldvar, newvar, n, parent ); 
-    } else if (n->isReturnStmt())         {r=        SubReturnStmt(oldvar, newvar, n, parent ); 
-    } else if (n->isIfStmt())             {r=            SubIfStmt(oldvar, newvar, n, parent ); 
-    } else if (n->isCallExpr())           {r=          SubCallExpr(oldvar, newvar, n, parent );
-    } else if (n->isCompoundStmt())       {r=      SubCompoundStmt(oldvar, newvar, n, parent );
-    } else if (n->isMemberExpr())         {r=        SubMemberExpr(oldvar, newvar, n, parent );
-      
-    } else if (n->isFloatingLiteral())    {  //fprintf(stderr, "sub in FL\n"); // do nothing
-    } else if (n->isIntegerLiteral())     {  // do nothing 
-      
-    } else {
-      fprintf(stderr, "\nCG_chillBuilder.cc substituteChill() UNHANDLED statement of type ");
-      n->dump(); printf("   "); n->print(); printf("\n"); fflush(stdout); 
-      fprintf(stderr, "%s\n", n->getTypeString()); 
-      exit(-1);
+    switch (n->getType()) {
+      case CHILLAST_NODE_BINARYOPERATOR:
+      case CHILLAST_NODE_UNARYOPERATOR:
+      case CHILLAST_NODE_FORSTMT:
+      case CHILLAST_NODE_IFSTMT:
+      case CHILLAST_NODE_COMPOUNDSTMT:
+      case CHILLAST_NODE_RETURNSTMT:
+      case CHILLAST_NODE_PARENEXPR:
+      case CHILLAST_NODE_CALLEXPR:
+      case CHILLAST_NODE_IMPLICITCASTEXPR:
+      case CHILLAST_NODE_CSTYLECASTEXPR:
+      case CHILLAST_NODE_ARRAYSUBSCRIPTEXPR:
+      case CHILLAST_NODE_MEMBEREXPR:
+        for (int i=0;i<n->getNumChildren();++i)
+          n->setChild(i,substituteChill(oldvar, newvar,n->getChild(i)));
+        break;
+      case CHILLAST_NODE_DECLREFEXPR: {
+          chillAST_DeclRefExpr *DRE = (chillAST_DeclRefExpr *) n;
+          if (!strcmp( oldvar,  DRE->declarationName)) {
+            std::vector<chillAST_Node*> newnodes = newvar->chillnodes;
+            chillAST_Node *firstn = newnodes[0]->clone();
+            r = firstn;
+          }
+        }
+        break;
+      case CHILLAST_NODE_INTEGERLITERAL:
+      case CHILLAST_NODE_FLOATINGLITERAL:
+        // No op
+        break;
+      default:
+        CHILL_ERROR("UNHANDLED statement of type %s %s\n",n->getTypeString());
+        exit(-1);
     }
-    
-    /*
-      if (isa<DeclStmt>(s))                  {         SubDeclStmt(oldvar, newvar, n, parent );
-      } else if (isa<UnaryOperator>(s))      {    SubUnaryOperator(oldvar, newvar, n, parent );
-      } else if (isa<ForStmt>(s))            {             SubLoop(oldvar, newvar, n, parent );
-    */  
-    
     return r;
   }
-  
-  
-  chillAST_Node *SubABinaryOperator( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
-    chillAST_BinaryOperator *b = (chillAST_BinaryOperator *) n; 
-    //fprintf(stderr,"SubABinaryOperator() 0x%x  subbing old variable %s in \n", b, oldvar); 
-    
 
-    //fprintf(stderr,"SubABinaryOperator() subbing old variable %s in \n", oldvar); 
-    //if (b->lhs!=NULL  && b->rhs!=NULL) {
-    //  b->print(); printf("\n"); fflush(stdout); 
-    //} 
-    
-    chillAST_Node *lhs = b->getLHS();
-    chillAST_Node *rhs = b->getRHS();
-    
-    //if (!strcmp(b->op, "=") && rhs->isBinaryOperator() ) { 
-    //  chillAST_BinaryOperator *r = (chillAST_BinaryOperator *) rhs;  
-    //  fprintf(stderr, "a(%p) = b(%p) %s c(%p)\n", lhs, r->lhs, r->op, r->rhs );
-    //} 
-    
-    //fprintf(stderr, "op %s   rhs type ", b->op);
-    //fprintf(stderr, "%s\n", rhs->getTypeString()); 
-    //rhs->dump(); printf("\n"); fflush(stdout);
-    
-    
-    b->setLHS(substituteChill( oldvar, newvar, lhs, b));
-    b->setRHS(substituteChill( oldvar, newvar, rhs, b));
-    return b;
-  }
-  
-
-
-  chillAST_Node *SubUnaryOperator( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
-    chillAST_UnaryOperator *u = (chillAST_UnaryOperator *) n; 
-    chillAST_Node *sub = u->getSubExpr();
-    u->setSubExpr(substituteChill( oldvar, newvar, sub, u));
-    return u;
-  }
-
-  
-  chillAST_Node *SubDeclRefExpr( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
-    //fprintf(stderr, "SubDeclRefExpr() subbing statement of type %s\n", n->getTypeString());
-    
-    chillAST_DeclRefExpr *DRE = (chillAST_DeclRefExpr *) n;
-    //const char *variable = DRE->declarationName; // should be the same as oldvar ?? 
-    
-    //fprintf(stderr, "looking for oldvar %s in old DRE code ", oldvar);
-    //n->print(); printf("\n"); fflush(stdout); 
-    
-    //fprintf(stderr, "old DRE name was %s\n", DRE->declarationName);
-    if (!strcmp( oldvar,  DRE->declarationName)) {
-      //fprintf(stderr, "yep. replacing\n"); 
-      
-      
-      //fprintf(stderr, "\nNEED TO REPLACE VARIABLE %s with new thing ", oldvar);  
-      //newvar->printChillNodes(); 
-      
-      
-      //  newvar->Dump();  printf("\n"); fflush(stdout); 
-      //  //fprintf(stderr, " in statement of type %s\n",s->getTypeString());
-      //} 
-      
-      std::vector<chillAST_Node*> newnodes = newvar->chillnodes;
-      //fprintf(stderr, "%d nodes in newvar\n", newnodes.size());
-      chillAST_Node *firstn = newnodes[0];
-      firstn->parent = parent;
-      return firstn;   // it's that simple!
-      
-    } 
-    //else fprintf(stderr, "nope. not the right thing to replace\n\n");
-    
-    
-    return DRE; // unchanged 
-  } // subdeclrefexpr
-  
-  
-  
-  
-  
-  chillAST_Node *SubArraySubscriptExpr( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
-    chillAST_ArraySubscriptExpr *ASE = (chillAST_ArraySubscriptExpr *) n; 
-    
-    //fprintf(stderr, "subASE   ASE 0x%x\n", ASE); 
-    //fprintf(stderr, "SubArraySubscriptExpr subbing old variable %s with new thing in ASE 0x%x  ", oldvar, ASE);
-    
-    //ASE->print(); printf("\n"); fflush(stdout);
-    
-    chillAST_Node *Base  = ASE->base;
-    chillAST_Node *Index = ASE->index;
-    //fprintf(stderr, "Index is of type %s\n", Index->getTypeString()); 
-    
-    ASE->base  = substituteChill( oldvar, newvar, Base,  ASE);  // this should not do anything 
-    ASE->index = substituteChill( oldvar, newvar, Index, ASE); // this should
-    
-    //if (Index != ASE->index) {
-    //  fprintf(stderr, "ASE was "); 
-    //  Base->print(); 
-    //  printf("["); 
-    //  Index->print();
-    //  printf("]\n"); 
-    //  printf("SWAPPED INDEX ASE 0x%x  is ", ASE); ASE->print(); printf("\n"); fflush(stdout); 
-    //} 
-    //else fprintf(stderr, "ASE  is "); ASE->print(); printf("\n"); fflush(stdout); 
-    return ASE;
-  }
-  
-  
-  
-  chillAST_Node *SubImplicitCastExpr( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
-    //fprintf(stderr, "SubImplicitCastExpr subbing statement of type %s at 0x%x    parent 0x%x\n", n->getTypeString(), n, parent);
-    chillAST_ImplicitCastExpr *IC = (chillAST_ImplicitCastExpr *) n; 
-    chillAST_Node *oldsub = IC->getSubExpr();
-    IC->setSubExpr(substituteChill( oldvar, newvar, oldsub, IC));
-    
-    //if (oldsub != IC->subexpr) { 
-    //fprintf(stderr, "ImplicitCastExpr has CHANGED\n");
-    //IC->print(); printf("\n"); fflush(stdout); 
-    //fprintf(stderr, "ICE was "); 
-    //oldsub->print(); 
-    //printf("\nSWAPPED subexpr ICE 0x%x  is ", IC); IC->print(); printf("\n"); fflush(stdout); 
-    //fprintf(stderr, "PARENT 0x%x is now ",IC->parent);
-    //IC->parent->print(); printf("\n"); fflush(stdout); 
-    //} 
-    return IC; 
-  }
-  
-  chillAST_Node *SubCStyleCastExpr( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
-    //fprintf(stderr, "SubCStyleCastExpr()  subexpr is type ");
-    chillAST_CStyleCastExpr *CSCE = (chillAST_CStyleCastExpr *) n;
-    //fprintf(stderr, "%s\n", CSCE->subexpr->getTypeString()); 
-    CSCE->setSubExpr(substituteChill( oldvar, newvar, CSCE->getSubExpr(), CSCE));
-    return CSCE;
-  }
-  
-  
-  chillAST_Node *SubParenExpr( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
-    chillAST_ParenExpr *PE = (chillAST_ParenExpr *) n;
-    PE->setSubExpr(substituteChill( oldvar, newvar, PE->getSubExpr(), PE));
-    return PE;
-  }
-  
-  chillAST_Node *SubCallExpr( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
-    chillAST_CallExpr *CE = (chillAST_CallExpr *) n;
-    
-    int nargs = CE->getNumChildren();
-    for (int i=1; i<nargs; i++) {
-      CE->setChild(i,substituteChill( oldvar, newvar, CE->getChild(i), CE));
-    }
-    return CE; 
-  }
-  
-  
-  
-  chillAST_Node *SubReturnStmt( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
-    chillAST_ReturnStmt *RS = (chillAST_ReturnStmt *)n;
-    if (RS->getRetVal()) RS->setRetVal(substituteChill(oldvar, newvar, RS->getRetVal(), RS));
-    return RS;
-  }
-  
-  
-  chillAST_Node *SubIfStmt( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
-    //fprintf(stderr, "SubIfStmt()\n");
-    chillAST_IfStmt *IS = (chillAST_IfStmt *)n;
-    //IS->print(0, stderr); fprintf(stderr, "\n\n"); 
-    chillAST_Node *sub;
-    sub = IS->getCond();
-    if ( sub ) IS->setCond( substituteChill(oldvar, newvar, sub, IS));
-    sub = IS->getThen();
-    if ( sub ) IS->setThen( substituteChill(oldvar, newvar, sub, IS));
-    sub = IS->getElse();
-    if ( sub ) IS->setElse( substituteChill(oldvar, newvar, sub, IS));
-    
-    return IS; 
-  }
-  
-  
-  chillAST_Node *SubCompoundStmt( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
-    chillAST_CompoundStmt *CS = (chillAST_CompoundStmt *)n;
-    
-    int numchildren = CS->getNumChildren(); 
-    for (int i=0; i<numchildren; i++) { 
-      CS->setChild( i, substituteChill(oldvar, newvar, CS->getChild(i), CS ));
-    }
-    
-    return CS;
-  }
-  
-  
-  
-  chillAST_Node *SubMemberExpr( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
-    chillAST_MemberExpr *ME = (chillAST_MemberExpr *)n;
-    ME->base =  substituteChill(oldvar, newvar, ME->base, ME );
-    return ME;
-  }
-  
-  
-  
   CG_chillBuilder::CG_chillBuilder() { 
     toplevel = NULL;
     currentfunction = NULL; // not very useful
@@ -370,151 +155,43 @@ namespace omega {
                                                         const std::vector<std::string> &vars, 
                                                         std::vector<CG_outputRepr*> &subs,
                                                         bool actuallyPrint) const {
-    
-    int numvars = vars.size(); 
+    int numvars = vars.size();
     int numsubs = subs.size(); 
-    fflush(stdout); 
-    fprintf(stderr, "\n\nin CG_xxxxBuilder.cc (OMEGA)  CG_xxxxBuilder::CreateSubstitutedStmt()\n");
-    fprintf(stderr, "%d vars and %d substitutions\n", numvars, (int)subs.size());
-    
-    
-    if (numvars != numsubs) {
-      //fprintf(stderr, "umwut?\n"); exit(-1); 
-    }
-    
-    
-    //{
-    //  std::vector<chillAST_Node*> nodes = ((CG_chillRepr *) stmt)->getChillCode();
-    //  // 
-    //  fprintf(stderr, "%d nodes in old code. was:\n", nodes.size()); 
-    //  for(int i=0; i<nodes.size(); i++) 
-    //    { 
-    //      printf("stmt(%d) = ",i); 
-    //      nodes[i]->print(); 
-    //      printf("\n"); 
-    //    }
-    //  //printf("\nreally subbing in %d top level statements\n", nodes.size()); 
-    //  fflush(stdout);
-    //}     
-    
-    //for (int i=0; i< numsubs; i++)        {
-    //  fprintf(stderr, "sub %d  ", i); 
-    //  if (subs[i]) {   ((CG_chillRepr *)subs[i])->Dump(); fflush( stdout );  }
-    //  else  { 
-    //    //int *crash = NULL;  *crash = 1; 
-    //    fprintf(stderr, "(NULL  error!)"); 
-    //  }
-    //  //fprintf(stderr, "\n"); 
-    //} 
-    //fprintf(stderr, "\n"); 
-    
-    
+
+    if (numvars != numsubs)
+      throw codegen_error("Unequal number of original vars and subs");
+
     if (numsubs == 0) {
-      
       std::vector<chillAST_Node*> nodes = ((CG_chillRepr *) stmt)->getChillCode();
-      
-      // 
-      //fprintf(stderr, "nosubs old code was:\n"); 
-      //for(int i=0; i<nodes.size(); i++) 
-      //  { 
-      //    printf("stmt = "); 
-      //    nodes[i]->print(); 
-      //    printf("\n"); 
-      //  }
-      //printf("\nreally subbing in %d top level statements\n", nodes.size()); 
-      //fflush(stdout);
-      
-      
-      
       // no cloning !!
       return new CG_chillRepr( nodes );
-      
-      //fprintf(stderr, "since nothing actually being substituted, this is just a clone\n"); 
-      //fprintf(stderr, "old code was AND new code is:\n");
-      //for (int i=0; i<nodes.size(); i++) { 
-      //  fprintf(stderr, "stmt = ");
-      //  nodes[i]->print();  fflush(stdout); 
-      //  fprintf(stderr, "\n"); 
-      //} 
-      //fprintf(stderr, "cloning()\n"); 
-      //return stmt->clone(); 
-      
     }
 
-
-
-    //fprintf(stderr, "numsubs %d\n", numsubs);
-    
-    // debugging: print the substitutions we'll do 
-    
-    //if (numsubs > 0) { 
-    //  for (int i=0; i< numsubs; i++)        {
-    //    fprintf(stderr, "subbing "); 
-    //    if (subs[i]) {   
-    //      ((CG_chillRepr *)subs[i])->Dump(); fflush( stdout ); 
-    //      fprintf(stderr, "for  %s\n", vars[i].c_str() );
-    //}        else  { 
-    //      //int *crash = NULL;  *crash = 1; 
-    //      fprintf(stderr, "(NULL  error!)"); 
-    //    }
-    //    //fprintf(stderr, "\n"); 
-    //  }
-    //  fprintf(stderr, "\n"); 
-    //} 
-    
-    
-    
-    //fprintf(stderr, "OK, now to really substitute ...\n");  
-    //CG_outputRepr *newstmt = stmt->clone();
-    //CG_chillRepr *n = (CG_chillRepr *) newstmt; 
-    //vector<chillAST_Node*> newnodes =  n->getChillCode();
-    
     CG_chillRepr *old = (CG_chillRepr *) stmt; 
     std::vector<chillAST_Node*> oldnodes = old->getChillCode();
-    
-    
+
     for (int j=0; j<numsubs; j++) { 
       if (subs[j] != NULL) {
-        
-        //fprintf(stderr, "substitution %d    %s -> ", j,vars[j].c_str()); 
-        //if (subs[j]) {  ((CG_chillRepr *)subs[j])->Dump(); fflush( stdout );  }
-        
-        
         // find the type of thing we'll be using to replace the old variable
         CG_chillRepr *CRSub = (CG_chillRepr *)(subs[j]); 
         std::vector<chillAST_Node*> nodes = CRSub->chillnodes;
         if (1 != nodes.size() )  { // always just one? 
-          fprintf(stderr, "CG_chillBuilder::CreateSubstitutedStmt(), replacement is not one statement??\n");
+          CG_ERROR("Replacement is not one statement\n");
           exit(-1);
         }
-        chillAST_Node *node = nodes[0]; // always just one?
-        
-        for (int i=0; i<oldnodes.size(); i++) { 
-          //fprintf(stderr, "   statement %d    ", i);
-          //oldnodes[i]->print();  printf("\n\n"); fflush(stdout); 
+        for (int i=0; i<oldnodes.size(); i++) {
           oldnodes[i] = substituteChill( vars[j].c_str(), CRSub, oldnodes[i]);
         }
       }
     }
-    
-    //fprintf(stderr, "\ncode after substituting variables:\n");
-    //for(int i=0; i<oldnodes.size(); ++i){ printf("stmt = ");oldnodes[i]->print();printf("\n");}
-    //fflush(stdout); 
-    
     return new CG_chillRepr( oldnodes );
   }
-  
-  
-  
-  //-----------------------------------------------------------------------------
-  // assignment generation
-  //-----------------------------------------------------------------------------
-  CG_outputRepr* CG_chillBuilder::CreateAssignment(int indent, 
+
+  CG_outputRepr* CG_chillBuilder::CreateAssignment(int indent,
                                                    CG_outputRepr *lhs,
                                                    CG_outputRepr *rhs) const {
-    //fprintf(stderr, "CG_chillBuilder::CreateAssignment()\n"); 
     if(lhs == NULL || rhs == NULL) {
-      fprintf(stderr, "Code generation: Missing lhs or rhs\n");
+      CG_ERROR("Code generation: Missing lhs or rhs\n");
       return NULL;
     }
     
@@ -535,9 +212,8 @@ namespace omega {
   CG_outputRepr* CG_chillBuilder::CreatePlusAssignment(int indent,               // += 
                                                        CG_outputRepr *lhs,
                                                        CG_outputRepr *rhs) const {
-    //fprintf(stderr, "CG_chillBuilder::CreatePlusAssignment()\n"); 
     if(lhs == NULL || rhs == NULL) {
-      fprintf(stderr, "Code generation: Missing lhs or rhs\n");
+      CHILL_ERROR("Code generation: Missing lhs or rhs\n");
       return NULL;
     }
     
@@ -559,107 +235,40 @@ namespace omega {
   // function invocation generation
   //-----------------------------------------------------------------------------
   CG_outputRepr* CG_chillBuilder::CreateInvoke(const std::string &fname,
-                                               std::vector<CG_outputRepr*> &list,
-                                               bool is_array) const { // WHAT is an array?
-    fprintf(stderr, "CG_roseBuilder::CreateInvoke( fname %s, ...)\n", fname.c_str()); 
-    //fprintf(stderr, "%d things in list\n", list.size()); 
-    
-    // debugging output.  print the "call"
-    //fprintf(stderr, "%s", fname.c_str());
-    //if (is_array) fprintf(stderr, "["); else fprintf(stderr, "("); 
-    //int numparams = list.size(); 
-    //for (int i=0; i<numparams; i++) { 
-    //  CG_chillRepr *CR = (CG_chillRepr *) list[i];
-    //  if (i) printf(","); 
-    //  printf(" "); 
-    //  CR->GetCode()->print(); 
-    //  fflush(stdout); 
-    //} 
-    //if (numparams) printf(" "); 
-    //if (is_array) printf("]\n"); else printf(")\n"); 
-    //fflush(stdout); 
-    
+                                               std::vector<CG_outputRepr*> &list) const {
+    CG_DEBUG_PRINT("CG_roseBuilder::CreateInvoke( fname %s, ...)\n", fname.c_str());
 
-
-    if (is_array) { 
-      //fprintf(stderr, "CG_chillBuilder::CreateInvoke() %s is_array\n", fname.c_str());
-      const char *arrayname = fname.c_str(); 
-      
-      CG_chillRepr *CR = (CG_chillRepr *) list[0];
-      chillAST_Node *cast = CR->GetCode();
-
-      //fprintf(stderr, "%s[",  arrayname);
-      //cast->print(); printf("] ???\n"); fflush(stdout);
-      
-      // find the array variable  (scope ??  TODO) 
-      chillAST_VarDecl *array = currentfunction->findArrayDecl( arrayname ); 
-      if (!array) { 
-        fprintf(stderr, "CG_chillBuilder::CreateInvoke(), can't find array %s\n", fname.c_str()); 
-      }
-      
-      // make a declrefexpr that refers to vardecl of array ? 
-      chillAST_DeclRefExpr *DRE = new chillAST_DeclRefExpr( array );
-      chillAST_ArraySubscriptExpr *ASE = new chillAST_ArraySubscriptExpr( DRE, cast, NULL, NULL); 
-      return  new CG_chillRepr( ASE ); 
-    }
-    
-    
     if (fname == std::string("max") || fname == std::string("min")) {
       if (list.size() == 0) { return NULL; }
       else if (list.size() == 1) { return list[1]; }
       else {
-        //fprintf(stderr, "else\n"); 
         int last = list.size()-1;
         CG_outputRepr *CGOR; 
         CG_chillRepr  *CGCR;
-        
-        //fprintf(stderr, "going to create call to %s( ", fname.c_str());
-        //for (int i=0; i<list.size(); i++) { 
-        //  CGCR = (CG_chillRepr*) list[i];
-        //  CGCR->chillnodes[0]->print(0, stderr);
-        //  if (i<(list.size()-1)) fprintf(stderr, ", ");
-        //} 
-        //fprintf(stderr, ")\n"); 
-        
         char macroname[32];
         char op; 
-        
         if (fname == std::string("max"))  op = '>';
         else op = '<'; 
-        
-        // TODO >, check number of args etc 
+        // TODO >, check number of args etc
         chillAST_Node *ternary = lessthanmacro(  ((CG_chillRepr*) list[0])->chillnodes[0],
                                                  ((CG_chillRepr*) list[1])->chillnodes[0]);  
-        
-        //fprintf(stderr, "just made ternary ");
-        //ternary->print(0, stdout);
-        
-        
         CG_chillRepr *repr = new CG_chillRepr( ternary );
-        //fprintf(stderr, "returning callexpr with ternary\n", macroname); 
         return repr;
       }
     }
-    //else { // special case for reduce? 
-    //} 
     else {
-      //do a simple function call 
-      fprintf(stderr, "building a function call expression\n"); 
-
       // try to find the function name, for a function in this file
       const char *name = fname.c_str(); 
-      //fprintf(stderr, "fname '%s'\n", name);
       chillAST_SourceFile *src = toplevel; // todo don't be dumb
       
       chillAST_Node *def = src->findCall(name);
-      if (!def) { // can't find it
-        fprintf(stderr, "CG_chillBuilder::CreateInvoke( %s ), can't find a function or macro by that name\n", name); 
+      if (!def) {
+        CG_ERROR("CG_chillBuilder::CreateInvoke( %s ), can't find a function or macro by that name\n", name);
         exit(-1); 
       }
       
       if (def->isMacroDefinition() || def->isFunctionDecl()) {
         chillAST_CallExpr *CE = new chillAST_CallExpr( def );
-        CE->setParent(toplevel);
         int numparams = list.size();
         for (int i=0; i<numparams; i++) { 
           CG_chillRepr *CR = (CG_chillRepr *) list[i];
@@ -667,8 +276,6 @@ namespace omega {
         }
         return  new CG_chillRepr( CE ); 
       }
-
-      // chillAST_CallExpr::chillAST_CallExpr(chillAST_Node *function, chillAST_Node *p );
 
       // todo addarg()
       //int numargs;

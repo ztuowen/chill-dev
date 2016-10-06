@@ -57,8 +57,8 @@ void Dump::printS(std::string ident, chillAST_ArraySubscriptExpr *n, std::ostrea
     else
       o << "lvalue ";
   } else o << "rvalue ";
-  print(ident, n->base, o);
-  print(ident, n->index, o);
+  print(ident, n->getBase(), o);
+  print(ident, n->getIndex(), o);
 }
 
 void Dump::printS(std::string ident, chillAST_BinaryOperator *n, std::ostream &o) {
@@ -166,7 +166,7 @@ void Dump::printS(std::string ident, chillAST_Malloc *n, std::ostream &o) {
 }
 
 void Dump::printS(std::string ident, chillAST_MemberExpr *n, std::ostream &o) {
-  print(ident, n->base, o);
+  print(ident, n->getBase(), o);
   if (n->exptype == CHILLAST_MEMBER_EXP_ARROW) o << "-> ";
   else o << ". ";
   o << n->member << " ";

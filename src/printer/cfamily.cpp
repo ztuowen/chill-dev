@@ -21,9 +21,9 @@ bool ifSemicolonFree(CHILLAST_NODE_TYPE t) {
 }
 
 void CFamily::printS(std::string ident, chillAST_ArraySubscriptExpr *n, std::ostream &o) {
-  print(ident, n->base, o);
+  print(ident, n->getBase(), o);
   o << "[";
-  print(ident, n->index, o);
+  print(ident, n->getIndex(), o);
   o << "]";
 }
 
@@ -266,7 +266,7 @@ void CFamily::printS(std::string ident, chillAST_Malloc *n, std::ostream &o) {
 
 void CFamily::printS(std::string ident, chillAST_MemberExpr *n, std::ostream &o) {
   int prec = getPrec(n);
-  if (n->base) printPrec(ident, n->base, o, prec);
+  if (n->getBase()) printPrec(ident, n->getBase(), o, prec);
   else o << "(NULL)";
   if (n->exptype == CHILLAST_MEMBER_EXP_ARROW) o << "->";
   else o << ".";

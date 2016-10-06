@@ -11,7 +11,7 @@
 // This thing below potentially create leaks
 #define FILENAME basename(strdup(__FILE__))
 
-#ifdef DEBUGCHILL 
+#ifdef DEBUGCHILL
 #define CHILL_DEBUG_PRINT(format,args...) fprintf(stderr,"%15s | %15s | LN%-4d:\t" format,FILENAME,__FUNCTION__, \
         __LINE__, ##args )
 #define CHILL_DEBUG_BEGIN   { \
