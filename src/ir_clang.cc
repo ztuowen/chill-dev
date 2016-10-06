@@ -1728,7 +1728,9 @@ IR_clangCode::~IR_clangCode() {
   // TODO should output the entire file, not just the function we're working on
   chillAST_SourceFile *src = chillfunc->getSourceFile();
   if (src) {
-    src->dump();
+    CHILL_DEBUG_BEGIN
+      src->dump();
+    CHILL_DEBUG_END
     if (src->isSourceFile()) src->printToFile();
   }
 }

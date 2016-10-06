@@ -43,6 +43,7 @@ set(PRINTER_SRC
         )
 
 llvm_map_components_to_libnames(llvm_libs all)
+
 set(clang_libs
         clangTooling
         clangFrontendTool
@@ -97,11 +98,22 @@ add_executable(chill
         ${AST_CHILL_SRC}
         ${PRINTER_SRC})
 
-target_link_libraries(chill
-        ${CORE_LIBS}
-        ${llvm_libs}
-        ${clang_libs}
-        ${PYTHON_LIBRARY})
+link_directories(${LLVM_LIBRARY_DIRS})
+
+if (${LLVM_PACKAGE_VERSION} VERSION_LESS "3.8") # need to flip llvm with clang
+    target_link_libraries(chill
+            ${CORE_LIBS}
+            ${clang_libs}
+            ${llvm_libs}
+            ${PYTHON_LIBRARY})
+else()
+    target_link_libraries(chill
+            ${CORE_LIBS}
+            ${llvm_libs}
+            ${clang_libs}
+            ${PYTHON_LIBRARY})
+endif()
+
 add_dependencies(chill omega codegen chillcg parseRel)
 
 install(TARGETS chill

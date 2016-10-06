@@ -2364,12 +2364,12 @@ void Loop::apply_xform(std::set<int> &active) {
               uninterpreted_symbols[*i].insert(
                   std::pair<std::string,
                       std::vector<omega::CG_outputRepr *> >(
-                      v->get_global_var()->base_name(),
+                      (const char*)(v->get_global_var()->base_name()),
                       reprs));
               uninterpreted_symbols_stringrepr[*i].insert(
                   std::pair<std::string,
                       std::vector<omega::CG_outputRepr *> >(
-                      v->get_global_var()->base_name(),
+                      (const char*)(v->get_global_var()->base_name()),
                       reprs2));
             }
           }
