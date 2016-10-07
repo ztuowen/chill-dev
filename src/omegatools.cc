@@ -63,21 +63,19 @@ void exp2formula(IR_Code *ir,
                  std::map<std::string, std::vector<omega::CG_outputRepr *> > &uninterpreted_symbols_stringrepr
 ) {
 
-  fprintf(stderr, "\n*** exp2formula()\n");
-  //repr->dump();  /* printf("\n"); */fflush(stdout); 
-  fprintf(stderr, "repr  ");
-  r.print();
-  printf("\n");
-  fflush(stdout);
-
+  CHILL_DEBUG_BEGIN
+    fprintf(stderr, "\n*** exp2formula()\n");
+    repr->dump();
+    fprintf(stderr, "repr  ");
+    r.print(stderr);
+    fflush(stdout);
+  CHILL_DEBUG_END
 
   IR_OPERATION_TYPE optype = ir->QueryExpOperation(repr);
 
   switch (optype) {
-
-
     case IR_OP_CONSTANT: {
-      fprintf(stderr, "IR_OP_CONSTANT\n");
+      CHILL_DEBUG_PRINT("IR_OP_CONSTANT\n");
       std::vector<CG_outputRepr *> v = ir->QueryExpOperand(repr);
       IR_ConstantRef *ref = static_cast<IR_ConstantRef *>(ir->Repr2Ref(v[0]));
       if (!ref->is_integer())
@@ -114,17 +112,11 @@ void exp2formula(IR_Code *ir,
     }
 
     case IR_OP_VARIABLE: {
-      fprintf(stderr, "IR_OP_VARIABLE\n");
-      //fprintf(stderr, "repr  "); repr->dump(); fflush(stdout); 
+      CHILL_DEBUG_PRINT("IR_OP_VARIABLE\n");
       std::vector<CG_outputRepr *> v = ir->QueryExpOperand(repr);
-      //fprintf(stderr, "v     "); v[0]->dump(); fflush(stdout); 
       IR_ScalarRef *ref = static_cast<IR_ScalarRef *>(ir->Repr2Ref(v[0]));
-
-      //fprintf(stderr, "omegatools.cc calling ref->name()\n"); 
       std::string s = ref->name();
       Variable_ID e = find_index(r, s, side);
-      //fprintf(stderr, "s %s\n", s.c_str()); 
-
 
       if (e == NULL) { // must be free variable
         Free_Var_Decl *t = NULL;
@@ -171,7 +163,7 @@ void exp2formula(IR_Code *ir,
     }
 
     case IR_OP_ASSIGNMENT: {
-      fprintf(stderr, "IR_OP_ASSIGNMENT\n");
+      CHILL_DEBUG_PRINT("IR_OP_ASSIGNMENT\n");
       std::vector<CG_outputRepr *> v = ir->QueryExpOperand(repr);
       exp2formula(ir, r, f_root, freevars, v[0], lhs, side, rel, true,
                   uninterpreted_symbols, uninterpreted_symbols_stringrepr);
@@ -181,7 +173,7 @@ void exp2formula(IR_Code *ir,
     }
 
     case IR_OP_PLUS: {
-      fprintf(stderr, "IR_OP_PLUS\n");
+      CHILL_DEBUG_PRINT("IR_OP_PLUS\n");
       F_Exists *f_exists = f_root->add_exists();
       Variable_ID e1 = f_exists->declare(tmp_e());
       Variable_ID e2 = f_exists->declare(tmp_e());
@@ -219,7 +211,7 @@ void exp2formula(IR_Code *ir,
       break;
     }
     case IR_OP_MINUS: {
-      fprintf(stderr, "IR_OP_MINUS\n");
+      CHILL_DEBUG_PRINT("IR_OP_MINUS\n");
       F_Exists *f_exists = f_root->add_exists();
       Variable_ID e1 = f_exists->declare(tmp_e());
       Variable_ID e2 = f_exists->declare(tmp_e());
@@ -248,13 +240,11 @@ void exp2formula(IR_Code *ir,
         throw std::invalid_argument("unsupported condition type");
 
       std::vector<CG_outputRepr *> v = ir->QueryExpOperand(repr);
-      fprintf(stderr, "IR_OP_MINUS v has %d parts\n", (int) v.size());
-      fprintf(stderr, "IR_OP_MINUS recursing 1\n");
+      CHILL_DEBUG_PRINT("IR_OP_MINUS v has %d parts\n", (int) v.size());
       exp2formula(ir, r, f_and, freevars, v[0], e1, side, IR_COND_EQ, true,
                   uninterpreted_symbols, uninterpreted_symbols_stringrepr);
 
       if (v.size() > 1) {
-        fprintf(stderr, "IR_OP_MINUS recursing 2\n");  // dies here because it's unary minus? 
         exp2formula(ir, r, f_and, freevars, v[1], e2, side, IR_COND_EQ, true,
                     uninterpreted_symbols, uninterpreted_symbols_stringrepr);
       }
@@ -267,7 +257,7 @@ void exp2formula(IR_Code *ir,
 
 
     case IR_OP_MULTIPLY: {
-      fprintf(stderr, "IR_OP_MULTIPLY\n");
+      CHILL_DEBUG_PRINT("IR_OP_MULTIPLY\n");
       std::vector<CG_outputRepr *> v = ir->QueryExpOperand(repr);
 
       coef_t coef;
@@ -318,7 +308,7 @@ void exp2formula(IR_Code *ir,
     }
 
     case IR_OP_DIVIDE: {
-      fprintf(stderr, "IR_OP_DIVIDE\n");
+      CHILL_DEBUG_PRINT("IR_OP_DIVIDE\n");
       std::vector<CG_outputRepr *> v = ir->QueryExpOperand(repr);
 
       assert(ir->QueryExpOperation(v[1]) == IR_OP_CONSTANT);
@@ -358,7 +348,7 @@ void exp2formula(IR_Code *ir,
     }
 
     case IR_OP_MOD: {
-      fprintf(stderr, "IR_OP_MOD\n");
+      CHILL_DEBUG_PRINT("IR_OP_MOD\n");
       /* the left hand of a mod can be a var but the right must be a const */
       std::vector<CG_outputRepr *> v = ir->QueryExpOperand(repr);
 
@@ -412,7 +402,7 @@ void exp2formula(IR_Code *ir,
 
 
     case IR_OP_POSITIVE: {
-      fprintf(stderr, "IR_OP_POSITIVE\n");
+      CHILL_DEBUG_PRINT("IR_OP_POSITIVE\n");
       std::vector<CG_outputRepr *> v = ir->QueryExpOperand(repr);
 
       exp2formula(ir, r, f_root, freevars, v[0], lhs, side, rel, true,
@@ -425,7 +415,7 @@ void exp2formula(IR_Code *ir,
 
 
     case IR_OP_NEGATIVE: {
-      fprintf(stderr, "IR_OP_NEGATIVE\n");
+      CHILL_DEBUG_PRINT("IR_OP_NEGATIVE\n");
       std::vector<CG_outputRepr *> v = ir->QueryExpOperand(repr);
 
       F_Exists *f_exists = f_root->add_exists();
@@ -460,7 +450,7 @@ void exp2formula(IR_Code *ir,
 
 
     case IR_OP_MIN: {
-      fprintf(stderr, "IR_OP_MIN\n");
+      CHILL_DEBUG_PRINT("IR_OP_MIN\n");
       std::vector<CG_outputRepr *> v = ir->QueryExpOperand(repr);
 
       F_Exists *f_exists = f_root->add_exists();
@@ -529,7 +519,7 @@ void exp2formula(IR_Code *ir,
     }
 
     case IR_OP_MAX: {
-      fprintf(stderr, "IR_OP_MAX\n");
+      CHILL_DEBUG_PRINT("IR_OP_MAX\n");
       std::vector<CG_outputRepr *> v = ir->QueryExpOperand(repr);
 
       F_Exists *f_exists = f_root->add_exists();
@@ -598,39 +588,19 @@ void exp2formula(IR_Code *ir,
     }
 
     case IR_OP_ARRAY_VARIABLE: {                      //                                  *****
-      fprintf(stderr, "\nomegatools.cc IR_OP_ARRAY_VARIABLE     ARRAY! \n");
-
-      // temp for printing
-      //CG_chillRepr *CR = (CG_chillRepr *)repr;
-      //fprintf(stderr, "repr  "); CR->dump(); fflush(stdout);
-
-      //fprintf(stderr, "repr  "); repr->dump();  /* printf("\n"); */fflush(stdout);
-
+      CHILL_DEBUG_PRINT("IR_OP_ARRAY_VARIABLE\n");
       std::vector<CG_outputRepr *> v = ir->QueryExpOperand(repr);
       IR_Ref *ref = static_cast<IR_ScalarRef *>(ir->Repr2Ref(v[0]));
 
 
       CG_chillRepr *CR = (CG_chillRepr *) v[0]; // cheat for now.  we should not know this is a chillRepr
-      //fprintf(stderr, "v     "); CR->dump(); fflush(stdout);
-      //fprintf(stderr, "v     "); v[0]->dump(); /* printf("\n"); */ fflush(stdout);
       chillAST_Node *node = CR->GetCode();
-
-
-      //fprintf(stderr, "\n**** walking parents!\n");
-      //std::vector<chillAST_VarDecl*> loopvars;
-      //node->gatherLoopIndeces( loopvars );
-      //fprintf(stderr, "in omegatools, %d loop vars\n", (int)loopvars.size());
-
-
       std::string s = ref->name();
-      //fprintf(stderr, "array variable s is %s\n", s.c_str());
 
       int max_dim = 0;
       bool need_new_fsymbol = false;
       std::set<std::string> vars;
-      //fprintf(stderr, "ref->n_dim %d\n", ref->n_dim());
       for (int i = 0; i < ref->n_dim(); i++) {
-        //fprintf(stderr, "dimension %d\n", i);
         Relation temp(r.n_inp());
 
         // r is enclosing relation, we build another that will include this
@@ -657,11 +627,9 @@ void exp2formula(IR_Code *ir,
         Variable_ID e = temp.get_local(t);
         freevars.insert(freevars.end(), t);
 
-        fprintf(stderr, "exp2formula recursing? \n");
         exp2formula(ir, temp, temp_root, freevars, repr, e, side,
                     IR_COND_EQ, false, uninterpreted_symbols,
                     uninterpreted_symbols_stringrepr);
-        fprintf(stderr, "BACK FROM exp2formula recursing? \n");
 
         // temp is relation for the index of the array ??
         for (DNF_Iterator di(temp.query_DNF()); di; di++) {
@@ -684,14 +652,6 @@ void exp2formula(IR_Code *ir,
         if (max_dim != ref->n_dim())
           need_new_fsymbol = true;
       }
-
-      //fprintf(stderr, "%d vars: ", (int)vars.size());
-      //for (int i=0; i<vars.size(); i++) fprintf(stderr, "%s", vars[i].c_str());
-      //for (std::set<std::string>::iterator it = vars.begin(); it != vars.end(); it++) {
-      //  fprintf(stderr, "%s ", (*it).c_str());
-      //}
-      //fprintf(stderr, "\n");
-
       // r is enclosing relation, we build another that will include
       Variable_ID e = find_index(r, s, side); // s is the array named "index"
 
@@ -703,21 +663,7 @@ void exp2formula(IR_Code *ir,
       for (int i = 0; i < numnodes; i++) {
         internals[i]->gatherScalarVarDecls(sdecls);   // vardecls for scalars
       }
-
-      //fprintf(stderr, "%d scalar var decls()\n", sdecls.size());
-      //for (int i=0; i<sdecls.size(); i++) {
-      //  fprintf(stderr, "vardecl %2d: ", i);
-      //  sdecls[i]->print(); printf("\n"); fflush(stdout);
-      //}
-
-
-      //fprintf(stderr, "omegatools.cc, exp2formula()   NOW WHAT\n");
-      //exit(0);
-
       if (e == NULL) { // s must be a free variable
-        //fprintf(stderr, "'%s' must be free variable\n\n", s.c_str());
-        //fprintf(stderr, "SO WE WILL CREATE A MACRO ???\n");
-
         Free_Var_Decl *t = NULL;
 
         // keep adding underscores until we have created a unique name based on the original
@@ -752,29 +698,13 @@ void exp2formula(IR_Code *ir,
           else
             args += ",";
           args += *it;
-          //fprintf(stderr, "an argument to the macro: %s\n", it->c_str());
           Vargs.push_back((*it));
           reprs.push_back(ir->builder()->CreateIdent(*it));
           reprs2.push_back(ir->builder()->CreateIdent(*it));
         }
         args += ")";
-
-        //fprintf(stderr, "args '%s'\n", args.c_str());
-        //fprintf(stderr, "Vargs ");
-        //for (int i=0; i<Vargs.size(); i++) fprintf(stderr, "%s ",Vargs[i].c_str());
-        //fprintf(stderr, "\n");
-
-        //fprintf(stderr, "omegatools.cc ir->CreateDefineMacro( s (%s), args(%s), repr)\n", s.c_str(), args.c_str());
-
         // TODO repr, the rhs of the macro, needs to NOT refer to an actual variable ???
-
-
         ir->CreateDefineMacro(s, Vargs, repr);
-
-
-
-        // index_(i)   uses i outputrepr
-        //fprintf(stderr,"omegatools.cc making uninterpreted symbol %s\n",s.c_str());
         uninterpreted_symbols.insert(                                           // adding to uninterpreted_symbols
             std::pair<std::string, std::vector<omega::CG_outputRepr *> >(
                 s, reprs));
@@ -803,17 +733,14 @@ void exp2formula(IR_Code *ir,
         } else
           throw std::invalid_argument("unsupported condition type");
       }
-      //  delete v[0];
       delete ref;
       if (destroy) delete repr;
-
-      //fprintf(stderr, "FINALLY DONE with IR_OP_ARRAY_VARIABLE\n\n");
       break;
     }
 
 
     case IR_OP_NULL:
-      fprintf(stderr, "IR_OP_NULL\n");
+      CHILL_DEBUG_PRINT("IR_OP_NULL\n");
       break;
 
 

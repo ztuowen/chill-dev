@@ -384,29 +384,21 @@ namespace omega {
                                                   CG_outputRepr *lower,
                                                   CG_outputRepr *upper,
                                                   CG_outputRepr *step) const {
-    fprintf(stderr, "\nCG_chillBuilder::CreateInductive()\n");
     if (index == NULL || lower == NULL || upper == NULL) {
-      fprintf(stderr, "Code generation: invalid arguments to CreateInductive\n");
+      CG_ERROR("Code generation: invalid arguments to CreateInductive\n");
       return NULL;
     }
-    
-    
     if (step == NULL) {
-      //IntegerLiteral *ilit = new (astContext_)IntegerLiteral(*astContext_, llvm::APInt(32, 1), bint->desugar(), SourceLocation());
-      //step = new CG_chillRepr(ilit);
-      
       chillAST_IntegerLiteral *intlit = new chillAST_IntegerLiteral(1);
       step = new CG_chillRepr(intlit);
     }
-    
-    //static_cast<CG_chillRepr*>(index)->printChillNodes(); 
+    //static_cast<CG_chillRepr*>(index)->printChillNodes();
     //static_cast<CG_chillRepr*>(lower)->printChillNodes(); 
     //static_cast<CG_chillRepr*>(upper)->printChillNodes(); 
     //static_cast<CG_chillRepr*>(step )->printChillNodes(); 
     
     // index should be a DeclRefExpr
     std::vector<chillAST_Node*> nodes = static_cast<CG_chillRepr*>(index)->getChillCode();
-    //fprintf(stderr, "%d index nodes\n", nodes.size());
     chillAST_Node *indexnode = nodes[0];
     if (strcmp("DeclRefExpr", indexnode->getTypeString())) {
       fprintf(stderr, "CG_chillBuilder::CreateInductive index is not a DeclRefExpr\n"); 
@@ -420,20 +412,14 @@ namespace omega {
     }
     
     nodes = static_cast<CG_chillRepr*>(lower)->getChillCode();
-    //fprintf(stderr, "%d lower nodes\n", nodes.size());
     chillAST_Node *lowernode = nodes[0];
-    //fprintf(stderr, "lower node is %s\n", lowernode->getTypeString()); 
-    
+
     nodes = static_cast<CG_chillRepr*>(upper)->getChillCode();
-    //fprintf(stderr, "%d upper nodes\n", nodes.size());
     chillAST_Node *uppernode = nodes[0];
-    //fprintf(stderr, "upper node is %s\n", uppernode->getTypeString()); 
-    
+
     nodes = static_cast<CG_chillRepr*>(step)->getChillCode();
-    //fprintf(stderr, "%d step nodes\n", nodes.size());
     chillAST_Node *stepnode = nodes[0];
-    //fprintf(stderr, "step  node is %s\n",  stepnode->getTypeString()); 
-    
+
     // unclear is this will always be the same 
     // TODO error checking  && incr vs decr
     chillAST_BinaryOperator *init = new  chillAST_BinaryOperator( indexnode, "=", lowernode);
@@ -569,18 +555,15 @@ namespace omega {
   // basic int, identifier gen operations
   //-----------------------------------------------------------------------------
   CG_outputRepr* CG_chillBuilder::CreateInt(int i) const {
-    fprintf(stderr, "CG_chillBuilder::CreateInt( %d )\n",i); 
-    chillAST_IntegerLiteral *il = new chillAST_IntegerLiteral(i); // parent not available
+    chillAST_IntegerLiteral *il = new chillAST_IntegerLiteral(i);
     return new CG_chillRepr(il);
   }
   CG_outputRepr* CG_chillBuilder::CreateFloat(float f) const {
-    //fprintf(stderr, "CG_chillBuilder::CreateFloat( %f )\n", f); 
-    chillAST_FloatingLiteral *fl = new chillAST_FloatingLiteral(f, 1, NULL); // parent not available
+    chillAST_FloatingLiteral *fl = new chillAST_FloatingLiteral(f, 1, NULL);
     return new CG_chillRepr(fl);
   }
   CG_outputRepr* CG_chillBuilder::CreateDouble(double d) const {
-    //fprintf(stderr, "CG_chillBuilder::CreateInt( %f )\n",d); 
-    chillAST_FloatingLiteral *dl = new chillAST_FloatingLiteral(d, 1, NULL); // parent not available
+    chillAST_FloatingLiteral *dl = new chillAST_FloatingLiteral(d, 2, NULL);
     return new CG_chillRepr(dl);
   }
   
@@ -594,41 +577,25 @@ namespace omega {
   
   //----------------------------------------------------------------------------------------
   CG_outputRepr* CG_chillBuilder::CreateIdent(const std::string &_s) const {
-    fprintf(stderr, "CG_chillBuilder::CreateIdent( %s )\n", _s.c_str()); 
-    
     chillAST_VarDecl* already_parameter = symbolTableFindName(symtab_,  _s.c_str());
     chillAST_VarDecl* already_internal  = symbolTableFindName(symtab2_, _s.c_str());
-    if ( already_parameter ) { 
-      fprintf(stderr, "%s was already a parameter??\n",  _s.c_str()); 
-    } 
-    if ( already_internal ) { 
-      //fprintf(stderr, "%s was already defined in the function body\n",  _s.c_str()); 
-      //printSymbolTable(symtab2_); printf("dammit\n"); fflush(stdout); 
-    } 
+    if ( already_parameter )
+      CG_DEBUG_PRINT("%s was already a parameter??\n",  _s.c_str());
+    if ( already_internal )
+      CG_DEBUG_PRINT("%s was already defined in the function body\n",  _s.c_str());
 
     if ( (!already_parameter) && (! already_internal)) {  
-      fprintf(stderr, "CG_roseBuilder.cc L919 adding symbol %s to symtab2_ because it was not already there\n", _s.c_str()); 
-      
-      //fprintf(stderr, "parameters were: %p\n", symtab_); 
-      //printSymbolTable( symtab_ ); 
-      //fprintf(stderr, "\nbody symbols were: %p\n", symtab2_); 
-      //printSymbolTable( symtab2_ ); 
-      //fprintf(stderr, "\n\n"); 
-      //fprintf(stderr, "there were  already %d entries in body\n", symtab2_->size()); 
-
-      // this is copying roseBuilder, but is probably wrong. it is assuming 
+      CG_DEBUG_PRINT("adding symbol %s to symtab2_ because it was not already there\n", _s.c_str());
+      // this is copying roseBuilder, but is probably wrong. it is assuming
       // that the ident is a direct child of the current function 
       
-      chillAST_VarDecl *vd = new chillAST_VarDecl( "int", _s.c_str(), "", currentfunction->getBody()); // parent not available  TODO 
+      chillAST_VarDecl *vd = new chillAST_VarDecl( "int", _s.c_str(), "", currentfunction->getBody());
       currentfunction->addVariableToScope( vd ); // use symtab2_  ?
     
       
       chillAST_DeclRefExpr *dre = new chillAST_DeclRefExpr( "int", _s.c_str(), (chillAST_Node*)vd); // parent not available
-      //fprintf(stderr, "made a new chillRepr from "); dre->dump(); fflush(stdout);
       return new CG_chillRepr( dre );
     }
-
-
     // variable was already defined as either a parameter or internal variable to the function.
 
     // NOW WHAT??  gotta return something
@@ -648,72 +615,38 @@ namespace omega {
   //-----------------------------------------------------------------------------
   CG_outputRepr* CG_chillBuilder::CreatePlus(CG_outputRepr *lop,
                                              CG_outputRepr *rop) const {
-    fprintf(stderr, "CG_chillBuilder::CreatePlus()\n"); 
-    
-    
-    if(rop == NULL) return lop;     // ?? 
+    if (rop == NULL) return lop;
     else if(lop == NULL) return rop;
     
     chillAST_Node *left  = ((CG_chillRepr*)lop)->chillnodes[0];
     chillAST_Node *right = ((CG_chillRepr*)rop)->chillnodes[0];
-    chillAST_BinaryOperator *bop = new chillAST_BinaryOperator( left, "+", right); // parent not available
+    chillAST_BinaryOperator *bop = new chillAST_BinaryOperator( left, "+", right);
     return new CG_chillRepr( bop );
-    /*
-      Expr *lhs = static_cast<CG_chillRepr*>(lop)->GetExpression();
-      Expr *rhs = static_cast<CG_chillRepr*>(rop)->GetExpression();
-      
-      // Not sure about type!!
-      fprintf(stderr, "about to die in CG_chillBuilder ~line 628    CREATE PLUS\n"); 
-      BinaryOperator *ins = new (astContext_)BinaryOperator(lhs,
-      rhs, 
-      BO_Add, 
-      lhs->getType(), // qualifyier type 
-      VK_LValue, //Expression Value Kind, following the C++11 scheme
-      OK_Ordinary, // expression object kind, A further classification of the kind of object referenced by an l-value or x-value. 
-      SourceLocation(),
-      false );  // fpContractable  ?? 
-      
-      delete lop; delete rop;
-      
-      //fprintf(stderr, "                                                                               NEW binary operator 0x%x\n", ins);
-      fprintf(stderr, "CG_chillBuilder::CreatePlus  ins 0x%x\n", ins); 
-      return new CG_chillRepr(ins);
-    */
   }
   
   //-----------------------------------------------------------------------------  
   CG_outputRepr* CG_chillBuilder::CreateMinus(CG_outputRepr *lop,
                                               CG_outputRepr *rop) const {
-    //fprintf(stderr, "CG_chillBuilder::CreateMinus( lop %p   rop %p)\n", lop, rop); 
-    fprintf(stderr, "CG_chillBuilder::CreateMinus()\n");
-    
     if(rop == NULL) {
-      fprintf(stderr, "CG_chillBuilder::CreateMinus(), right side is NULL\n"); 
-      return lop; // from protonu's version. 
-
-      int *i = 0;
-      int j = i[0]; // segfault 
+      CG_ERROR("right side is NULL\n");
+      return lop;
     }
     
     CG_chillRepr *clop = (CG_chillRepr *) lop;
     CG_chillRepr *crop = (CG_chillRepr *) rop;
     
-    if(clop == NULL) {  // this is really a unary operator ??? 
-      //fprintf(stderr, "CG_chillBuilder::CreateMinus()  unary\n");
-      chillAST_Node *rAST = crop->chillnodes[0]; // always just one?
-      chillAST_UnaryOperator *ins = new chillAST_UnaryOperator("-", true, rAST->clone()); // clone?
-      delete crop;  // ?? note: the chillRepr, not the chillAST_Node
+    if(clop == NULL) {
+      chillAST_Node *rAST = crop->chillnodes[0];
+      chillAST_UnaryOperator *ins = new chillAST_UnaryOperator("-", true, rAST->clone());
+      delete crop;
       return new CG_chillRepr(ins);
     } else {
-      //fprintf(stderr, "binary\n");
-      chillAST_Node *lAST = clop->chillnodes[0]; // always just one?
-      chillAST_Node *rAST = crop->chillnodes[0]; // always just one?
-      //lAST->print(); printf(" - ");
-      //rAST->print(); printf("\n"); fflush(stdout); 
+      chillAST_Node *lAST = clop->chillnodes[0];
+      chillAST_Node *rAST = crop->chillnodes[0];
+
+      chillAST_BinaryOperator *bop = new chillAST_BinaryOperator(lAST->clone(), "-", rAST->clone());
       
-      chillAST_BinaryOperator *bop = new chillAST_BinaryOperator(lAST->clone(), "-", rAST->clone()); // clone??
-      
-      delete clop; delete crop; // ?? note: the chillReprs, not the chillAST_Nodes
+      delete clop; delete crop;
       return new CG_chillRepr(bop);
     }
   }
@@ -722,8 +655,8 @@ namespace omega {
   //-----------------------------------------------------------------------------
   CG_outputRepr* CG_chillBuilder::CreateTimes(CG_outputRepr *lop,
                                               CG_outputRepr *rop) const {
-    fprintf(stderr, "CG_chillBuilder::CreateTimes()\n"); 
     if (rop == NULL || lop == NULL) {
+      CG_ERROR("Operand for times is null\n");
       if (rop != NULL) {
         rop->clear();
         delete rop;
@@ -738,18 +671,11 @@ namespace omega {
     CG_chillRepr *clop = (CG_chillRepr *) lop;
     CG_chillRepr *crop = (CG_chillRepr *) rop;
     
-    chillAST_Node *lAST = clop->chillnodes[0]; // always just one?
-    chillAST_Node *rAST = crop->chillnodes[0]; // always just one?
-    
-    fprintf(stderr, "building "); 
-    lAST->print(0, stderr); 
-    fprintf(stderr, " * ");
-    rAST->print(0, stderr);
-    fprintf(stderr, "\n"); 
-    
+    chillAST_Node *lAST = clop->chillnodes[0];
+    chillAST_Node *rAST = crop->chillnodes[0];
+
     chillAST_BinaryOperator *binop = new chillAST_BinaryOperator( lAST, "*", rAST);
-    delete lop; delete rop; // ?? 
-    //fprintf(stderr, "CG_chillBuilder::CreateTimes() returning a CG_chillRepr with a binop inside\n");
+    delete lop; delete rop;
     return new CG_chillRepr( binop );
   }
   
@@ -765,9 +691,8 @@ namespace omega {
   //-----------------------------------------------------------------------------
   CG_outputRepr* CG_chillBuilder::CreateIntegerDivide(CG_outputRepr *lop,
                                                       CG_outputRepr *rop) const {
-    //fprintf(stderr, "CG_chillBuilder::CreatIntegerDivide()\n"); 
     if (rop == NULL) {
-      fprintf(stderr, "Code generation: divide by NULL\n");
+      CG_ERROR("divide by NULL\n");
       return NULL;
     }
     else if ( lop == NULL ) {
@@ -778,15 +703,9 @@ namespace omega {
     CG_chillRepr *clop = (CG_chillRepr *) lop;
     CG_chillRepr *crop = (CG_chillRepr *) rop;
     
-    chillAST_Node *lAST = clop->chillnodes[0]; // always just one?
-    chillAST_Node *rAST = crop->chillnodes[0]; // always just one?
-    
-    //fprintf(stderr, "building "); 
-    //lAST->print(0, stderr); 
-    //fprintf(stderr, " / ");
-    //rAST->print(0, stderr);
-    //fprintf(stderr, "  ??\n"); 
-    
+    chillAST_Node *lAST = clop->chillnodes[0];
+    chillAST_Node *rAST = crop->chillnodes[0];
+
     chillAST_BinaryOperator *binop = new chillAST_BinaryOperator( lAST, "/", rAST);
     delete lop; delete rop; // ?? 
     return new CG_chillRepr( binop );
@@ -795,20 +714,12 @@ namespace omega {
   
   //-----------------------------------------------------------------------------
   CG_outputRepr* CG_chillBuilder::CreateIntegerFloor(CG_outputRepr* lop, CG_outputRepr* rop) const { 
-    //fprintf(stderr, "CG_chillBuilder::CreateIntegerFloor()\n");
-    
     CG_chillRepr *clop = (CG_chillRepr *) lop;
     CG_chillRepr *crop = (CG_chillRepr *) rop;
     
-    chillAST_Node *lAST = clop->chillnodes[0]; // always just one?
-    chillAST_Node *rAST = crop->chillnodes[0]; // always just one?
-    
-    //fprintf(stderr, "building "); 
-    //lAST->print(0, stderr); 
-    //fprintf(stderr, " / ");
-    //rAST->print(0, stderr);
-    //fprintf(stderr, "  ??\n"); 
-    
+    chillAST_Node *lAST = clop->chillnodes[0];
+    chillAST_Node *rAST = crop->chillnodes[0];
+
     chillAST_BinaryOperator *binop = new chillAST_BinaryOperator( lAST, "/", rAST);
     return new CG_chillRepr( binop );
   }
@@ -818,11 +729,7 @@ namespace omega {
   //-----------------------------------------------------------------------------
   CG_outputRepr* CG_chillBuilder::CreateIntegerMod(CG_outputRepr *lop,
                                                    CG_outputRepr *rop) const {
-    //fprintf(stderr, "CG_chillBuilder::CreateIntegerMod()   NEEDS WORK\n"); 
-    //fprintf(stderr, "LHS "); lop->dump(); 
-    //fprintf(stderr, "RHS "); rop->dump(); 
-    
-    CG_chillRepr *l = (CG_chillRepr *) lop; 
+    CG_chillRepr *l = (CG_chillRepr *) lop;
     CG_chillRepr *r = (CG_chillRepr *) rop; 
     
     chillAST_Node *lhs = l->GetCode();
@@ -830,89 +737,31 @@ namespace omega {
     
     chillAST_BinaryOperator *BO = new  chillAST_BinaryOperator(lhs, "%", rhs );
     return new CG_chillRepr(BO);
-    
-    /* 
-       if (rop == NULL || lop == NULL) {
-       return NULL;
-       }
-       
-       Expr *op1 = static_cast<CG_chillRepr*>(lop)->GetExpression();
-       Expr *op2 = static_cast<CG_chillRepr*>(rop)->GetExpression();
-       
-       // Not sure about type!!
-       fprintf(stderr, "gonna die in CG_chillBuilder.cc ~line 394\n"); 
-       BinaryOperator *ins = NULL; // new (astContext_)BinaryOperator(op1, op2, BO_Rem, op1->getType(), SourceLocation());
-       
-       delete lop; delete rop;
-       return new CG_chillRepr(ins);
-    */
   }
-  
-  
-  
-  //-----------------------------------------------------------------------------
+
   CG_outputRepr *CG_chillBuilder::CreateIntegerCeil(CG_outputRepr *lop, CG_outputRepr *rop) const {
     return CreateMinus(NULL, CreateIntegerFloor(CreateMinus(NULL, lop), rop));
   }
-  
-  
-  
-  //-----------------------------------------------------------------------------
-  // binary logical operations
-  //-----------------------------------------------------------------------------
+
   CG_outputRepr* CG_chillBuilder::CreateAnd(CG_outputRepr *lop,
                                             CG_outputRepr *rop) const {
-    fprintf(stderr, "CG_chillBuilder::CreateAnd()\n");  
     if (rop == NULL)
       return lop;
     else if (lop == NULL)
       return rop;
-    
-    /* if (rop == NULL || lop == NULL ) {
-       fprintf(stderr, "returning NULL!\n"); 
-       return NULL;
-       }*/
-    
+
     CG_chillRepr *clop = (CG_chillRepr *) lop;
     CG_chillRepr *crop = (CG_chillRepr *) rop;
     
-    chillAST_Node *lAST = clop->chillnodes[0]; // always just one?
-    chillAST_Node *rAST = crop->chillnodes[0]; // always just one?
-    
-    //fprintf(stderr, "building "); 
-    //lAST->print(0, stderr); 
-    //fprintf(stderr, " && ");
-    //rAST->print(0, stderr);
-    //fprintf(stderr, "  ??\n"); 
-    
+    chillAST_Node *lAST = clop->chillnodes[0];
+    chillAST_Node *rAST = crop->chillnodes[0];
+
     chillAST_BinaryOperator *binop = new chillAST_BinaryOperator( lAST, "&&", rAST);
     return new CG_chillRepr( binop );
   }
-  
-  
-  //-----------------------------------------------------------------------------
-  // binary relational operations
-  //-----------------------------------------------------------------------------
-  //  CG_outputRepr* CG_chillBuilder::CreateGE(CG_outputRepr *lop,   // use the outputBuilder version
-  //                                           CG_outputRepr *rop) const {
-  //    
-  //    Expr *op1 = static_cast<CG_chillRepr*>(lop)->GetExpression();
-  //    Expr *op2 = static_cast<CG_chillRepr*>(rop)->GetExpression();
-  
-  // Not sure about type!!
-  //    fprintf(stderr, "about to die in CG_chillBuilder ~line 480\n"); 
-  
-  //    BinaryOperator *ins = NULL; // new (astContext_)BinaryOperator(op1, op2, BO_GE, op1->getType(), SourceLocation());
-  
-  //    delete lop; delete rop;
-  //    return new CG_chillRepr(ins);
-  //  }
-  
-  
-  //-----------------------------------------------------------------------------
+
   CG_outputRepr* CG_chillBuilder::CreateLE(CG_outputRepr *lop,
                                            CG_outputRepr *rop) const {
-    //fprintf(stderr, "CG_chillBuilder::CreateLE()\n");  
     if (rop == NULL || lop == NULL) {
       return NULL;           
     }            
@@ -920,15 +769,9 @@ namespace omega {
     CG_chillRepr *clop = (CG_chillRepr *) lop;
     CG_chillRepr *crop = (CG_chillRepr *) rop;
     
-    chillAST_Node *lAST = clop->chillnodes[0]; // always just one?
-    chillAST_Node *rAST = crop->chillnodes[0]; // always just one?
-    
-    //fprintf(stderr, "building "); 
-    //lAST->print(0, stderr); 
-    //fprintf(stderr, " <= ");
-    //rAST->print(0, stderr);
-    //fprintf(stderr, "  ??\n"); 
-    
+    chillAST_Node *lAST = clop->chillnodes[0];
+    chillAST_Node *rAST = crop->chillnodes[0];
+
     chillAST_BinaryOperator *binop = new chillAST_BinaryOperator( lAST, "<=", rAST);
     delete lop; delete rop; // ?? 
     return new CG_chillRepr( binop );

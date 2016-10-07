@@ -1,6 +1,3 @@
-
-
-
 #include <chilldebug.h>
 #include <stack>
 #include <fstream>

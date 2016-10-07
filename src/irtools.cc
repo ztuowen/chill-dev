@@ -364,26 +364,11 @@ test_data_dependences(IR_Code *ir,
     //-------------------------------------------------------------
 
     for (int i = 0; i < access.size(); i++) {
-      fprintf(stderr, "i %d\n", i);
       IR_ArrayRef *a = access[i];
       IR_ArraySymbol *sym_a = a->symbol();
-      fprintf(stderr, "sym_a = %s\n", a->name().c_str());
       for (int j = i; j < access.size(); j++) {
-        fprintf(stderr, "irtools.cc j %d\n", j);
         IR_ArrayRef *b = access[j];
         IR_ArraySymbol *sym_b = b->symbol();
-        fprintf(stderr, "sym_b = %s\n", b->name().c_str());
-
-        fprintf(stderr, "irtools.cc ij %d %d\n", i, j);
-
-        if (*sym_a == *sym_b) fprintf(stderr, "*sym_a == *sym_b\n");
-        else fprintf(stderr, "*sym_a NOT == *sym_b\n");
-
-        if (a->is_write()) fprintf(stderr, "%d a->is_write()\n", i);
-        else fprintf(stderr, "%d a->is_NOT_write()\n", i);
-        if (b->is_write()) fprintf(stderr, "%d b->is_write()\n", j);
-        else fprintf(stderr, "%d b->is_NOT_write()\n", j);
-
         if (*sym_a == *sym_b && (a->is_write() || b->is_write())) {
           Relation r = arrays2relation(ir, freevar, a, IS1, b, IS2, uninterpreted_symbols,
                                        uninterpreted_symbols_stringrepr);
@@ -394,24 +379,15 @@ test_data_dependences(IR_Code *ir,
             helper->print();
             fflush(stdout);
           CHILL_DEBUG_END
-
-          fprintf(stderr, "1\n");
           std::pair<std::vector<DependenceVector>,
               std::vector<DependenceVector> > dv =
               relation2dependences(a, b, r);
-          fprintf(stderr, "\nirtools.cc ij %d %d dv.first %d   dv.second %d\n", i, j, dv.first.size(),
-                  dv.second.size());
-          fprintf(stderr, "2");
           result.first.insert(result.first.end(), dv.first.begin(),
                               dv.first.end());
-          fprintf(stderr, "3");
           result.second.insert(result.second.end(), dv.second.begin(),
                                dv.second.end());
-          fprintf(stderr, "4");
-
           // Manu:: check if the array references belong to the same statement
           // If yes, set the flag in the dependence vector
-          //----------------------------------------------
           CHILL_DEBUG_BEGIN
             std::cout << "Size of the dependence vector '" << a->name().c_str() << "'  -- " << dv.first.size() << "\n";
             std::cout << "------------ Printing dependence vector START ---------------\n";
@@ -448,9 +424,7 @@ test_data_dependences(IR_Code *ir,
             std::cout << "------------ Printing dependence vector END---------------\n";
           CHILL_DEBUG_END
           checkReductionDependence(i, j, nestLeveli, lbound, ubound, ref2Stmt, rMap, dv, trMap, nrStmts);
-          //----------------------------------------------
-
-//           // Manu:: original code without the condition
+          // Manu:: original code without the condition
           if (((rMap.find(ref2Stmt[i])->second).size() != 3) || (lbound[0] != lbound[1]) || (lbound[1] != lbound[2]) ||
               (lbound[0] != lbound[2]) || (ubound[0] != ubound[1]) || (ubound[1] != ubound[2]) ||
               (ubound[0] != ubound[2])) { // Manu:: original code without the condition
@@ -459,8 +433,6 @@ test_data_dependences(IR_Code *ir,
             result.second.insert(result.second.end(),
                                  dv.second.begin(), dv.second.end());
           }
-
-
         }
         delete sym_b;
       }
@@ -479,13 +451,12 @@ test_data_dependences(IR_Code *ir,
     for (int i = 0; i < access.size(); i++)
       delete access[i];
   } else {
-    fprintf(stderr, "\nrepr1 != repr2\n");
+    CHILL_DEBUG_PRINT("repr1 != repr2\n");
 
     std::vector<IR_ArrayRef *> access1 = ir->FindArrayRef(repr1);
     std::vector<IR_ArrayRef *> access2 = ir->FindArrayRef(repr2);
 
     for (int i = 0; i < access1.size(); i++) {
-      fprintf(stderr, "i %d\n", i);
       IR_ArrayRef *a = access1[i];
       IR_ArraySymbol *sym_a = a->symbol();
 
@@ -514,23 +485,6 @@ test_data_dependences(IR_Code *ir,
     for (int i = 0; i < access2.size(); i++)
       delete access2[i];
   }
-  /*std::pair<std::vector<DependenceVector>,
-    std::vector<DependenceVector> > dv =
-    ir->FindScalarDeps(repr1, repr2, index, i, j);
-    
-    
-    result.first.insert(result.first.end(), dv.first.begin(),
-    dv.first.end());
-    result.second.insert(result.second.end(), dv.second.begin(),
-    dv.second.end());*/
-  /*result.first.insert(result.first.end(), dv.first.begin(),
-    dv.first.end());
-    result.second.insert(result.second.end(), dv.second.begin(),
-    dv.second.end());
-  */
-
-  fprintf(stderr, "LEAVING test_data_dependences()  first size %d    second size %d\n\n", result.first.size(),
-          result.second.size());
   return result;
 }
 
@@ -542,7 +496,7 @@ bool from_same_statement(IR_Code *ir, IR_ArrayRef *a, IR_ArrayRef *b) {
 
 // Manu
 int stmtType(IR_Code *ir, const CG_outputRepr *repr) {
-  fprintf(stderr, "stmtType() DIE \n");
+  CHILL_ERROR("stmtType() DIE \n");
   exit(-1);
   return (ir->getStmtType(repr)); /// AIEEE returns a meaningless number encoding rose internals. 
 }

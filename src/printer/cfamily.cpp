@@ -180,9 +180,9 @@ void CFamily::printS(std::string ident, chillAST_ForStmt *n, std::ostream &o) {
     o << "// " << n->metacomment << "\n";
   o << "for (";
   print(ident, n->getInit(), o);
-  o << ";";
+  o << "; ";
   print(ident, n->getCond(), o);
-  o << ";";
+  o << "; ";
   print(ident, n->getInc(), o);
   o << ") ";
   if (n->getBody()->isCompoundStmt()) {
@@ -232,6 +232,9 @@ void CFamily::printS(std::string ident, chillAST_IfStmt *n, std::ostream &o) {
   if (!(n->getThen()->isCompoundStmt()))
     CHILL_ERROR("Then part is not a CompoundStmt!\n");
   if (n->getElse()) {
+    if (n->getThen()->getNumChildren() == 1)
+      o<<std::endl<<ident;
+    else o<<" ";
     o << "else ";
     print(ident, n->getElse(), o);
   }

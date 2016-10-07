@@ -1041,41 +1041,28 @@ bool IR_chillArrayRef::is_write() const {
 
 // TODO
 omega::CG_outputRepr *IR_chillArrayRef::index(int dim) const {
-  fprintf(stderr, "IR_xxxxArrayRef::index( %d )  \n", dim);
-  //chillASE->print(); printf("\n"); fflush(stdout); 
-  //chillASE->getIndex(dim)->print(); printf("\n"); fflush(stdout); 
   return new omega::CG_chillRepr(chillASE->getIndex(dim));
 }
 
 
 IR_ArraySymbol *IR_chillArrayRef::symbol() const {
-  //fprintf(stderr, "IR_chillArrayRef::symbol()\n"); 
-  //chillASE->print(); printf("\n"); fflush(stdout); 
-  //fprintf(stderr, "base:  ");  chillASE->base->print();  printf("\n"); fflush(stdout); 
-
-
   chillAST_Node *mb = chillASE->multibase();
   chillAST_VarDecl *vd = (chillAST_VarDecl *) mb;
-  //fprintf(stderr, "symbol: '%s'\n", vd->varname);
-
-  //fprintf(stderr, "IR_chillArrayRef symbol: '%s%s'\n", vd->varname, vd->arraypart); 
-  //fprintf(stderr, "numdimensions %d\n", vd->numdimensions); 
   IR_ArraySymbol *AS = new IR_chillArraySymbol(ir_, vd);
-  //fprintf(stderr, "ir_clang.cc returning IR_chillArraySymbol 0x%x\n", AS); 
   return AS;
 /*
   chillAST_Node *b = chillASE->base;
-  fprintf(stderr, "base of type %s\n", b->getTypeString()); 
-  //b->print(); printf("\n"); fflush(stdout); 
+  fprintf(stderr, "base of type %s\n", b->getTypeString());
+  //b->print(); printf("\n"); fflush(stdout);
   if (b->getType() == CHILLAST_NODE_IMPLICITCASTEXPR) {
     b = ((chillAST_ImplicitCastExpr*)b)->subexpr;
-    fprintf(stderr, "base of type %s\n", b->getTypeString()); 
+    fprintf(stderr, "base of type %s\n", b->getTypeString());
   }
-  
+
   if (b->getType() == CHILLAST_NODE_DECLREFEXPR)  {
-    if (NULL == ((chillAST_DeclRefExpr*)b)->decl) { 
-      fprintf(stderr, "IR_chillArrayRef::symbol()  var decl = 0x%x\n", ((chillAST_DeclRefExpr*)b)->decl); 
-      exit(-1); 
+    if (NULL == ((chillAST_DeclRefExpr*)b)->decl) {
+      fprintf(stderr, "IR_chillArrayRef::symbol()  var decl = 0x%x\n", ((chillAST_DeclRefExpr*)b)->decl);
+      exit(-1);
     }
     return new IR_chillArraySymbol(ir_, ((chillAST_DeclRefExpr*)b)->decl); // -> decl?
   }
@@ -1083,26 +1070,21 @@ IR_ArraySymbol *IR_chillArrayRef::symbol() const {
     return (
   }
   fprintf(stderr, "IR_chillArrayRef::symbol() can't handle\n");
-  fprintf(stderr, "base of type %s\n", b->getTypeString()); 
-  exit(-1); 
-  return NULL; 
+  fprintf(stderr, "base of type %s\n", b->getTypeString());
+  exit(-1);
+  return NULL;
 */
 }
 
 
 bool IR_chillArrayRef::operator!=(const IR_Ref &that) const {
-  //fprintf(stderr, "IR_xxxxArrayRef::operator!=\n"); 
   bool op = (*this) == that; // opposite
   return !op;
 }
 
 bool IR_chillArrayRef::operator==(const IR_Ref &that) const {
-  //fprintf(stderr, "IR_xxxxArrayRef::operator==\n"); 
-  //printf("I am\n"); chillASE->print(); printf("\n"); 
   const IR_chillArrayRef *l_that = static_cast<const IR_chillArrayRef *>(&that);
   const chillAST_ArraySubscriptExpr *thatASE = l_that->chillASE;
-  //printf("other is:\n");  thatASE->print(); printf("\n"); fflush(stdout);
-  //fprintf(stderr, "addresses are 0x%x  0x%x\n", chillASE, thatASE ); 
   return (*chillASE) == (*thatASE);
   /*
 
@@ -1117,7 +1099,6 @@ bool IR_chillArrayRef::operator==(const IR_Ref &that) const {
 
 
 omega::CG_outputRepr *IR_chillArrayRef::convert() {
-  //fprintf(stderr, "IR_chillArrayRef::convert()\n"); 
   CG_chillRepr *result = new CG_chillRepr(chillASE->clone());
 //  omega::CG_chillRepr *temp = new omega::CG_chillRepr(static_cast<Expr*>(this->as_));
 //  omega::CG_outputRepr *result = temp->clone();
@@ -1163,9 +1144,6 @@ IR_chillLoop::IR_chillLoop(const IR_Code *ir, chillAST_ForStmt *achillforstmt) {
 
   chillAST_Node *inc = chillforstmt->getInc();
   // check the increment
-  //fprintf(stderr, "increment is of type %s\n", inc->getTypeString()); 
-  //inc->print(); printf("\n"); fflush(stdout);
-
   if (inc->getType() == CHILLAST_NODE_UNARYOPERATOR) {
     if (!strcmp(((chillAST_UnaryOperator *) inc)->op, "++")) step_size_ = 1;
     else step_size_ = -1;
@@ -1177,7 +1155,6 @@ IR_chillLoop::IR_chillLoop(const IR_Code *ir, chillAST_ForStmt *achillforstmt) {
       // TODO looks like this will fail for I=1+I or I=J+1 etc. do more checking
 
       char *assop = bop->getOp();
-      //fprintf(stderr, "'%s' is an assignment op\n", bop->getOp()); 
       if (!strcmp(assop, "+=") || !strcmp(assop, "-=")) {
         chillAST_Node *stride = rhs;
         //fprintf(stderr, "stride is of type %s\n", stride->getTypeString());
@@ -1286,16 +1263,8 @@ omega::CG_outputRepr *IR_chillBlock::original() const {
 
 
 omega::CG_outputRepr *IR_chillBlock::extract() const {
-  fflush(stdout);
-  fprintf(stderr, "IR_xxxxBlock::extract()\n");
-  //omega::CG_chillRepr *tnl =  new omega::CG_chillRepr(getStmtList());
-
   // if the block refers to a compound statement, return the next level
   // of statements ;  otherwise just return a repr of the statements
-
-  //if (chillAST != NULL) fprintf(stderr, "block has chillAST of type %s\n",code->getTypeString());
-  //fprintf(stderr, "block has %d exploded statements\n", statements.size()); 
-
   omega::CG_chillRepr *OR;
   CHILL_DEBUG_PRINT("adding a statement from IR_chillBlock::extract()\n");
   OR = new omega::CG_chillRepr(); // empty of statements
@@ -1306,18 +1275,17 @@ omega::CG_outputRepr *IR_chillBlock::extract() const {
 
 IR_Control *IR_chillBlock::clone() const {
   CHILL_DEBUG_PRINT("IR_xxxxBlock::clone()\n");
-  //fprintf(stderr, "IR_xxxxBlock::clone()  %d statements\n", statements.size());
   return new IR_chillBlock(this);  // shallow copy ?
 }
 
 void IR_chillBlock::dump() const {
-  fprintf(stderr, "IR_chillBlock::dump()  TODO\n");
+  CHILL_DEBUG_PRINT("IR_chillBlock::dump()  TODO\n");
   return;
 }
 
 //StmtList 
 vector<chillAST_Node *> IR_chillBlock::getStmtList() const {
-  fprintf(stderr, "IR_xxxxBlock::getStmtList()\n");
+  CHILL_DEBUG_PRINT("IR_xxxxBlock::getStmtList()\n");
   return statements; // ?? 
 }
 
@@ -1326,52 +1294,19 @@ void IR_chillBlock::addStatement(chillAST_Node *s) {
   statements.push_back(s);
 }
 
-
-void PrintTranslationUnit(TranslationUnitDecl *TUD) { // ,  ASTContext &CTX ) {
-  fprintf(stderr, "MY PrintTranslationUnit()\n");
-  // TUD derived from Decl and DeclContext
-  static DeclContext *DC = TUD->castToDeclContext(TUD);
-  //SourceManager  SM =  CTX.getSourceManager();
-
-  for (DeclContext::decl_iterator DI = DC->decls_begin(), DE = DC->decls_end(); DI != DE; ++DI) {
-    Decl *D = *DI;
-    fprintf(stderr, "D\n");
-    if (isa<FunctionDecl>(D)) {
-      fprintf(stderr, "FunctionDecl\n");
-      //PrintFunctionDecl( dyn_cast<FunctionDecl>(D), CTX.getSourceManager(), 0);
-    } else if (isa<VarDecl>(D)) {
-      fprintf(stderr, "VarDecl\n");
-      //PrintVarDecl( dyn_cast<VarDecl>(D), CTX.getSourceManager(), 0 );
-    } else if (isa<TypedefDecl>(D)) {
-      fprintf(stderr, "TypedefDecl\n");
-      //PrintTypeDefDecl( dyn_cast<TypedefDecl>(D), CTX.getSourceManager(), 0 );
-    } else if (isa<TypeAliasDecl>(D)) {
-      fprintf(stderr, "TypeAliasDecl\n");
-    } else fprintf(stderr, "\na declaration of type %s (%d)\n", D->getDeclKindName(), D->getKind());
-    //else if (isa<TypedefNameDecl>(D)) { fprintf(stderr, "TypedefNameDecl\n");}
-  }
-}
-
 class NULLASTConsumer : public ASTConsumer {
 };
 
 
 void findmanually(chillAST_Node *node, char *procname, std::vector<chillAST_Node *> &procs) {
-  //fprintf(stderr, "findmanually()                CHILL AST node of type %s\n", node->getTypeString()); 
 
   if (node->getType() == CHILLAST_NODE_FUNCTIONDECL) {
     char *name = ((chillAST_FunctionDecl *) node)->functionName;
-    //fprintf(stderr, "node name 0x%x  ", name);
-    //fprintf(stderr, "%s     procname ", name); 
-    //fprintf(stderr, "0x%x  ", procname);
-    //fprintf(stderr, "%s\n", procname); 
     if (!strcmp(name, procname)) {
-      //fprintf(stderr, "found procedure %s\n", procname ); 
       procs.push_back(node);
       // quit recursing. probably not correct in some horrible case
       return;
     }
-    //else fprintf(stderr, "this is not the function we're looking for\n"); 
   }
 
 
@@ -1380,10 +1315,8 @@ void findmanually(chillAST_Node *node, char *procname, std::vector<chillAST_Node
   // and then its children is needed. 
 
   int numc = node->children.size();
-  //fprintf(stderr, "%d children\n", numc);
 
   for (int i = 0; i < numc; i++) {
-    //fprintf(stderr, "node of type %s is recursing to child %d\n",  node->getTypeString(), i); 
     findmanually(node->children[i], procname, procs);
   }
   return;
@@ -2188,68 +2121,29 @@ IR_Block *IR_clangCode::GetCode() const {    // return IR_Block corresponding to
 
 
 void IR_clangCode::ReplaceCode(IR_Control *old, omega::CG_outputRepr *repr) {
-  fflush(stdout);
-  fprintf(stderr, "IR_xxxxCode::ReplaceCode( old, *repr)\n");
-
   CG_chillRepr *chillrepr = (CG_chillRepr *) repr;
   std::vector<chillAST_Node *> newcode = chillrepr->getChillCode();
   int numnew = newcode.size();
-
-  //fprintf(stderr, "new code (%d) is\n", numnew); 
-  //for (int i=0; i<numnew; i++) { 
-  //  newcode[i]->print(0, stderr);
-  //  fprintf(stderr, "\n"); 
-  //} 
-
   struct IR_chillLoop *cloop;
-
   std::vector<chillAST_VarDecl *> olddecls;
   chillfunc->gatherVarDecls(olddecls);
-  //fprintf(stderr, "\n%d old decls   they are:\n", olddecls.size()); 
-  //for (int i=0; i<olddecls.size(); i++) {
-  //  fprintf(stderr, "olddecl[%d]  ox%x  ",i, olddecls[i]); 
-  //  olddecls[i]->print(); printf("\n"); fflush(stdout); 
-  //} 
-
-
-  //fprintf(stderr, "num new stmts %d\n", numnew); 
-  //fprintf(stderr, "new code we're look for decls in:\n"); 
   std::vector<chillAST_VarDecl *> decls;
-  for (int i = 0; i < numnew; i++) {
-    //newcode[i]->print(0,stderr);
-    //fprintf(stderr, "\n"); 
+  for (int i = 0; i < numnew; i++)
     newcode[i]->gatherVarUsage(decls);
-  }
-
-  //fprintf(stderr, "\n%d new vars used  they are:\n", decls.size()); 
-  //for (int i=0; i<decls.size(); i++) {
-  //  fprintf(stderr, "decl[%d]  ox%x  ",i, decls[i]); 
-  //  decls[i]->print(); printf("\n"); fflush(stdout); 
-  //} 
-
 
   for (int i = 0; i < decls.size(); i++) {
-    //fprintf(stderr, "\nchecking "); decls[i]->print(); printf("\n"); fflush(stdout); 
     int inthere = 0;
-    for (int j = 0; j < VariableDeclarations.size(); j++) {
-      if (VariableDeclarations[j] == decls[i]) {
-        //fprintf(stderr, "it's in the Variable Declarations()\n");
-      }
-    }
-    for (int j = 0; j < olddecls.size(); j++) {
-      if (decls[i] == olddecls[j]) {
-        //fprintf(stderr, "it's in the olddecls (exactly)\n");
+    for (int j = 0; j < VariableDeclarations.size(); j++)
+      if (VariableDeclarations[j] == decls[i])
         inthere = 1;
-      }
-      if (!strcmp(decls[i]->varname, olddecls[j]->varname)) {
-        if (!strcmp(decls[i]->arraypart, olddecls[j]->arraypart)) {
-          //fprintf(stderr, "it's in the olddecls (INEXACTLY)\n");
+    for (int j = 0; j < olddecls.size(); j++) {
+      if (decls[i] == olddecls[j])
+        inthere = 1;
+      if (!strcmp(decls[i]->varname, olddecls[j]->varname))
+        if (!strcmp(decls[i]->arraypart, olddecls[j]->arraypart))
           inthere = 1;
-        }
-      }
     }
     if (!inthere) {
-      //fprintf(stderr, "inserting decl[%d] for ",i); decls[i]->print(); printf("\n");fflush(stdout); 
       chillfunc->getBody()->insertChild(0, decls[i]);
       olddecls.push_back(decls[i]);
     }
@@ -2281,7 +2175,7 @@ void IR_clangCode::ReplaceCode(IR_Control *old, omega::CG_outputRepr *repr) {
       int numstatements = oldparentcode->size();
       for (int i = 0; i < numstatements; i++) if ((*oldparentcode)[i] == forstmt) { index = i; }
       if (index == -1) {
-        fprintf(stderr, "ir_clang.cc can't find the loop in its parent\n");
+        CHILL_ERROR("can't find the loop in its parent\n");
         exit(-1);
       }
       // insert the new code
@@ -2309,7 +2203,6 @@ void IR_clangCode::ReplaceCode(IR_Control *old, omega::CG_outputRepr *repr) {
     case IR_CONTROL_BLOCK:
       CHILL_ERROR("old is IR_CONTROL_BLOCK\n");
       exit(-1);
-      //tf_old = static_cast<IR_chillBlock *>(old)->getStmtList()[0];
       break;
     default:
       throw chill::error::ir("control structure to be replaced not supported");

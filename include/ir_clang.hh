@@ -39,7 +39,6 @@ struct IR_chillScalarSymbol : public IR_ScalarSymbol {
   chillAST_VarDecl *chillvd;
 
   IR_chillScalarSymbol(const IR_Code *ir, chillAST_VarDecl *vd) {
-    fprintf(stderr, "making scalar symbol %s\n", vd->varname);
     ir_ = ir;
     chillvd = vd;
   }
