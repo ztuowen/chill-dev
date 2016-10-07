@@ -1782,22 +1782,25 @@ IR_clangCode::CreateArraySymbol(const IR_Symbol *sym, std::vector<omega::CG_outp
 // TODO 
 std::vector<IR_ScalarRef *> IR_clangCode::FindScalarRef(const omega::CG_outputRepr *repr) const {
   std::vector<IR_ScalarRef *> scalars;
-  fprintf(stderr, "IR_clangCode::FindScalarRef() DIE\n");
-  exit(-1);
+
+  const omega::CG_chillRepr *crepr = static_cast<const omega::CG_chillRepr *>(repr);
+  std::vector<chillAST_Node *> chillstmts = crepr->getChillCode();
+
+  std::vector<chillAST_DeclRefExpr *> refs;
+  for (int i = 0; i < chillstmts.size(); i++) {
+    chillstmts[i]->gatherScalarRefs(refs,false);
+  }
+  for (int i = 0; i < refs.size(); i++) {
+    scalars.push_back(new IR_chillScalarRef(this, refs[i]));
+  }
   return scalars;
 }
 
 
 IR_ScalarRef *IR_clangCode::CreateScalarRef(const IR_ScalarSymbol *sym) {
-  //fprintf(stderr, "\n***** ir_clang.cc IR_clangCode::CreateScalarRef( sym %s )\n", sym->name().c_str()); 
-  //DeclRefExpr *de = new (vd->getASTContext())DeclRefExpr(static_cast<ValueDecl*>(vd), vd->getType(), SourceLocation());
-  //fprintf(stderr, "sym 0x%x\n", sym); 
-
   IR_chillScalarRef *sr = new IR_chillScalarRef(this, new chillAST_DeclRefExpr(
       ((IR_chillScalarSymbol *) sym)->chillvd)); // uses VarDecl to mak a declrefexpr
-  //fprintf(stderr, "returning ScalarRef with dre 0x%x\n", sr->dre); 
   return sr;
-  //return (IR_ScalarRef *)NULL;
 }
 
 bool IR_clangCode::FromSameStmt(IR_ArrayRef *A, IR_ArrayRef *B) {
@@ -1817,15 +1820,12 @@ IR_ArrayRef *IR_clangCode::CreateArrayRef(const IR_ArraySymbol *sym, std::vector
   chillAST_VarDecl *vd = c_sym->chillvd;
   std::vector<chillAST_Node *> inds;
 
-  //fprintf(stderr, "%d array indeces\n", sym->n_dim()); 
   for (int i = 0; i < index.size(); i++) {
     CG_chillRepr *CR = (CG_chillRepr *) index[i];
 
     int numnodes = CR->chillnodes.size();
     if (1 != numnodes) {
-      fprintf(stderr,
-              "IR_clangCode::CreateArrayRef() array dimension %d has %d chillnodes\n",
-              i, numnodes);
+      CHILL_ERROR("IR_clangCode::CreateArrayRef() array dimension %d has %d chillnodes\n", i, numnodes);
       exit(-1);
     }
 

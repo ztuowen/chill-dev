@@ -162,6 +162,7 @@ public:
   void permute(const std::set<int> &active, const std::vector<int> &pi);
   void permute(int stmt_num, int level, const std::vector<int> &pi);
   void permute(const std::vector<int> &pi);
+  // TODO doc and usage needed
   void original();
   
   void tile(int stmt_num, int level, int tile_size, int outer_level = 1, TilingMethodType method = StridedTile, int alignment_offset = 0, int alignment_multiple = 1);

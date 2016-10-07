@@ -357,9 +357,9 @@ int CFamily::getPrecS(chillAST_TernaryOperator *n) {
 void CFamily::printS(std::string ident, chillAST_TernaryOperator *n, std::ostream &o) {
   int prec = getPrec(n);
   printPrec(ident, n->getCond(), o, prec);
-  o << "" << n->op << "";
+  o << " " << n->op << " ";
   printPrec(ident, n->getLHS(), o, prec);
-  o << ":";
+  o << " : ";
   printPrec(ident, n->getRHS(), o, prec);
 }
 

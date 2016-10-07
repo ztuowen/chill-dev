@@ -11,7 +11,6 @@ bool streq(const char *a, const char *b) {
   return !strcmp(a, b);
 }
 
-//! Parse to the most basic type
 char *parseUnderlyingType(const char *sometype) {
   int len = strlen(sometype);
   CHILL_DEBUG_PRINT("parseUnderlyingType( %s )\n", sometype);
@@ -116,7 +115,6 @@ chillAST_VarDecl *symbolTableFindVariableNamed(chillAST_SymbolTable *table, cons
   return variableDeclFindSubpart(vd, subpart);
 }
 
-//! remove UL from numbers, MODIFIES the argument!
 char *ulhack(char *brackets) {
   CHILL_DEBUG_PRINT("ulhack( \"%s\"  -> \n", brackets);
   int len = strlen(brackets);
@@ -132,8 +130,6 @@ char *ulhack(char *brackets) {
   return brackets;
 }
 
-
-//! remove __restrict__ , MODIFIES the argument!
 char *restricthack(char *typeinfo) {
   CHILL_DEBUG_PRINT("restricthack( \"%s\"  -> \n", typeinfo);
   std::string r("__restrict__");
@@ -292,24 +288,17 @@ chillAST_TypedefDecl::chillAST_TypedefDecl(char *t, const char *a, char *p) {
 };
 
 chillAST_VarDecl *chillAST_TypedefDecl::findSubpart(const char *name) {
-  //fprintf(stderr, "chillAST_TypedefDecl::findSubpart( %s )\n", name);
-  //fprintf(stderr, "typedef %s  %s\n", structname, newtype);
-
   if (rd) { // we have a record decl look there
     chillAST_VarDecl *sub = rd->findSubpart(name);
-    //fprintf(stderr, "rd found subpart %p\n", sub);
     return sub;
   }
 
   // can this ever happen now ???
   int nsub = subparts.size();
-  //fprintf(stderr, "%d subparts\n", nsub);
   for (int i = 0; i < nsub; i++) {
     if (!strcmp(name, subparts[i]->varname)) return subparts[i];
   }
-  //fprintf(stderr, "subpart not found\n");
-
-
+  CHILL_ERROR("subpart not found\n");
   return NULL;
 }
 
@@ -334,11 +323,8 @@ chillAST_RecordDecl::chillAST_RecordDecl(const char *nam, const char *orig) {
 
 
 chillAST_VarDecl *chillAST_RecordDecl::findSubpart(const char *nam) {
-  //fprintf(stderr, "chillAST_RecordDecl::findSubpart( %s )\n", nam);
   int nsub = subparts.size();
-  //fprintf(stderr, "%d subparts\n", nsub);
   for (int i = 0; i < nsub; i++) {
-    //fprintf(stderr, "comparing to '%s' to '%s'\n", nam, subparts[i]->varname);
     if (!strcmp(nam, subparts[i]->varname)) return subparts[i];
   }
   fprintf(stderr, "chillAST_RecordDecl::findSubpart() couldn't find member NAMED %s in ", nam);
@@ -349,26 +335,19 @@ chillAST_VarDecl *chillAST_RecordDecl::findSubpart(const char *nam) {
 
 
 chillAST_VarDecl *chillAST_RecordDecl::findSubpartByType(const char *typ) {
-  //fprintf(stderr, "chillAST_RecordDecl::findSubpart( %s )\n", nam);
   int nsub = subparts.size();
-  //fprintf(stderr, "%d subparts\n", nsub);
   for (int i = 0; i < nsub; i++) {
-    //fprintf(stderr, "comparing '%s' to '%s'\n", typ, subparts[i]->vartype);
     if (!strcmp(typ, subparts[i]->vartype)) return subparts[i];
   }
-  //fprintf(stderr, "chillAST_RecordDecl::findSubpart() couldn't find member of TYPE %s in ", typ); print(); printf("\n\n"); fflush(stdout);
-
   return NULL;
 }
 
 chillAST_SymbolTable *chillAST_RecordDecl::addVariableToSymbolTable(chillAST_VarDecl *vd) {
   // for now, just bail. or do we want the struct to have an actual symbol table?
-  //fprintf(stderr, "chillAST_RecordDecl::addVariableToSymbolTable() ignoring struct member %s vardecl\n", vd->varname);
   return NULL; // damn, I hope nothing uses this!
 }
 
 void chillAST_RecordDecl::printStructure(int indent, FILE *fp) {
-  //fprintf(stderr, "chillAST_RecordDecl::printStructure()\n");
   chillindent(indent, fp);
   if (isStruct) {
     fprintf(fp, "struct { ", name);
@@ -2471,7 +2450,7 @@ chillAST_ParenExpr::chillAST_ParenExpr() {
   children.push_back(NULL);
 }
 
-chillAST_ParenExpr::chillAST_ParenExpr(chillAST_Node *sub) {
+chillAST_ParenExpr::chillAST_ParenExpr(chillAST_Node *sub):chillAST_ParenExpr() {
   setSubExpr(sub);
 }
 
@@ -2626,12 +2605,11 @@ bool chillAST_IfStmt::findLoopIndexesToReplace(chillAST_SymbolTable *symtab, boo
 
 chillAST_Node *lessthanmacro(chillAST_Node *left, chillAST_Node *right) {
 
-  chillAST_ParenExpr *lp1 = new chillAST_ParenExpr(left);
-  chillAST_ParenExpr *rp1 = new chillAST_ParenExpr(right);
+  chillAST_Node *lp1 = left->clone();
+  chillAST_Node *rp1 = right->clone();
   chillAST_BinaryOperator *cond = new chillAST_BinaryOperator(lp1, "<", rp1);
-
-  chillAST_ParenExpr *lp2 = new chillAST_ParenExpr(left);
-  chillAST_ParenExpr *rp2 = new chillAST_ParenExpr(right);
+  chillAST_Node *lp2 = left->clone();
+  chillAST_Node *rp2 = right->clone();
 
   chillAST_TernaryOperator *t = new chillAST_TernaryOperator("?", cond, lp2, rp2);
 
@@ -2641,21 +2619,12 @@ chillAST_Node *lessthanmacro(chillAST_Node *left, chillAST_Node *right) {
 
 // look for function declaration with a given name, in the tree with root "node"
 void findFunctionDeclRecursive(chillAST_Node *node, const char *procname, vector<chillAST_FunctionDecl *> &funcs) {
-  //fprintf(stderr, "findmanually()                CHILL AST node of type %s\n", node->getTypeString());
-
   if (node->isFunctionDecl()) {
     char *name = ((chillAST_FunctionDecl *) node)->functionName; // compare name with desired name
-    //fprintf(stderr, "node name 0x%x  ", name);
-    //fprintf(stderr, "%s     procname ", name);
-    //fprintf(stderr, "0x%x  ", procname);
-    //fprintf(stderr, "%s\n", procname);
     if (!strcmp(name, procname)) {
-      //fprintf(stderr, "found procedure %s\n", procname );
       funcs.push_back((chillAST_FunctionDecl *) node);  // this is it
-      // quit recursing. probably not correct in some horrible case
       return;
     }
-    //else fprintf(stderr, "this is not the function we're looking for\n");
   }
 
 
@@ -2687,21 +2656,18 @@ chillAST_FunctionDecl *findFunctionDecl(chillAST_Node *node, const char *procnam
   findFunctionDeclRecursive(node, procname, functions);
 
   if (functions.size() == 0) {
-    fprintf(stderr, "could not find function named '%s'\n", procname);
+    CHILL_ERROR("could not find function named '%s'\n", procname);
     exit(-1);
   }
 
   if (functions.size() > 1) {
-    fprintf(stderr, "oddly, found %d functions named '%s'\n", functions.size(), procname);
-    fprintf(stderr, "I am unsure what to do\n");
+    CHILL_ERROR("oddly, found %d functions named '%s'\n", functions.size(), procname);
 
     for (int f = 0; f < functions.size(); f++) {
-      fprintf(stderr, "function %d  %p   %s\n", f, functions[f], functions[f]->functionName);
+      CHILL_ERROR("function %d  %p   %s\n", f, functions[f], functions[f]->functionName);
     }
     exit(-1);
   }
-
-  //fprintf(stderr, "found the procedure named %s\n", procname);
   return functions[0];
 }
 
@@ -2710,33 +2676,18 @@ chillAST_SymbolTable *addSymbolToTable(chillAST_SymbolTable *st, chillAST_VarDec
 {
   chillAST_SymbolTable *s = st;
   if (!s) s = new chillAST_SymbolTable;
-
   int tablesize = s->size();
-
   for (int i = 0; i < tablesize; i++) {
     if ((*s)[i] == vd) {
-      //fprintf(stderr, "the exact same symbol, not just the same name, was already there\n");
       return s; // already there
     }
   }
-
   for (int i = 0; i < tablesize; i++) {
-    //fprintf(stderr, "name %s vs name %s\n", (*s)[i]->varname, vd->varname);
     if (!strcmp((*s)[i]->varname, vd->varname)) {
-      //fprintf(stderr, "symbol with the same name was already there\n");
       return s; // already there
     }
   }
-
-  //fprintf(stderr, "adding %s %s to a symbol table that didn't already have it\n", vd->vartype, vd->varname);
-
-  //printf("before:\n");
-  //printSymbolTable( s ); fflush(stdout);
-
   s->push_back(vd); // add it
-
-  //printf("after:\n");
-  //printSymbolTable( s ); fflush(stdout);
   return s;
 }
 

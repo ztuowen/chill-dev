@@ -87,6 +87,7 @@ enum CHILLAST_PREPROCESSING_POSITION { // when tied to another statement
   CHILLAST_PREPROCESSING_IMMEDIATELYBEFORE // on same line
 };
 
+//! Parse to the most basic type
 char *parseUnderlyingType(const char *sometype);
 
 char *parseArrayParts(char *sometype);
@@ -95,7 +96,10 @@ bool isRestrict(const char *sometype);
 
 char *splitTypeInfo(char *underlyingtype);
 
-//! change "1024UL" to "1024"
+//! remove UL from numbers, MODIFIES the argument!
+/*!
+ * change "1024UL" to "1024"
+ */
 char *ulhack(char *brackets);
 
 //! remove __restrict__ , MODIFIES the argument!
