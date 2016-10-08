@@ -1349,10 +1349,8 @@ std::vector<std::set<int> > Loop::sort_by_same_loops(std::set<int> active,
       //while (itn->content->type() != IR_CONTROL_LOOP && itn != NULL)
       //  itn = itn->parent;
 
-      while ((itn != NULL) && (itn->payload != level - 1)) {
+      while ((itn != NULL) && ((itn->payload != level - 1) || itn -> content->type() != IR_CONTROL_LOOP)) {
         itn = itn->parent;
-        while (itn != NULL && itn->content->type() != IR_CONTROL_LOOP)
-          itn = itn->parent;
       }
 
       if (itn == NULL)
