@@ -4,6 +4,7 @@
 
 #include "printer/cfamily.h"
 #include <iomanip>
+#include <limits>
 
 
 using namespace std;
@@ -169,9 +170,16 @@ void CFamily::printS(std::string ident, chillAST_FloatingLiteral *n, std::ostrea
   if (n->allthedigits)
     o << n->allthedigits;
   else {
-    o << showpoint << n->value;
-    if (n->getPrecision() == 1)
+    if (n->getPrecision() == 2)
+      o << setprecision(std::numeric_limits<double>::max_digits10) << n->value;
+    else {
+      ostringstream st;
+      st << setprecision(std::numeric_limits<float>::max_digits10) << n->value;
+      o << st.str();
+      if (st.str().find('.')==string::npos)
+        o << ".0";
       o << "f";
+    }
   }
 }
 

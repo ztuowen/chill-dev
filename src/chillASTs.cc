@@ -521,12 +521,6 @@ bool chillAST_FunctionDecl::findLoopIndexesToReplace(chillAST_SymbolTable *symta
   return false;
 }
 
-
-chillAST_Node *chillAST_FunctionDecl::constantFold() {
-  if (getBody()) setBody((chillAST_CompoundStmt *) getBody()->constantFold());
-  return this;
-}
-
 chillAST_MacroDefinition::chillAST_MacroDefinition(const char *mname = NULL, const char *rhs = NULL) {
   if (mname) macroName = strdup(mname); else macroName = strdup("UNDEFINEDMACRO");
   metacomment = NULL;
@@ -1039,12 +1033,7 @@ chillAST_BinaryOperator::chillAST_BinaryOperator() {
 
 chillAST_BinaryOperator::chillAST_BinaryOperator(chillAST_Node *l, const char *oper, chillAST_Node *r)
     : chillAST_BinaryOperator() {
-  //fprintf(stderr, "chillAST_BinaryOperator::chillAST_BinaryOperator( l %p  %s  r %p,   parent %p)  this %p\n", l, oper, r, par, this);
   CHILL_DEBUG_PRINT("( l  %s  r )\n", oper);
-
-  //if (l && r ) {
-  //  fprintf(stderr, "("); l->print(0,stderr); fprintf(stderr, ") %s (", oper); r->print(0,stderr); fprintf(stderr, ")\n\n");
-  //}
 
   setLHS(l);
   setRHS(r);
@@ -1055,13 +1044,10 @@ chillAST_BinaryOperator::chillAST_BinaryOperator(chillAST_Node *l, const char *o
   if (isAssignmentOp()) {
     if (l && l->isArraySubscriptExpr()) {
       ((chillAST_ArraySubscriptExpr *) l)->imwrittento = true;
-      //fprintf(stderr, "chillAST_BinaryOperator, op '=', lhs is an array reference  LVALUE\n");
     }
   }
   if (isAugmentedAssignmentOp()) {  // +=  etc
-    //fprintf(stderr, "isAugmentedAssignmentOp()  "); print(); fflush(stdout);
     if (l && l->isArraySubscriptExpr()) {
-      //fprintf(stderr, "lhs is also read from  ");  lhs->print(); fflush(stdout);
       ((chillAST_ArraySubscriptExpr *) l)->imreadfrom = true; // note will ALSO have imwrittento true
     }
   }
@@ -1097,8 +1083,6 @@ class chillAST_Node *chillAST_BinaryOperator::constantFold() {
   chillAST_Node *returnval = this;
 
   if (getLHS()->isConstant() && getRHS()->isConstant()) {
-    //fprintf(stderr, "binop folding constants\n"); print(0,stderr); fprintf(stderr, "\n");
-
     if (!strcmp(op, "+") || !strcmp(op, "-") || !strcmp(op, "*")) {
       if (getLHS()->isIntegerLiteral() && getRHS()->isIntegerLiteral()) {
         chillAST_IntegerLiteral *l = (chillAST_IntegerLiteral *) getLHS();
@@ -1110,34 +1094,33 @@ class chillAST_Node *chillAST_BinaryOperator::constantFold() {
         if (!strcmp(op, "*")) I = new chillAST_IntegerLiteral(l->value * r->value);
 
         returnval = I;
-        //fprintf(stderr, "%d %s %d becomes %d\n", l->value,op, r->value, I->value);
-      } else { // at least one is a float
+      } else {
 
         // usually don't want to do this for floats or doubles
         // could probably check for special cases like 0.0/30.0  or X/X  or X/1.0
-#ifdef FOLDFLOATS
-        float lval, rval;
-        if (lhs->isIntegerLiteral()) {
-          lval = (float) ((chillAST_IntegerLiteral *)lhs)->value;
-        }
+        double lval, rval;
+        int prec = 1;
+        if (getLHS()->isIntegerLiteral())
+          lval = ((chillAST_IntegerLiteral *)getLHS())->value;
         else {
-          lval = ((chillAST_FloatingLiteral *)lhs)->value;
+          lval = ((chillAST_FloatingLiteral *)getLHS())->value;
+          prec = max(prec, ((chillAST_FloatingLiteral *)getLHS())->getPrecision());
         }
 
-        if (rhs->isIntegerLiteral()) {
-          rval = (float) ((chillAST_IntegerLiteral *)rhs)->value;
-        }
+        if (getRHS()->isIntegerLiteral())
+          rval = ((chillAST_IntegerLiteral *)getRHS())->value;
         else {
-          rval = ((chillAST_FloatingLiteral *)rhs)->value;
+          rval = ((chillAST_FloatingLiteral *) getRHS())->value;
+          prec = max(prec, ((chillAST_FloatingLiteral *) getRHS())->getPrecision());
         }
 
         chillAST_FloatingLiteral *F;
-        if (streq(op, "+")) F = new chillAST_FloatingLiteral(lval + rval, parent);
-        if (streq(op, "-")) F = new chillAST_FloatingLiteral(lval - rval, parent);
-        if (streq(op, "*")) F = new chillAST_FloatingLiteral(lval * rval, parent);
+        // NOT SAFE
+        // if (streq(op, "+")) F = new chillAST_FloatingLiteral(lval + rval, parent);
+        // if (streq(op, "-")) F = new chillAST_FloatingLiteral(lval - rval, parent);
+        if (streq(op, "*")) F = new chillAST_FloatingLiteral(lval * rval, prec, NULL);
 
         returnval = F;
-#endif
 
       }
     }
@@ -1556,8 +1539,6 @@ chillAST_Node *chillAST_VarDecl::clone() {
   vd->arraypointerpart = NULL;
 
   if (arraypart != NULL && NULL != arraysizes) {  // !strcmp(arraypart, "")) {
-    //fprintf(stderr, "in chillAST_VarDecl::clone(), cloning the array info\n");
-    //fprintf(stderr, "numdimensions %d     arraysizes 0x%x\n", numdimensions, arraysizes) ;
     vd->numdimensions = numdimensions;
 
     if (arraysizes) {
@@ -1569,17 +1550,11 @@ chillAST_Node *chillAST_VarDecl::clone() {
     }
   }
 
-  if (arraypointerpart) {
-    //fprintf(stderr, "copying arraypointerpart\n");
+  if (arraypointerpart)
     vd->arraypointerpart = strdup(arraypointerpart);
-  }
 
   vd->isStruct = this->isStruct;
   //vd->insideAStruct =  this->insideAStruct;
-
-  //if (vd->isStruct)  fprintf(stderr, "vardecl::clone()  %s is a struct\n", varname);
-  //else fprintf(stderr, "vardecl::clone()  %s is NOT a struct\n", varname);
-
 
   vd->knownArraySizes = this->knownArraySizes;
   vd->isFromSourceFile = isFromSourceFile;
@@ -1633,9 +1608,6 @@ chillAST_IntegerLiteral::chillAST_IntegerLiteral(int val) {
   filename = NULL;
 }
 
-class chillAST_Node *chillAST_IntegerLiteral::constantFold() { return this; } // can never do anything
-
-
 class chillAST_Node *chillAST_IntegerLiteral::clone() {
 
   chillAST_IntegerLiteral *IL = new chillAST_IntegerLiteral(value);
@@ -1664,8 +1636,6 @@ chillAST_FloatingLiteral::chillAST_FloatingLiteral(chillAST_FloatingLiteral *old
   isFromSourceFile = true; // default
   filename = NULL;
 }
-
-chillAST_Node *chillAST_FloatingLiteral::constantFold() { return this; }; // NOOP
 
 chillAST_Node *chillAST_FloatingLiteral::clone() {
   //fprintf(stderr, "chillAST_FloatingLiteral::clone()  ");
@@ -1713,7 +1683,6 @@ chillAST_Node *chillAST_UnaryOperator::constantFold() {
         chillAST_IntegerLiteral *I = new chillAST_IntegerLiteral(-intval);
         I->setParent(parent);
         returnval = I;
-        //fprintf(stderr, "integer -%d becomes %d\n", intval, I->value);
       } else {
         chillAST_FloatingLiteral *FL = (chillAST_FloatingLiteral *) getSubExpr();
         chillAST_FloatingLiteral *F = new chillAST_FloatingLiteral(FL); // clone
@@ -1776,6 +1745,18 @@ chillAST_CStyleCastExpr::chillAST_CStyleCastExpr() {
 chillAST_CStyleCastExpr::chillAST_CStyleCastExpr(const char *to, chillAST_Node *sub) : chillAST_CStyleCastExpr() {
   towhat = strdup(to);
   setSubExpr(sub);
+}
+
+chillAST_Node * chillAST_CStyleCastExpr::constantFold() {
+  chillAST_Node::constantFold();
+  if (getSubExpr()->isConstant() && getSubExpr()->isIntegerLiteral()) {
+    long long val = getSubExpr()->evalAsInt();
+    if (!strcmp(towhat,"float"))
+      return new chillAST_FloatingLiteral(val,1,NULL);
+    if (!strcmp(towhat, "double"))
+      return new chillAST_FloatingLiteral(val,2,NULL);
+  }
+  return this;
 }
 
 class chillAST_Node *chillAST_CStyleCastExpr::clone() {
@@ -2337,13 +2318,6 @@ void chillAST_CompoundStmt::loseLoopWithLoopVar(char *var) {
   //fprintf(stderr, "CompoundStmt node 0x%x done recursing\n", this );
 }
 
-chillAST_Node *chillAST_CompoundStmt::constantFold() {
-  //fprintf(stderr, "chillAST_CompoundStmt::constantFold()\n");
-  for (int i = 0; i < children.size(); i++) children[i] = children[i]->constantFold();
-  return this;
-}
-
-
 chillAST_Node *chillAST_CompoundStmt::clone() {
   chillAST_CompoundStmt *cs = new chillAST_CompoundStmt();
   for (int i = 0; i < children.size(); i++) cs->addChild(children[i]->clone());
@@ -2610,11 +2584,11 @@ bool chillAST_IfStmt::findLoopIndexesToReplace(chillAST_SymbolTable *symtab, boo
 }
 
 
-chillAST_Node *lessthanmacro(chillAST_Node *left, chillAST_Node *right) {
+chillAST_Node *minmaxTernary(const char * op, chillAST_Node *left, chillAST_Node *right) {
 
   chillAST_Node *lp1 = left->clone();
   chillAST_Node *rp1 = right->clone();
-  chillAST_BinaryOperator *cond = new chillAST_BinaryOperator(lp1, "<", rp1);
+  chillAST_BinaryOperator *cond = new chillAST_BinaryOperator(lp1, op, rp1);
   chillAST_Node *lp2 = left->clone();
   chillAST_Node *rp2 = right->clone();
 

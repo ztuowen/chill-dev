@@ -199,7 +199,7 @@ chillAST_VarDecl *symbolTableFindVariableNamed(chillAST_SymbolTable *table,
 
 chillAST_TypedefDecl *typedefTableFindName(chillAST_TypedefTable *table, const char *name);
 
-chillAST_Node *lessthanmacro(chillAST_Node *left, chillAST_Node *right);
+chillAST_Node *minmaxTernary(const char *op, chillAST_Node *left, chillAST_Node *right);
 
 chillAST_SymbolTable *addSymbolToTable(chillAST_SymbolTable *st, chillAST_VarDecl *vd);
 

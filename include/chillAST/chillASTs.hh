@@ -265,7 +265,6 @@ public:
   // required methods
   void replaceChild(chillAST_Node *old, chillAST_Node *newchild);
 
-  chillAST_Node *constantFold();
 
   chillAST_Node *clone();
 
@@ -408,8 +407,6 @@ public:
 
   //void replaceVarDecls( chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl);
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bool forcesync = false);
-
-  chillAST_Node *constantFold();
 
 };  // end FunctionDecl
 
@@ -596,9 +593,9 @@ public:
 
   chillAST_Node *getCond() { return getChild(0); };
 
-  chillAST_Node *getRHS() { return getChild(1); };
+  chillAST_Node *getLHS() { return getChild(1); };
 
-  chillAST_Node *getLHS() { return getChild(2); };
+  chillAST_Node *getRHS() { return getChild(2); };
 
   void setCond(chillAST_Node *newc) { setChild(0, newc); }
 
@@ -811,8 +808,6 @@ public:
   int evalAsInt() { return value; }
 
   // required methods that I can't seem to get to inherit
-  chillAST_Node *constantFold();
-
   chillAST_Node *clone();
 
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab,
@@ -843,8 +838,6 @@ public:
   int getPrecision() { return precision; }
 
   // required methods that I can't seem to get to inherit
-  chillAST_Node *constantFold();
-
   chillAST_Node *clone();
 
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab,
@@ -943,6 +936,8 @@ public:
 
   // required methods that I can't seem to get to inherit
   chillAST_Node *getSubExpr() { return getChild(0); }
+
+  chillAST_Node *constantFold();
 
   void setSubExpr(chillAST_Node *sub) { return setChild(0, sub); }
 

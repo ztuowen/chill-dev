@@ -246,12 +246,11 @@ namespace omega {
         CG_outputRepr *CGOR; 
         CG_chillRepr  *CGCR;
         char macroname[32];
-        char op; 
-        if (fname == std::string("max"))  op = '>';
-        else op = '<'; 
-        // TODO >, check number of args etc
-        chillAST_Node *ternary = lessthanmacro(  ((CG_chillRepr*) list[0])->chillnodes[0],
-                                                 ((CG_chillRepr*) list[1])->chillnodes[0]);  
+        const char * op;
+        if (fname == std::string("max"))  op = ">";
+        else op = "<";
+        chillAST_Node *ternary = minmaxTernary( op,  ((CG_chillRepr*) list[0])->chillnodes[0],
+                                                 ((CG_chillRepr*) list[1])->chillnodes[0]);
         CG_chillRepr *repr = new CG_chillRepr( ternary );
         return repr;
       }
