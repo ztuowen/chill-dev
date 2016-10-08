@@ -2,7 +2,6 @@
 #ifndef CG_chillRepr_h
 #define CG_chillRepr_h
 
-//                                               Repr using chillAst internally
 #include <stdio.h>
 #include <string.h>
 #include <code_gen/CG_outputRepr.h>
@@ -11,9 +10,7 @@
 #define __STDC_CONSTANT_MACROS 
 #endif
 
-
 #include "chillAST/chillASTs.hh"
-
 
 namespace omega {
 
@@ -22,16 +19,8 @@ namespace omega {
 
   public:
     CG_chillRepr() { stmtclassname = strdup("NOTHING"); }
-
-
     char *type() const { return strdup("chill"); };
-    //
-    std::vector<chillAST_Node *> chillnodes;  // TODO make private
-    void printChillNodes() const {
-      for (int i = 0; i < chillnodes.size(); i++)
-        chillnodes[i]->print();
-      fflush(stdout);
-    };
+    std::vector<chillAST_Node *> chillnodes;
 
     CG_chillRepr(std::vector<chillAST_Node *> cnodes) {
       chillnodes = cnodes;
@@ -53,12 +42,11 @@ namespace omega {
     void addStatement(chillAST_Node *s) { chillnodes.push_back(s); };
 
     std::vector<chillAST_Node *> getChillCode() const { return chillnodes; };
-
+    //! Return the containing code
     chillAST_Node *GetCode();
 
-
     ~CG_chillRepr();
-
+    //! Creating a deep copy of this node
     CG_outputRepr *clone() const;
 
     void clear();
@@ -67,9 +55,7 @@ namespace omega {
     //---------------------------------------------------------------------------
     // Dump operations
     //---------------------------------------------------------------------------
-    void dump() const { printChillNodes(); };
-
-    void Dump() const;
+    void dump() const;
   private:
 
     char *stmtclassname;    // chill

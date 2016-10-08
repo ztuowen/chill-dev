@@ -39,7 +39,6 @@ struct IR_chillScalarSymbol : public IR_ScalarSymbol {
   chillAST_VarDecl *chillvd;
 
   IR_chillScalarSymbol(const IR_Code *ir, chillAST_VarDecl *vd) {
-    fprintf(stderr, "making scalar symbol %s\n", vd->varname);
     ir_ = ir;
     chillvd = vd;
   }
@@ -447,6 +446,7 @@ protected:
   //  
   char *filename;
   char *procedurename;
+  char *outfilename;
 
 
   chillAST_Node *entire_file_AST;
@@ -472,6 +472,7 @@ public:
   clang::SourceManager *getASTSourceManager() { return sourceManager; };
 
   IR_clangCode(const char *filename, const char *proc_name);
+  IR_clangCode(const char *filename, const char *proc_name, const char *dest_name);
 
   ~IR_clangCode();
 

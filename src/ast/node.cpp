@@ -364,3 +364,26 @@ chillAST_Node* chillAST_Node::findContainingStmt() {
   return p->findContainingStmt();
 }
 
+chillAST_Node *chillAST_Node::getEnclosingStatement(int level) {  // TODO do for subclasses?
+  if (isArraySubscriptExpr()) return parent->getEnclosingStatement(level + 1);
+
+  if (level != 0) {
+    if (isBinaryOperator() ||
+        isUnaryOperator() ||
+        isTernaryOperator() ||
+        isReturnStmt() ||
+        isCallExpr()
+        )
+      return this;
+    // things that are not endpoints. recurse through parent
+    if (isMemberExpr()) return parent->getEnclosingStatement(level + 1);
+    if (isImplicitCastExpr()) return parent->getEnclosingStatement(level + 1);
+    if (isSizeof()) return parent->getEnclosingStatement(level + 1);
+    if (isCStyleCastExpr()) return parent->getEnclosingStatement(level + 1);
+    return NULL;
+  }
+  CHILL_ERROR("level %d type %s, returning NULL\n", level, getTypeString());
+  exit(-1);
+  return NULL;
+}
+

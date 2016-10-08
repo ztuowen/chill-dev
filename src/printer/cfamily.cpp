@@ -21,9 +21,9 @@ bool ifSemicolonFree(CHILLAST_NODE_TYPE t) {
 }
 
 void CFamily::printS(std::string ident, chillAST_ArraySubscriptExpr *n, std::ostream &o) {
-  print(ident, n->base, o);
+  print(ident, n->getBase(), o);
   o << "[";
-  print(ident, n->index, o);
+  print(ident, n->getIndex(), o);
   o << "]";
 }
 
@@ -59,7 +59,7 @@ void CFamily::printS(std::string ident, chillAST_BinaryOperator *n, std::ostream
   if (n->getLHS()) printPrec(ident, n->getLHS(), o, prec);
   else o << "(NULL)";
   o << " " << n->op << " ";
-  if (n->getRHS()) printPrec(ident, n->getRHS(), o, prec);
+  if (n->getRHS()) printPrec(ident, n->getRHS(), o, prec-1);
   else o << "(NULL)";
 }
 
@@ -83,32 +83,32 @@ void CFamily::printS(std::string ident, chillAST_CallExpr *n, std::ostream &o) {
     FD = (chillAST_FunctionDecl *) n->getCallee();
   else if (n->getCallee()->isMacroDefinition())
     MD = (chillAST_MacroDefinition *) n->getCallee();
-  if (FD) {
-    o << FD->functionName;
+  if (MD && n->getNumChildren()-1)
+    o << "(";
+  else {
+    print(ident,n->getCallee(),o);
     if (n->grid && n->block)
       o << "<<<" << n->grid->varname << "," << n->block->varname << ">>>";
     o << "(";
   }
-  if (MD && n->getNumChildren()-1)
-    o << "(";
   for (int i = 1; i < n->getNumChildren(); ++i) {
-    if (i != 0) o << ", ";
+    if (i != 1) o << ", ";
     print(ident, n->getChild(i), o);
   }
-  if (FD || n->getNumChildren()-1)
+  if (!MD || n->getNumChildren()-1)
     o << ")";
 }
 
 void CFamily::printS(std::string ident, chillAST_CompoundStmt *n, std::ostream &o) {
   chillAST_NodeList *c = n->getChildren();
   string nid = ident + identSpace;
-  if (c->size() > 1) o << "{";
+  if (c->size() > 1 || n->getParent()->isFunctionDecl()) o << "{";
   for (int i = 0; i < c->size(); ++i) {
     o << "\n" << nid;
     print(nid, c->at(i), o);
     if (!ifSemicolonFree(c->at(i)->getType())) o << ";";
   }
-  if (c->size() > 1) o << "\n" << ident << "}";
+  if (c->size() > 1 || n->getParent()->isFunctionDecl()) o << "\n" << ident << "}";
 }
 
 int CFamily::getPrecS(chillAST_CStyleAddressOf *n) {
@@ -180,9 +180,9 @@ void CFamily::printS(std::string ident, chillAST_ForStmt *n, std::ostream &o) {
     o << "// " << n->metacomment << "\n";
   o << "for (";
   print(ident, n->getInit(), o);
-  o << ";";
+  o << "; ";
   print(ident, n->getCond(), o);
-  o << ";";
+  o << "; ";
   print(ident, n->getInc(), o);
   o << ") ";
   if (n->getBody()->isCompoundStmt()) {
@@ -232,6 +232,9 @@ void CFamily::printS(std::string ident, chillAST_IfStmt *n, std::ostream &o) {
   if (!(n->getThen()->isCompoundStmt()))
     CHILL_ERROR("Then part is not a CompoundStmt!\n");
   if (n->getElse()) {
+    if (n->getThen()->getNumChildren() == 1)
+      o<<std::endl<<ident;
+    else o<<" ";
     o << "else ";
     print(ident, n->getElse(), o);
   }
@@ -266,7 +269,7 @@ void CFamily::printS(std::string ident, chillAST_Malloc *n, std::ostream &o) {
 
 void CFamily::printS(std::string ident, chillAST_MemberExpr *n, std::ostream &o) {
   int prec = getPrec(n);
-  if (n->base) printPrec(ident, n->base, o, prec);
+  if (n->getBase()) printPrec(ident, n->getBase(), o, prec);
   else o << "(NULL)";
   if (n->exptype == CHILLAST_MEMBER_EXP_ARROW) o << "->";
   else o << ".";
@@ -354,9 +357,9 @@ int CFamily::getPrecS(chillAST_TernaryOperator *n) {
 void CFamily::printS(std::string ident, chillAST_TernaryOperator *n, std::ostream &o) {
   int prec = getPrec(n);
   printPrec(ident, n->getCond(), o, prec);
-  o << "" << n->op << "";
+  o << " " << n->op << " ";
   printPrec(ident, n->getLHS(), o, prec);
-  o << ":";
+  o << " : ";
   printPrec(ident, n->getRHS(), o, prec);
 }
 

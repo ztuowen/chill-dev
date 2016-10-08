@@ -7,6 +7,7 @@
 using namespace chill::printer;
 
 void GenericPrinter::print(std::string ident, chillAST_Node *n, std::ostream &o) {
+  if (!n) return;
   switch (n->getType()) {
     case CHILLAST_NODE_ARRAYSUBSCRIPTEXPR:
       printS(ident, dynamic_cast<chillAST_ArraySubscriptExpr *>(n), o);
@@ -120,6 +121,7 @@ void GenericPrinter::print(std::string ident, chillAST_Node *n, std::ostream &o)
 }
 
 int GenericPrinter::getPrec(chillAST_Node *n) {
+  if (!n) return defGetPrecS();
   switch (n->getType()) {
     case CHILLAST_NODE_ARRAYSUBSCRIPTEXPR:
       return getPrecS(dynamic_cast<chillAST_ArraySubscriptExpr *>(n));

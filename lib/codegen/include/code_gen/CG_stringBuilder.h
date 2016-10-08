@@ -21,7 +21,7 @@ public:
   CG_stringRepr *CreateSubstitutedStmt(int indent, CG_outputRepr *stmt, const std::vector<std::string> &vars, std::vector<CG_outputRepr *> &subs, bool actuallyPrint) const;
   CG_stringRepr *CreateAssignment(int indent, CG_outputRepr *lhs, CG_outputRepr *rhs) const;
   CG_stringRepr *CreatePlusAssignment(int indent, CG_outputRepr *lhs, CG_outputRepr *rhs) const;
-  CG_stringRepr *CreateInvoke(const std::string &funcName, std::vector<CG_outputRepr *> &argList,bool is_array=false) const;
+  CG_stringRepr *CreateInvoke(const std::string &funcName, std::vector<CG_outputRepr *> &argList) const;
   CG_stringRepr *CreateComment(int indent, const std::string &commentText) const;
   CG_stringRepr* CreateAttribute(CG_outputRepr *control,
                                           const std::string &commentText) const;

@@ -24,6 +24,7 @@ void dumpVector(GenericPrinter *p, string ident, chillAST_TypedefTable *n, ostre
 }
 
 void Dump::print(string ident, chillAST_Node *n, ostream &o) {
+  if (!n) return;
   o << "(" << n->getTypeString() << " ";
   if (n->getParameters()) {
     o << "(Params: ";
@@ -57,8 +58,8 @@ void Dump::printS(std::string ident, chillAST_ArraySubscriptExpr *n, std::ostrea
     else
       o << "lvalue ";
   } else o << "rvalue ";
-  print(ident, n->base, o);
-  print(ident, n->index, o);
+  print(ident, n->getBase(), o);
+  print(ident, n->getIndex(), o);
 }
 
 void Dump::printS(std::string ident, chillAST_BinaryOperator *n, std::ostream &o) {
@@ -70,8 +71,7 @@ void Dump::printS(std::string ident, chillAST_BinaryOperator *n, std::ostream &o
 }
 
 void Dump::printS(std::string ident, chillAST_CallExpr *n, std::ostream &o) {
-  if (n->getCallee())
-    print(ident, n->getCallee(), o);
+  dumpVector(this,ident,n->getChildren(),o);
 }
 
 void Dump::printS(std::string ident, chillAST_CompoundStmt *n, std::ostream &o) {
@@ -166,7 +166,7 @@ void Dump::printS(std::string ident, chillAST_Malloc *n, std::ostream &o) {
 }
 
 void Dump::printS(std::string ident, chillAST_MemberExpr *n, std::ostream &o) {
-  print(ident, n->base, o);
+  print(ident, n->getBase(), o);
   if (n->exptype == CHILLAST_MEMBER_EXP_ARROW) o << "-> ";
   else o << ". ";
   o << n->member << " ";

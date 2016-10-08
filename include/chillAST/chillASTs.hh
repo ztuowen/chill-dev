@@ -704,10 +704,6 @@ class chillAST_ArraySubscriptExpr : public chillAST_Node {
 public:
   virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_ARRAYSUBSCRIPTEXPR; }
   // variables that are special for this type of node
-
-  //! always a decl ref expr? No, for multidimensional array, is another ASE
-  chillAST_Node *base;
-  chillAST_Node *index;
   bool imwrittento;
   bool imreadfrom; // WARNING: ONLY used when both writtento and readfrom are true  x += 1 and so on
   chillAST_VarDecl *basedecl; // the vardecl that this refers to
@@ -715,9 +711,16 @@ public:
   void *uniquePtr;
 
   // constructors
+  chillAST_ArraySubscriptExpr();
+
   chillAST_ArraySubscriptExpr(chillAST_Node *bas, chillAST_Node *indx, bool writtento, void *unique);
 
   chillAST_ArraySubscriptExpr(chillAST_VarDecl *v, std::vector<chillAST_Node *> indeces);
+
+  chillAST_Node *getBase() { return getChild(0); }
+  void setBase(chillAST_Node* b) { setChild(0, b); }
+  chillAST_Node *getIndex() { return getChild(1); }
+  void setIndex(chillAST_Node* i) { setChild(1, i); }
 
   // other methods particular to this type of node
   bool operator!=(const chillAST_ArraySubscriptExpr &);
@@ -727,17 +730,13 @@ public:
   //! Method for finding the basedecl, retursn the VARDECL of the thing the subscript is an index into
   chillAST_VarDecl *multibase();
 
-  chillAST_Node *multibase2() { return base->multibase2(); }
+  chillAST_Node *multibase2() { return getBase()->multibase2(); }
 
   chillAST_Node *getIndex(int dim);
 
   void gatherIndeces(std::vector<chillAST_Node *> &ind);
 
-  void replaceChild(chillAST_Node *old, chillAST_Node *newchild); // will examine index
-
   // required methods that I can't seem to get to inherit
-  chillAST_Node *constantFold();
-
   chillAST_Node *clone();
 
   chillAST_Node *findref() { return this; }// find the SINGLE constant or data reference at this node or below
@@ -745,27 +744,14 @@ public:
 
   void gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento);
 
-  void gatherVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherScalarVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherDeclRefExprs(std::vector<chillAST_DeclRefExpr *> &refs);
-
-  void replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl);
-
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab,
                                 bool forcesync = false) { return false; }; // no loops under here
 
   const char *getUnderlyingType() {
-    //fprintf(stderr, "ASE getUnderlyingType() base of type %s\n", base->getTypeString()); base->print(); printf("\n"); fflush(stderr); 
-    return base->getUnderlyingType();
+    return getBase()->getUnderlyingType();
   };
 
-  virtual chillAST_VarDecl *getUnderlyingVarDecl() { return base->getUnderlyingVarDecl(); };
+  virtual chillAST_VarDecl *getUnderlyingVarDecl() { return getBase()->getUnderlyingVarDecl(); };
 
 };
 
@@ -774,7 +760,6 @@ public:
   virtual CHILLAST_NODE_TYPE getType() { return CHILLAST_NODE_MEMBEREXPR; }
 
   // variables that are special for this type of node
-  chillAST_Node *base;  // always a decl ref expr? No, can be Array Subscript Expr
   char *member;
   char *printstring;
 
@@ -783,10 +768,13 @@ public:
 
   CHILLAST_MEMBER_EXP_TYPE exptype;
 
-
   // constructors
+  chillAST_MemberExpr();
   chillAST_MemberExpr(chillAST_Node *bas, const char *mem, void *unique,
                       CHILLAST_MEMBER_EXP_TYPE t = CHILLAST_MEMBER_EXP_DOT);
+
+  chillAST_Node *getBase() { return getChild(0); }
+  void setBase(chillAST_Node *b) { setChild(0,b); }
 
   // other methods particular to this type of node
   bool operator!=(const chillAST_MemberExpr &);
@@ -794,32 +782,12 @@ public:
   bool operator==(const chillAST_MemberExpr &);
 
   // required methods that I can't seem to get to inherit
-  chillAST_Node *constantFold();
-
   chillAST_Node *clone();
-
-  void gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento);
-
-  void gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento);
-
-  void gatherVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherScalarVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherDeclRefExprs(std::vector<chillAST_DeclRefExpr *> &refs);
-
-  void replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl);
 
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab,
                                 bool forcesync = false) { return false; }; // no loops under here
 
   chillAST_VarDecl *getUnderlyingVarDecl();
-
-  void replaceChild(chillAST_Node *old, chillAST_Node *newchild);
 
   void setType(CHILLAST_MEMBER_EXP_TYPE t) { exptype = t; };
 
@@ -947,6 +915,8 @@ public:
 
   // required methods that I can't seem to get to inherit
   chillAST_Node *clone();
+
+  chillAST_Node* constantFold();
 
   //void replaceVarDecls( chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl);
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab,

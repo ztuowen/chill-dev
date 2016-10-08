@@ -91,12 +91,10 @@ namespace omega {
      * @brief function invoation generation
      * @param funcName
      * @param argList
-     * @param is_array
      * @return
      */
     virtual CG_outputRepr *CreateInvoke(const std::string &funcName,
-                                        std::vector<CG_outputRepr *> &argList,
-                                        bool is_array = false) const = 0;
+                                        std::vector<CG_outputRepr *> &argList) const = 0;
     /*!
      * @brief comment generation
      * @param indent

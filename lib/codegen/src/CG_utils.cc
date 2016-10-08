@@ -22,6 +22,7 @@
 #include <code_gen/codegen_error.h>
 #include <math.h>
 #include <stack>
+#include <code_gen/CGdebug.h>
 
 namespace omega {
   
@@ -274,36 +275,29 @@ namespace omega {
                               Variable_ID v, 
                               const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly, 
                                std::map<std::string, std::vector<CG_outputRepr *> > unin) {
-    fprintf(stderr, "output_ident( %s )\n", v->name().c_str()); 
+    CG_DEBUG_PRINT("output_ident( %s )\n", v->name().c_str());
     
     const_cast<Relation &>(R).setup_names(); // hack
     
     if (v->kind() == Input_Var) {
       int pos = v->get_position();
       if (assigned_on_the_fly[pos - 1].first != NULL) { 
-        //fprintf(stderr, "on the fly   pos=%d\n", pos); 
         CG_outputRepr *tmp =  assigned_on_the_fly[pos-1].first->clone();
-        //fprintf(stderr, "tmp on the fly (0x%x)\n", tmp); 
         return tmp;
       }
       else {
-        //fprintf(stderr, "creating Ident for %s\n", v->name().c_str()); 
         CG_outputRepr *tmp =  ocg->CreateIdent(v->name());
-        //fprintf(stderr, "ident created for %s\n", v->name().c_str()); 
         return tmp;
       }
     }
     else if (v->kind() == Global_Var) {
-      //fprintf(stderr, "CG_utils.cc output_ident() Global_Var\n"); 
       if (v->get_global_var()->arity() == 0) {
-        //fprintf(stderr, "arity 0\n"); 
         return ocg->CreateIdent(v->name());
       }
       else {
         /* This should be improved to take into account the possible elimination
            of the set variables. */
         int arity = v->get_global_var()->arity();
-        //fprintf(stderr, "arity %dn", arity ); 
        std::vector<CG_outputRepr *> argList;
         if (unin.find(v->get_global_var()->base_name()) != unin.end()) {
           
@@ -363,19 +357,14 @@ namespace omega {
     const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly,
     std::map<std::string, std::vector<CG_outputRepr *> > unin) {
     
-    //fprintf(stderr, "output_assignment( )\n");
     int numfly =  assigned_on_the_fly.size();
-    //fprintf(stderr, "assigned on the fly  %d\n", numfly );
-    for (int i=0; i<numfly; i++) { 
-      //fprintf(stderr, "i %d\n", i); 
+    for (int i=0; i<numfly; i++) {
       std::pair<CG_outputRepr *, int>p = assigned_on_the_fly[i];
       CG_outputRepr *tr = NULL;
       if (p.first != NULL) tr = p.first->clone();
       int val = p.second;
-      //fprintf(stderr, "0x%x   %d\n", tr, val);
     }
-    
-    
+
     Variable_ID v = const_cast<Relation &>(R).set_var(level);
     Conjunct *c = const_cast<Relation &>(R).single_conjunct();
     
@@ -650,9 +639,6 @@ namespace omega {
                                                    const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly, 
                                                    std::map<std::string, std::vector<CG_outputRepr *> > unin) {
     std::vector<CG_outputRepr *> subs;
-    
-    fprintf(stderr, "CG_utils.cc  output_substitutions()\n"); 
-    
     for (int i = 1; i <= R.n_out(); i++) {
       Relation mapping(R.n_out(), 1);
       F_And *f_root = mapping.add_and();
@@ -665,16 +651,13 @@ namespace omega {
       Variable_ID v = r.output_var(1);
       CG_outputRepr *repr = NULL;
       
-      fprintf(stderr, "v %s\n", v->char_name()); 
       std::pair<EQ_Handle, int> result = find_simplest_assignment(r, v, assigned_on_the_fly);
       if (result.second < INT_MAX) {
-        //fprintf(stderr, "output_substitutions() calling  output_substitution_repr()\n"); 
-        repr = output_substitution_repr(ocg, result.first, v, true, r, 
+        repr = output_substitution_repr(ocg, result.first, v, true, r,
                                         assigned_on_the_fly, unin);
-        if (repr == NULL) fprintf(stderr, "IN IF, repr for %s assigned NULL\n", v->char_name());          
+        if (repr == NULL) CG_ERROR("IN IF, repr for %s assigned NULL\n", v->char_name());
       }
       else {
-        //fprintf(stderr, "else\n"); 
         std::pair<bool, GEQ_Handle> result = find_floor_definition(R, v);
         if (result.first)
           try {
@@ -685,7 +668,7 @@ namespace omega {
           }
       }
       
-      if (repr == NULL) fprintf(stderr, "repr NULL\n"); 
+      if (repr == NULL) CG_ERROR("repr NULL\n");
       if (repr != NULL) { 
         subs.push_back(repr);
       }
@@ -699,7 +682,7 @@ namespace omega {
           //h.update_coef(mapping1.input_var(i), -1);
           //Relation r = Composition(mapping1, copy(mapping));
           //r.simplify();
-          
+
           Relation r = copy(R);
           
           Variable_ID v = r.output_var(k);
@@ -718,7 +701,7 @@ namespace omega {
             Variable_ID v1 = cvi.curr_var();
             if (v1->kind() == Input_Var)
             variables.push_back(v1);
-            
+
             }
             */
             repr_ = output_substitution_repr(ocg, result.first, v, true,
@@ -839,8 +822,6 @@ namespace omega {
         } // for int k 
       }
     }
-    
-    fprintf(stderr, "CG_utils.cc  output_substitutions()          DONE\n\n"); 
     return subs;
   }
   
@@ -1195,7 +1176,6 @@ namespace omega {
                               const Relation &R, 
                               const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly,
                               std::map<std::string, std::vector<CG_outputRepr *> > unin) {
-    fprintf(stderr, "output_guard()\n");
     assert(R.n_out()==0);
     
     CG_outputRepr *result = NULL;
@@ -1204,7 +1184,6 @@ namespace omega {
     // e.g. 4i=5*j
     for (EQ_Iterator e = c->EQs(); e; e++)
       if (!(*e).has_wildcards()) {
-        //fprintf(stderr, "EQ\n"); 
         CG_outputRepr *lhs = NULL;
         CG_outputRepr *rhs = NULL;
         for (Constr_Vars_Iter cvi(*e); cvi; cvi++) {
@@ -1509,8 +1488,6 @@ namespace omega {
                                         const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly, 
                                         std::map<std::string, std::vector<CG_outputRepr *> > unin,
                                         std::set<Variable_ID> excluded_floor_vars) {
-    fprintf(stderr, "output_inequality_repr()  v %s\n", v->name().c_str()); 
-
     const_cast<Relation &>(R).setup_names(); // hack
     
     coef_t a = inequality.get_coef(v);
@@ -1527,12 +1504,9 @@ namespace omega {
                                                                      cvi.curr_var(), 
                                                                      excluded_floor_vars);
           if (!result.first) {
-            fprintf(stderr, "\n\n*** heading into NEW CODE\n");
-
             coef_t coef_ = cvi.curr_coef();
             result2 = find_floor_definition_temp(R, cvi.curr_var(),
                                                  excluded_floor_vars);
-            
             for (Constr_Vars_Iter cvi_(
                    result2[result2.size() - 1].second); cvi_; cvi_++) {
               if (cvi_.curr_var()->kind() != Wildcard_Var
@@ -1545,8 +1519,6 @@ namespace omega {
                                                ocg->CreateInt(-coef_));
                 repr = ocg->CreateTimes(ocg->CreateInt(-coef_),
                                         repr);
-                
-                fprintf(stderr, "returning a TIMES\n"); 
                 return repr;
                 
               }
@@ -1667,8 +1639,6 @@ namespace omega {
                                          const Relation &known, 
                                          const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly,
                                          std::map<std::string, std::vector<CG_outputRepr *> > unin) {
-
-    fprintf(stderr, "output_lower_bound_repr()\n"); 
     assert(inequality.get_coef(v) > 0);
     CG_outputRepr* zero_;
     if (wc == NULL 
@@ -1772,11 +1742,7 @@ namespace omega {
                              const Relation &known, 
                              const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly,
                              std::map<std::string, std::vector<CG_outputRepr *> > unin) {
-    
-    fprintf(stderr, "CG_utils.cc output_loop()\n"); 
     std::pair<EQ_Handle, Variable_ID> result = find_simplest_stride(R, const_cast<Relation &>(R).set_var(level));
-    fprintf(stderr, "found stride\n"); 
-
     if (result.second != NULL)
       assert(abs(result.first.get_coef(const_cast<Relation &>(R).set_var(level))) == 1);
     
@@ -1788,19 +1754,14 @@ namespace omega {
       for (GEQ_Iterator e(const_cast<Relation &>(R).single_conjunct()->GEQs()); 
            e; 
            e++) {
-        fprintf(stderr, "new e\n"); 
         coef_t coef = (*e).get_coef(const_cast<Relation &>(R).set_var(level));
-        
-        fprintf(stderr, "coef %d\n", coef); 
         if (coef > 0) {
           CG_outputRepr *repr = output_lower_bound_repr(ocg, *e, const_cast<Relation &>(R).set_var(level), result.first, result.second, R, known, assigned_on_the_fly, unin);
-          fprintf(stderr, "got a repr\n"); 
-          if (repr == NULL) fprintf(stderr, "repr NULL\n"); 
-
-          if (repr == NULL)
+          if (repr == NULL) {
+            CG_ERROR("NULL lowerbound, assumed zero\n");
             repr = ocg->CreateInt(0);
+          }
           lbList.push_back(repr);
-          
           if ((*e).is_const(const_cast<Relation &>(R).set_var(level))){
             if(!result.second) {
               
@@ -2604,10 +2565,6 @@ namespace omega {
                                  const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly,
                                  std::vector<std::map<std::string, std::vector<CG_outputRepr *> > > unin) {
 
-    fprintf(stderr, "loop_print_repr()  guard_repr "); 
-    if (guard_repr == NULL) fprintf(stderr, "NULL\n");
-    else fprintf(stderr, "NOT NULL\n");
-    
     if (start >= end)
       return NULL;
     
@@ -2628,9 +2585,7 @@ namespace omega {
                                                             stmts, 
                                                             assigned_on_the_fly,
                                                             unin));
-
-      fprintf(stderr,"CG_utils.cc loop_print_repr recursive\n"); 
-      stmt_list = ocg->StmtListAppend(stmt_list, 
+      stmt_list = ocg->StmtListAppend(stmt_list,
                                       loop_print_repr(active,
                                                       loops, 
                                                       i, 
@@ -2644,12 +2599,9 @@ namespace omega {
                                                       stmts, 
                                                       assigned_on_the_fly,
                                                       unin));
-      
-      //fprintf(stderr, "guard_repr 0x%x\n", guard_repr); 
       if (guard_repr == NULL)
         return stmt_list;
       else {
-        fprintf(stderr, "CG_utils.cc loop_print_repr() CreateIf()\n"); 
         return ocg->CreateIf(indent, guard_repr, stmt_list, NULL);
       }
     }
@@ -2682,8 +2634,7 @@ namespace omega {
       guard_repr = ocg->CreateAnd(guard_repr, new_guard_repr);
       Relation new_guard = Intersection(copy(guard), copy(then_cond));
       new_guard.simplify();
-      fprintf(stderr,"CG_utils.cc loop_print_repr recursive 2\n"); 
-      return loop_print_repr(active, loops, start, end, new_guard, guard_repr, 
+      return loop_print_repr(active, loops, start, end, new_guard, guard_repr,
                              indent,  remap, xforms, ocg, stmts, aotf, unin);
     }
     else if (j == i && end > j) {
@@ -2694,9 +2645,7 @@ namespace omega {
       new_guard.simplify();
       new_guard.print(stderr); 
       new_guard.print_with_subs(stderr); 
-
-      fprintf(stderr,"CG_utils.cc loop_print_repr recursive 3\n"); 
-      CG_outputRepr *stmt_list = loop_print_repr(active, 
+      CG_outputRepr *stmt_list = loop_print_repr(active,
                                                  loops, 
                                                  start, 
                                                  i, 
@@ -2709,9 +2658,7 @@ namespace omega {
                                                  stmts, 
                                                  aotf,
                                                  unin);
-
-      fprintf(stderr,"CG_utils.cc loop_print_repr recursive 4\n"); 
-      stmt_list = ocg->StmtListAppend(stmt_list, 
+      stmt_list = ocg->StmtListAppend(stmt_list,
                                       loop_print_repr(active,
                                                       loops, 
                                                       j, 
@@ -2729,7 +2676,6 @@ namespace omega {
       if (guard_repr == NULL)
         return stmt_list;
       else {
-        fprintf(stderr, "CG_utils.cc loop_print_repr() CreateIf() 2\n"); 
         return ocg->CreateIf(indent, guard_repr, stmt_list, NULL);
       }
     }
@@ -2737,8 +2683,6 @@ namespace omega {
       int new_indent = (guard_repr==NULL)?indent:indent+1;
       Relation then_new_guard = Intersection(copy(guard), copy(then_cond));
       then_new_guard.simplify();
-
-      fprintf(stderr,"CG_utils.cc loop_print_repr recursive 5\n"); 
       CG_outputRepr *then_stmt_list = loop_print_repr(active,
                                                       loops, 
                                                       start, 
@@ -2755,8 +2699,6 @@ namespace omega {
 
       Relation else_new_guard = Intersection(copy(guard), copy(else_cond));
       else_new_guard.simplify();
-
-      fprintf(stderr,"CG_utils.cc loop_print_repr recursive 6\n"); 
       CG_outputRepr *else_stmt_list = loop_print_repr(active,
                                                       loops, 
                                                       i, 
@@ -2770,15 +2712,11 @@ namespace omega {
                                                       stmts, 
                                                       aotf,
                                                       unin);
-      
-      fprintf(stderr, "CG_utils.cc loop_print_repr() CreateIf() 3\n"); 
-      CG_outputRepr *stmt_list = ocg->CreateIf(new_indent, 
+      CG_outputRepr *stmt_list = ocg->CreateIf(new_indent,
                                                new_guard_repr, 
                                                then_stmt_list, 
                                                else_stmt_list);
-
-      fprintf(stderr,"CG_utils.cc loop_print_repr recursive 7\n"); 
-      stmt_list = ocg->StmtListAppend(stmt_list, 
+      stmt_list = ocg->StmtListAppend(stmt_list,
                                       loop_print_repr(active,
                                                       loops, 
                                                       j, 
@@ -2797,7 +2735,6 @@ namespace omega {
       if (guard_repr == NULL)
         return stmt_list;
       else {
-        fprintf(stderr, "CG_utils.cc loop_print_repr() CreateIf() 4\n"); 
         return ocg->CreateIf(indent, guard_repr, stmt_list, NULL);
       }
     }

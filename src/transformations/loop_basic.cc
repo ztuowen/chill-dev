@@ -815,18 +815,12 @@ std::set<int> Loop::split(int stmt_num, int level, const Relation &cond) {
         new_stmt.has_inspector = stmt[*i].has_inspector;
         new_stmt.reduction = stmt[*i].reduction;
         new_stmt.reductionOp = stmt[*i].reductionOp;
-
         stmt_nesting_level_.push_back(stmt_nesting_level_[*i]);
-
-
         if (place_after)
           assign_const(new_stmt.xform, dim - 1, cur_lex + 1);
         else
           assign_const(new_stmt.xform, dim - 1, cur_lex - 1);
-
-        fprintf(stderr, "loop_basic.cc L828 adding stmt %d\n", stmt.size());
         stmt.push_back(new_stmt);
-
         uninterpreted_symbols.push_back(uninterpreted_symbols[stmt_num]);
         uninterpreted_symbols_stringrepr.push_back(uninterpreted_symbols_stringrepr[stmt_num]);
         dep.insert();
@@ -1425,7 +1419,7 @@ void Loop::fuse(const std::set<int> &stmt_nums, int level) {
 void Loop::distribute(const std::set<int> &stmt_nums, int level) {
   if (stmt_nums.size() == 0 || stmt_nums.size() == 1)
     return;
-  fprintf(stderr, "Loop::distribute()\n");
+  CHILL_DEBUG_PRINT("Loop::distribute()\n");
 
 
   // invalidate saved codegen computation
