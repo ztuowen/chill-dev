@@ -22,8 +22,10 @@ char *parseUnderlyingType(const char *sometype) {
   while (p > underlying)
     if (*p == ' ' || *p == '*')
       --p;
-    else if (*p == ']')
+    else if (*p == ']') {
       while (*p != '[') --p;
+      --p;
+    }
     else break;
 
   *(p + 1) = '\0';
@@ -1751,6 +1753,11 @@ chillAST_ImplicitCastExpr::chillAST_ImplicitCastExpr() {
   children.push_back(NULL);
 }
 
+chillAST_Node* chillAST_ImplicitCastExpr::constantFold() {
+  chillAST_Node::constantFold();
+  return getSubExpr();
+}
+
 chillAST_ImplicitCastExpr::chillAST_ImplicitCastExpr(chillAST_Node *sub) : chillAST_ImplicitCastExpr() {
   setSubExpr(sub);
 }
@@ -1908,7 +1915,7 @@ class chillAST_Node *chillAST_ReturnStmt::clone() {
 }
 
 chillAST_CallExpr::chillAST_CallExpr() {
-  addChild(NULL);
+  children.push_back(NULL);
 }
 
 chillAST_CallExpr::chillAST_CallExpr(chillAST_Node *c) : chillAST_CallExpr() {

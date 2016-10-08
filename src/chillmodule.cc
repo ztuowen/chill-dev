@@ -21,6 +21,7 @@ extern bool is_interactive;
 
 std::string procedure_name;
 std::string source_filename;
+std::string dest_filename;
 
 int loop_start_num;
 int loop_end_num;
@@ -80,7 +81,10 @@ static void init_loop(int loop_num_start, int loop_num_end) {
       exit(2);
   } else {
     if (ir_code == NULL) {
-      ir_code = new IR_clangCode(source_filename.c_str(), procedure_name.c_str());
+      if (dest_filename != "")
+        ir_code = new IR_clangCode(source_filename.c_str(), procedure_name.c_str(), dest_filename.c_str());
+      else
+        ir_code = new IR_clangCode(source_filename.c_str(), procedure_name.c_str());
       IR_Block *block = ir_code->GetCode();
       ir_controls = ir_code->FindOneLevelControlStructure(block);
       for (int i = 0; i < ir_controls.size(); i++) {
@@ -265,6 +269,13 @@ static bool tointmatrix(PyObject *args, int index, std::vector<std::vector<int> 
 static PyObject *chill_source(PyObject *self, PyObject *args) {
   strict_arg_num(args, 1, "source");
   source_filename = strArg(args, 0);
+  Py_RETURN_NONE;
+}
+
+static PyObject *
+chill_dest(PyObject *self, PyObject* args) {
+  strict_arg_num(args, 1, "destination");
+  dest_filename = strArg(args, 0);
   Py_RETURN_NONE;
 }
 
@@ -706,9 +717,7 @@ static PyObject *chill_distribute(PyObject *self, PyObject *args) {
 
 static PyObject *
 chill_num_statements(PyObject *self, PyObject *args) {
-  //DEBUG_PRINT("\nC chill_num_statements() called from python\n"); 
   int num = myloop->stmt.size();
-  //DEBUG_PRINT("C num_statement() = %d\n", num); 
   return Py_BuildValue("i", num); // BEWARE "d" is DOUBLE, not int
 }
 
@@ -716,6 +725,7 @@ static PyMethodDef ChillMethods[] = {
 
     //python name           C routine                  parameter passing comment
     {"source",              chill_source,              METH_VARARGS, "set source file for chill script"},
+    {"destination",         chill_dest,                METH_VARARGS, "set destination file for generated source"},
     {"procedure",           chill_procedure,           METH_VARARGS, "set the name of the procedure"},
     {"loop",                chill_loop,                METH_VARARGS, "indicate which loop to optimize"},
     {"print_code",          chill_print_code,          METH_VARARGS, "print generated code"},
@@ -767,5 +777,6 @@ initchill(void)    // pass C methods to python
 {
   CHILL_DEBUG_PRINT("set up C methods to be called from python\n");
   PyObject *m = Py_InitModule("chill", ChillMethods);
+  dest_filename = "";
   register_globals(m);
 }

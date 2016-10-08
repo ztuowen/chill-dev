@@ -376,7 +376,7 @@ test_data_dependences(IR_Code *ir,
             fprintf(stderr, "\nirtools.cc ij %d %d   SYMBOL A == SYMBOL B and one is a write\n", i, j);
             Relation *helper = new Relation(r);
             fprintf(stderr, "r    ");
-            helper->print();
+            helper->print(stderr);
             fflush(stdout);
           CHILL_DEBUG_END
           std::pair<std::vector<DependenceVector>,

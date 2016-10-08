@@ -446,6 +446,7 @@ protected:
   //  
   char *filename;
   char *procedurename;
+  char *outfilename;
 
 
   chillAST_Node *entire_file_AST;
@@ -471,6 +472,7 @@ public:
   clang::SourceManager *getASTSourceManager() { return sourceManager; };
 
   IR_clangCode(const char *filename, const char *proc_name);
+  IR_clangCode(const char *filename, const char *proc_name, const char *dest_name);
 
   ~IR_clangCode();
 

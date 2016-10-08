@@ -916,6 +916,8 @@ public:
   // required methods that I can't seem to get to inherit
   chillAST_Node *clone();
 
+  chillAST_Node* constantFold();
+
   //void replaceVarDecls( chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl);
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab,
                                 bool forcesync = false) { return false; }; // no loops under here
