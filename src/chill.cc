@@ -35,13 +35,14 @@ int main(int argc, char *argv[]) {
 
   // Create PYTHON interpreter
   /* Pass argv[0] to the Python interpreter */
-  Py_SetProgramName(argv[0]);
-
-  /* Initialize the Python interpreter.  Required. */
-  Py_Initialize();
+  wchar_t *program = Py_DecodeLocale(argv[0], NULL);
+  Py_SetProgramName(program);
 
   /* Add a static module */
   initchill();
+
+  /* Initialize the Python interpreter.  Required. */
+  Py_Initialize();
 
   if (argc == 2) {
     FILE *f = fopen(argv[1], "r");

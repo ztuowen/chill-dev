@@ -160,7 +160,7 @@ static int intArg(PyObject *args, int index, int dval = 0) {
   int ival;
   PyObject *item = PyTuple_GetItem(args, index);
   Py_INCREF(item);
-  if (PyInt_Check(item)) ival = PyInt_AsLong(item);
+  if (PyLong_Check(item)) ival = PyLong_AsLong(item);
   else {
     CHILL_ERROR("argument at index %i is not an int\n", index);
     exit(-1);
@@ -174,7 +174,7 @@ static std::string strArg(PyObject *args, int index, const char *dval = NULL) {
   std::string strval;
   PyObject *item = PyTuple_GetItem(args, index);
   Py_INCREF(item);
-  if (PyString_Check(item)) strval = strdup(PyString_AsString(item));
+  if (PyUnicode_Check(item)) strval = strdup(PyUnicode_AsUTF8(item));
   else {
     CHILL_ERROR("argument at index %i is not an string\n", index);
     exit(-1);
@@ -206,8 +206,8 @@ static bool tostringintmapvector(PyObject *args, int index, std::vector<std::map
     for (int j = 0; j < dict_len; j++) {
       PyObject *key = PyList_GetItem(keys, j);
       PyObject *value = PyDict_GetItem(dict, key);
-      std::string str_key = strdup(PyString_AsString(key));
-      int int_value = PyInt_AsLong(value);
+      std::string str_key = strdup(PyUnicode_AsUTF8(key));
+      int int_value = PyLong_AsLong(value);
       map[str_key] = int_value;
     }
     vec.push_back(map);
@@ -220,7 +220,7 @@ static bool tointvector(PyObject *seq, std::vector<int> &vec) {
   int seq_len = PyList_Size(seq);
   for (int i = 0; i < seq_len; i++) {
     PyObject *item = PyList_GetItem(seq, i);
-    vec.push_back(PyInt_AsLong(item));
+    vec.push_back(PyLong_AsLong(item));
   }
   return true;
 }
@@ -240,7 +240,7 @@ static bool tointset(PyObject *args, int index, std::set<int> &set) {
   int seq_len = PyList_Size(seq);
   for (int i = 0; i < seq_len; i++) {
     PyObject *item = PyList_GetItem(seq, i);
-    set.insert(PyInt_AsLong(item));
+    set.insert(PyLong_AsLong(item));
   }
   return true;
 }
@@ -256,7 +256,7 @@ static bool tointmatrix(PyObject *args, int index, std::vector<std::vector<int> 
     int seq_two_len = PyList_Size(seq_two);
     for (int j = 0; j < seq_two_len; j++) {
       PyObject *item = PyList_GetItem(seq_two, j);
-      vec.push_back(PyInt_AsLong(item));
+      vec.push_back(PyLong_AsLong(item));
     }
     mat.push_back(vec);
   }
@@ -379,7 +379,7 @@ static PyObject *chill_known(PyObject *self, PyObject *args) {
   if (PyList_Check(PyTuple_GetItem(args, 0))) {
     PyObject *list = PyTuple_GetItem(args, 0);
     for (int i = 0; i < PyList_Size(list); i++) {
-      add_known(std::string(PyString_AsString(PyList_GetItem(list, i))));
+      add_known(std::string(PyUnicode_AsUTF8(PyList_GetItem(list, i))));
     }
   } else {
     add_known(strArg(args, 0));
@@ -779,12 +779,23 @@ static void register_globals(PyObject *m) {
   PyModule_AddIntConstant(m, "sync", 1);
 }
 
+static PyModuleDef ChillModule = {
+    PyModuleDef_HEAD_INIT, "chill", NULL, -1, ChillMethods,
+    NULL, NULL, NULL, NULL
+};
+
+static PyObject*
+PyInit_chill(void) {
+  PyObject *m = PyModule_Create(&ChillModule);
+  register_globals(m);
+  return m;
+}
+
 PyMODINIT_FUNC
 initchill(void)    // pass C methods to python 
 {
   CHILL_DEBUG_PRINT("set up C methods to be called from python\n");
-  PyObject *m = Py_InitModule("chill", ChillMethods);
+  PyImport_AppendInittab("chill", &PyInit_chill);
   dest_filename = "";
   effort = 1;
-  register_globals(m);
 }

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(chill)
 set(CHILL_VERSION 0.2.1) # 2.8 doesn't support project version clause
 
-find_package(PythonLibs 2.7 REQUIRED)
+find_package(PythonLibs 3 REQUIRED)
 find_package(LLVM REQUIRED CONFIG)
 
 add_definitions(${LLVM_DEFINITIONS})
