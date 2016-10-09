@@ -60,7 +60,7 @@ namespace omega {
         // No op
         break;
       default:
-        CHILL_ERROR("UNHANDLED statement of type %s %s\n",n->getTypeString());
+        CG_ERROR("UNHANDLED statement of type %s %s\n",n->getTypeString());
         exit(-1);
     }
     return r;
@@ -213,7 +213,7 @@ namespace omega {
                                                        CG_outputRepr *lhs,
                                                        CG_outputRepr *rhs) const {
     if(lhs == NULL || rhs == NULL) {
-      CHILL_ERROR("Code generation: Missing lhs or rhs\n");
+      CG_ERROR("Code generation: Missing lhs or rhs\n");
       return NULL;
     }
     

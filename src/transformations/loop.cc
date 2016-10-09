@@ -1058,8 +1058,7 @@ CG_outputRepr *Loop::getCode(int effort) const {
       xforms[i] = stmt[i].xform;
     }
 
-    debugRelations();
-
+    //debugRelations();
 
     Relation known = Extend_Set(copy(this->known), n - this->known.n_set());
 

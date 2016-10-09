@@ -442,9 +442,23 @@ chillAST_NodeList* ConvertIfStmt(IfStmt *clangIS) {
 
   chillAST_Node *con = unwrap(ConvertGenericClangAST(cond));
   chillAST_Node *thn = NULL;
-  if (thenpart) thn = unwrap(ConvertGenericClangAST(thenpart));
+  if (thenpart) {
+    thn = unwrap(ConvertGenericClangAST(thenpart));
+    if (!thn->isCompoundStmt()) {
+      chillAST_Node* tmp=new chillAST_CompoundStmt();
+      tmp->addChild(thn);
+      thn = tmp;
+    }
+  }
   chillAST_Node *els = NULL;
-  if (elsepart) els = unwrap(ConvertGenericClangAST(elsepart));
+  if (elsepart) {
+    els = unwrap(ConvertGenericClangAST(elsepart));
+    if (!els->isCompoundStmt()) {
+      chillAST_Node* tmp=new chillAST_CompoundStmt();
+      tmp->addChild(els);
+      els = tmp;
+    }
+  }
 
   chillAST_IfStmt *ifstmt = new chillAST_IfStmt(con, thn, els);
   NL_RET(ifstmt);
@@ -1988,8 +2002,6 @@ std::vector<IR_Control *> IR_clangCode::FindOneLevelControlStructure(const IR_Bl
   for (int i = 0; i < numchildren; i++) {
     CHILLAST_NODE_TYPE typ = (*children)[i]->getType();
     if (typ == CHILLAST_NODE_LOOP) {
-      CHILL_DEBUG_PRINT("found a For statement (Loop) at %d within a Basic Block\n", i);
-
       ns = basicblock->numstatements();
       if (ns) {
         CHILL_DEBUG_PRINT("pushing a run of statements as a block\n");
@@ -1999,18 +2011,17 @@ std::vector<IR_Control *> IR_clangCode::FindOneLevelControlStructure(const IR_Bl
 
       CHILL_DEBUG_PRINT("pushing the loop at %d\n", i);
       controls.push_back(new IR_chillLoop(this, (chillAST_ForStmt *) (*children)[i]));
-
-    }
-      //else if (typ == CHILLAST_NODE_IFSTMT ) // TODO
-    else { // straight line code
+    } else if (typ == CHILLAST_NODE_IFSTMT ) {
+      ns = basicblock->numstatements();
+      if (ns) {
+        CHILL_DEBUG_PRINT("pushing a run of statements as a block\n");
+        controls.push_back(basicblock);
+        basicblock = new IR_chillBlock(this); // start a new one
+      }
+      CHILL_DEBUG_PRINT("pushing the if at %d\n", i);
+      controls.push_back(new IR_chillIf(this, (chillAST_IfStmt *) (*children)[i]));
+    } else
       basicblock->addStatement((*children)[i]);
-      CHILL_DEBUG_BEGIN
-        fprintf(stderr, "straight line code\n");
-        fprintf(stderr, "child %d = \n", i);
-        (*children)[i]->print();
-        fprintf(stderr, "child %d is part of a basic block\n", i);
-      CHILL_DEBUG_END
-    }
   } // for each child
   ns = basicblock->numstatements();
   if (ns != 0 && (unwrap || ns != numchildren))
@@ -2475,4 +2486,34 @@ chillAST_NodeList* ConvertMemberExpr(clang::MemberExpr *clangME) {
 
   NL_RET(ME);
 
-} 
+}
+
+omega::CG_outputRepr *IR_chillIf::condition() const {
+  assert( code->isIfStmt() && "If statement's code is not if statement");
+  return new omega::CG_chillRepr(((chillAST_IfStmt*)code) -> getCond());
+}
+
+IR_Block *IR_chillIf::then_body() const {
+  assert( code->isIfStmt() && "If statement's code is not if statement");
+  chillAST_Node* thenPart = ((chillAST_IfStmt*)code) -> getThen();
+  if (thenPart) return new IR_chillBlock(ir_,thenPart);
+  return NULL;
+}
+
+IR_Block *IR_chillIf::else_body() const {
+  assert( code->isIfStmt() && "If statement's code is not if statement");
+  chillAST_Node* elsePart = ((chillAST_IfStmt*)code) -> getElse();
+  if (elsePart) return new IR_chillBlock(ir_,elsePart);
+  return NULL;
+}
+
+IR_Block *IR_chillIf::convert() {
+  const IR_Code *ir = ir_;
+  chillAST_Node *code = this->code;
+  delete this;
+  return new IR_chillBlock(ir,code);
+}
+
+IR_Control *IR_chillIf::clone() const {
+  return new IR_chillIf(ir_,code);
+}

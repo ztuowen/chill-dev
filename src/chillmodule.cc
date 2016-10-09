@@ -25,6 +25,7 @@ std::string dest_filename;
 
 int loop_start_num;
 int loop_end_num;
+int effort;
 
 extern std::vector<IR_Control *> ir_controls;
 extern std::vector<int> loops;
@@ -52,14 +53,14 @@ static void set_loop_num_end(int end_num) {
 
 void finalize_loop(int loop_num_start, int loop_num_end) {
   if (loop_num_start == loop_num_end) {
-    ir_code->ReplaceCode(ir_controls[loops[loop_num_start]], myloop->getCode());
+    ir_code->ReplaceCode(ir_controls[loops[loop_num_start]], myloop->getCode(effort));
     ir_controls[loops[loop_num_start]] = NULL;
   } else {
     std::vector<IR_Control *> parm;
     for (int i = loops[loop_num_start]; i <= loops[loop_num_end]; i++)
       parm.push_back(ir_controls[i]);
     IR_Block *block = ir_code->MergeNeighboringControlStructures(parm);
-    ir_code->ReplaceCode(block, myloop->getCode());
+    ir_code->ReplaceCode(block, myloop->getCode(effort));
     for (int i = loops[loop_num_start]; i <= loops[loop_num_end]; i++) {
       delete ir_controls[i];
       ir_controls[i] = NULL;
@@ -279,6 +280,12 @@ chill_dest(PyObject *self, PyObject* args) {
   Py_RETURN_NONE;
 }
 
+static PyObject *chill_effort(PyObject *self, PyObject *args) {
+  strict_arg_num(args, 1, "effort");
+  source_filename = intArg(args, 0);
+  Py_RETURN_NONE;
+}
+
 static PyObject *chill_procedure(PyObject *self, PyObject *args) {
   if (!procedure_name.empty()) {
     CHILL_ERROR("only one procedure can be handled in a script");
@@ -315,7 +322,7 @@ static PyObject *chill_loop(PyObject *self, PyObject *args) {
 
 static PyObject *chill_print_code(PyObject *self, PyObject *args) {
   strict_arg_num(args, 0, "print_code");
-  myloop->printCode();
+  myloop->printCode(effort);
   printf("\n");
   Py_RETURN_NONE;
 }
@@ -726,6 +733,7 @@ static PyMethodDef ChillMethods[] = {
     //python name           C routine                  parameter passing comment
     {"source",              chill_source,              METH_VARARGS, "set source file for chill script"},
     {"destination",         chill_dest,                METH_VARARGS, "set destination file for generated source"},
+    {"effort",              chill_effort,              METH_VARARGS, "set the effort to remove loop overhead"},
     {"procedure",           chill_procedure,           METH_VARARGS, "set the name of the procedure"},
     {"loop",                chill_loop,                METH_VARARGS, "indicate which loop to optimize"},
     {"print_code",          chill_print_code,          METH_VARARGS, "print generated code"},
@@ -778,5 +786,6 @@ initchill(void)    // pass C methods to python
   CHILL_DEBUG_PRINT("set up C methods to be called from python\n");
   PyObject *m = Py_InitModule("chill", ChillMethods);
   dest_filename = "";
+  effort = 1;
   register_globals(m);
 }

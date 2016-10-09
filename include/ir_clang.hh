@@ -336,16 +336,14 @@ public:
   void dump() const;
 };
 
+struct IR_chillIf: public IR_If {
+  chillAST_Node *code;
 
-#ifdef NOTYET
-struct IR_clangIf: public IR_If {
-  SgNode *ti_;
-  
-  IR_clangIf(const IR_Code *ir, SgNode *ti) {
+  IR_chillIf(const IR_Code *ir, chillAST_Node *ti) {
     ir_ = ir;
-    ti_ = ti;
+    code = ti;
   }
-  ~IR_clangIf() {
+  ~IR_chillIf() {
   }
   omega::CG_outputRepr *condition() const;
   IR_Block *then_body() const;
@@ -353,8 +351,6 @@ struct IR_clangIf: public IR_If {
   IR_Block *convert();
   IR_Control *clone() const;
 };
-#endif
-
 
 class aClangCompiler {
 private:
