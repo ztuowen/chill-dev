@@ -1058,7 +1058,7 @@ CG_outputRepr *Loop::getCode(int effort) const {
       xforms[i] = stmt[i].xform;
     }
 
-    debugRelations();
+    //debugRelations();
 
 
     Relation known = Extend_Set(copy(this->known), n - this->known.n_set());
@@ -1709,8 +1709,6 @@ std::vector<std::set<int> > Loop::typed_fusion(Graph<std::set<int>, bool> g,
 
 void Loop::setLexicalOrder(int dim, const std::set<int> &active,
                            int starting_order, std::vector<std::vector<std::string> > idxNames) {
-  fprintf(stderr, "Loop::setLexicalOrder()  %d idxNames     active size %d  starting_order %d\n", idxNames.size(),
-          active.size(), starting_order);
   if (active.size() == 0)
     return;
 
@@ -1874,7 +1872,6 @@ void Loop::setLexicalOrder(int dim, const std::set<int> &active,
           assign_const(stmt[cur_stmt].xform, j, 0);
         order++;
       } else { // recurse ! 
-        fprintf(stderr, "Loop:setLexicalOrder() recursing\n");
         setLexicalOrder(dim, cur_scc, order, idxNames);
         order += sz;
       }
@@ -1961,7 +1958,6 @@ void Loop::setLexicalOrder(int dim, const std::set<int> &active,
         }
 
         if ((dim + 2) <= (stmt[ref_stmt_num].xform.n_out() - 1)) {  // recurse ! 
-          fprintf(stderr, "Loop:setLexicalOrder() recursing\n");
           setLexicalOrder(dim + 2, s[i], order, idxNames);
         }
 
@@ -2093,13 +2089,15 @@ void Loop::setLexicalOrder(int dim, const std::set<int> &active,
     */
   }
 
-  fprintf(stderr, "LEAVING Loop::setLexicalOrder()  %d idxNames\n", idxNames.size());
-  for (int i = 0; i < idxNames.size(); i++) {
-    std::vector<std::string> what = idxNames[i];
-    for (int j = 0; j < what.size(); j++) {
-      fprintf(stderr, "%2d %2d %s\n", i, j, what[j].c_str());
+  CHILL_DEBUG_BEGIN
+    fprintf(stderr, "LEAVING Loop::setLexicalOrder()  %d idxNames\n", idxNames.size());
+    for (int i = 0; i < idxNames.size(); i++) {
+      std::vector<std::string> what = idxNames[i];
+      for (int j = 0; j < what.size(); j++) {
+        fprintf(stderr, "%2d %2d %s\n", i, j, what[j].c_str());
+      }
     }
-  }
+  CHILL_DEBUG_END
 }
 
 

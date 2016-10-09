@@ -120,9 +120,6 @@ namespace omega {
     CreateStmtList(CG_outputRepr *singleton = NULL) const;
 
     CG_outputRepr *
-    StmtListInsertLast(CG_outputRepr *list, CG_outputRepr *node) const;
-
-    CG_outputRepr *
     StmtListAppend(CG_outputRepr *list1, CG_outputRepr *list2) const;
 
     CG_outputRepr *CreateAddressOf(CG_outputRepr *op) const;

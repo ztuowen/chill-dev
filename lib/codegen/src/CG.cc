@@ -111,7 +111,6 @@ namespace omega {
                                                   v, aotf);
           
           std::string hand = result.first.print_to_string();
-          //fprintf(stderr, "result: %s, %d\n", hand.c_str(), result.second); 
           if (result.second < INT_MAX) {
             
             CG_outputRepr *subs = output_substitution_repr(ocg,
@@ -309,16 +308,7 @@ namespace omega {
     
     CG_DEBUG_PRINT("CG_split::printRepr()\n");
     int numfly =  assigned_on_the_fly.size();
-    //fprintf(stderr, "assigned on the fly  %d\n", numfly );
-    //for (int i=0; i<numfly; i++) { 
-    //  fprintf(stderr, "i %d\n", i); 
-    //  std::pair<CG_outputRepr *, int>p = assigned_on_the_fly[i];
-    //  CG_outputRepr *tr = NULL;
-    //  if (p.first != NULL) tr = p.first->clone();
-    //  int val = p.second;
-    //  fprintf(stderr, "0x%x   %d\n", tr, val);
-    //} 
-    
+
     CG_outputRepr *stmtList = NULL;
     std::vector<CG_result *> next_level = findNextLevel();
     
@@ -1093,16 +1083,6 @@ namespace omega {
                                     const std::vector<CG_outputRepr *> &stmts,
                                     const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly,
                                     std::vector<std::map<std::string, std::vector<CG_outputRepr *> > > unin, bool printString) const {
-    //int numfly =  assigned_on_the_fly.size();
-    //fprintf(stderr, "assigned on the fly  %d\n", numfly );
-    //for (int i=0; i<numfly; i++) { 
-    //  //fprintf(stderr, "i %d\n", i); 
-    //  std::pair<CG_outputRepr *, int>p = assigned_on_the_fly[i];
-    //  CG_outputRepr *tr = NULL;
-    //  if (p.first != NULL) tr = p.first->clone();
-    //  int val = p.second;
-    //  //fprintf(stderr, "0x%x   %d\n", tr, val);
-    //} 
     return printRepr(true, indent, ocg, stmts, assigned_on_the_fly, unin, printString);
   }
 

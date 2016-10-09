@@ -381,47 +381,28 @@ chillAST_FunctionDecl::chillAST_FunctionDecl(const char *rt, const char *fname, 
 };
 
 void chillAST_FunctionDecl::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "chillAST_FunctionDecl::gatherVarDecls()\n");
-  //if (0 < children.size()) fprintf(stderr, "functiondecl has %d children\n", children.size());
-  //fprintf(stderr, "functiondecl has %d parameters\n", numParameters());
   for (int i = 0; i < getParameters()->size(); i++) (*getParameters())[i]->gatherVarDecls(decls);
-  //fprintf(stderr, "after parms, %d decls\n", decls.size());
   for (int i = 0; i < children.size(); i++) children[i]->gatherVarDecls(decls);
-  //fprintf(stderr, "after children, %d decls\n", decls.size());
-  getBody()->gatherVarDecls(decls);  // todo, figure out if functiondecl has actual children
-  //fprintf(stderr, "after body, %d decls\n", decls.size());
-  //for (int d=0; d<decls.size(); d++) {
-  //  decls[d]->print(0,stderr); fprintf(stderr, "\n");
-  //}
 }
 
 
 void chillAST_FunctionDecl::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //if (0 < children.size()) fprintf(stderr, "functiondecl has %d children\n", children.size());
-
   for (int i = 0; i < getParameters()->size(); i++) (*getSymbolTable())[i]->gatherScalarVarDecls(decls);
   for (int i = 0; i < children.size(); i++) children[i]->gatherScalarVarDecls(decls);
-  getBody()->gatherScalarVarDecls(decls);  // todo, figure out if functiondecl has actual children
 }
 
 
 void chillAST_FunctionDecl::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //if (0 < children.size()) fprintf(stderr, "functiondecl has %d children\n", children.size());
-
   for (int i = 0; i < getParameters()->size(); i++) (*getSymbolTable())[i]->gatherArrayVarDecls(decls);
   for (int i = 0; i < children.size(); i++) children[i]->gatherArrayVarDecls(decls);
-  getBody()->gatherArrayVarDecls(decls);  // todo, figure out if functiondecl has actual children
 }
 
 
 chillAST_VarDecl *chillAST_FunctionDecl::findArrayDecl(const char *name) {
-  //fprintf(stderr, "chillAST_FunctionDecl::findArrayDecl( %s )\n", name );
   chillAST_VarDecl *p = getVariableDeclaration(name);
-  //if (p) fprintf(stderr, "function %s has parameter named %s\n", functionName, name );
   if (p && p->isArray()) return p;
 
   chillAST_VarDecl *v = getBody()->getVariableDeclaration(name);
-  //if (v) fprintf(stderr, "function %s has symbol table variable named %s\n", functionName, name );
   if (v && v->isArray()) return v;
 
   // declared variables that may not be in symbol table but probably should be
@@ -432,25 +413,11 @@ chillAST_VarDecl *chillAST_FunctionDecl::findArrayDecl(const char *name) {
     if (0 == strcmp(vd->varname, name) && vd->isArray()) return vd;
   }
 
-  //fprintf(stderr, "can't find array named %s in function %s \n", name, functionName);
   return NULL;
 }
 
 
-void chillAST_FunctionDecl::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
-  for (int i = 0; i < children.size(); i++) children[i]->gatherVarUsage(decls);
-  getBody()->gatherVarUsage(decls);  // todo, figure out if functiondecl has actual children
-}
-
-
-void chillAST_FunctionDecl::gatherDeclRefExprs(vector<chillAST_DeclRefExpr *> &refs) {
-  for (int i = 0; i < children.size(); i++) children[i]->gatherDeclRefExprs(refs);
-  getBody()->gatherDeclRefExprs(refs);  // todo, figure out if functiondecl has actual children
-}
-
-
 void chillAST_FunctionDecl::cleanUpVarDecls() {
-  //fprintf(stderr, "\ncleanUpVarDecls() for function %s\n", functionName);
   vector<chillAST_VarDecl *> used;
   vector<chillAST_VarDecl *> defined;
   vector<chillAST_VarDecl *> deletethese;
@@ -458,24 +425,10 @@ void chillAST_FunctionDecl::cleanUpVarDecls() {
   gatherVarUsage(used);
   gatherVarDecls(defined);
 
-  //fprintf(stderr, "\nvars used: \n");
-  //for ( int i=0; i< used.size(); i++) {
-  //used[i]->print(0, stderr);  fprintf(stderr, "\n");
-  //}
-  //fprintf(stderr, "\n");
-  //fprintf(stderr, "\nvars defined: \n");
-  //for ( int i=0; i< defined.size(); i++) {
-  //  defined[i]->print(0, stderr);  fprintf(stderr, "\n");
-  //}
-  //fprintf(stderr, "\n");
-
   for (int j = 0; j < defined.size(); j++) {
-    //fprintf(stderr, "j %d  defined %s\n", j, defined[j]->varname);
     bool definedandused = false;
     for (int i = 0; i < used.size(); i++) {
       if (used[i] == defined[j]) {
-        //fprintf(stderr, "i %d used %s\n", i, used[i]->varname);
-        //fprintf(stderr, "\n");
         definedandused = true;
         break;
       }
@@ -483,18 +436,13 @@ void chillAST_FunctionDecl::cleanUpVarDecls() {
 
     if (!definedandused) {
       if (defined[j]->isParmVarDecl()) {
-        //fprintf(stderr, "we'd remove %s except that it's a parameter. Maybe someday\n", defined[j]->varname);
       } else {
-        //fprintf(stderr, "we can probably remove the definition of %s\n", defined[j]->varname);
         deletethese.push_back(defined[j]);
       }
     }
   }
 
-
-  //fprintf(stderr, "deleting %d vardecls\n", deletethese.size());
   for (int i = 0; i < deletethese.size(); i++) {
-    //fprintf(stderr, "deleting varDecl %s\n",  deletethese[i]->varname);
     chillAST_Node *par = deletethese[i]->parent;
     par->removeChild(par->findChild(deletethese[i]));
   }
@@ -519,12 +467,6 @@ void chillAST_FunctionDecl::cleanUpVarDecls() {
 bool chillAST_FunctionDecl::findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bool forcesync) {
   if (getBody()) getBody()->findLoopIndexesToReplace(symtab, false);
   return false;
-}
-
-
-chillAST_Node *chillAST_FunctionDecl::constantFold() {
-  if (getBody()) setBody((chillAST_CompoundStmt *) getBody()->constantFold());
-  return this;
 }
 
 chillAST_MacroDefinition::chillAST_MacroDefinition(const char *mname = NULL, const char *rhs = NULL) {

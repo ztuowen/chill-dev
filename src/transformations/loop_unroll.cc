@@ -576,7 +576,6 @@ std::set<int> Loop::unroll(int stmt_num, int level, int unroll_amount,
           stmt[stmt_num].loop_level[i].parallel_level;
     }
 
-    fprintf(stderr, "loop_unroll.cc L581 adding stmt %d\n", stmt.size());
     stmt.push_back(overflow_stmt);
 
     uninterpreted_symbols.push_back(uninterpreted_symbols[stmt_num]);
@@ -735,7 +734,6 @@ std::set<int> Loop::unroll(int stmt_num, int level, int unroll_amount,
         new_stmt.loop_level = stmt[*i].loop_level;
         new_stmt.ir_stmt_node = NULL;
 
-        fprintf(stderr, "loop_unroll.cc L740 adding stmt %d\n", stmt.size());
         stmt.push_back(new_stmt);
 
         uninterpreted_symbols.push_back(uninterpreted_symbols[stmt_num]);
@@ -1079,10 +1077,10 @@ std::set<int> Loop::unroll(int stmt_num, int level, int unroll_amount,
     new_stmt.ir_stmt_node = NULL;
 
     new_stmt.has_inspector = false; //  ?? or from copied stmt?
-    if (stmt[stmt_num].has_inspector) fprintf(stderr, "OLD STMT HAS INSPECTOR\n");
-    else fprintf(stderr, "OLD STMT DOES NOT HAVE INSPECTOR\n");
-
-    fprintf(stderr, "loop_unroll.cc L1083 adding stmt %d\n", stmt.size());
+    CHILL_DEBUG_BEGIN
+      if (stmt[stmt_num].has_inspector) fprintf(stderr, "OLD STMT HAS INSPECTOR\n");
+      else fprintf(stderr, "OLD STMT DOES NOT HAVE INSPECTOR\n");
+    CHILL_DEBUG_END
     stmt.push_back(new_stmt);
 
     uninterpreted_symbols.push_back(uninterpreted_symbols[stmt_num]);

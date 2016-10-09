@@ -59,8 +59,6 @@ struct IR_chillArraySymbol : public IR_ArraySymbol {
   chillAST_VarDecl *chillvd;
 
   IR_chillArraySymbol(const IR_Code *ir, chillAST_VarDecl *vd, int offset = 0) {
-    //if ( vd == 0 ) 
-    //fprintf(stderr, "IR_chillArraySymbol::IR_chillArraySymbol (%s)  vd 0x%x\n", vd->varname, vd); 
     ir_ = ir;
     chillvd = vd;
     //indirect_ = indirect;
@@ -176,19 +174,11 @@ struct IR_chillScalarRef : public IR_ScalarRef {
   }
 
   IR_chillScalarRef(const IR_Code *ir, chillAST_DeclRefExpr *d) {
-    // fprintf(stderr, "\n*****                         new IR_xxxxScalarRef( ir, REF EXPR sym %s ) *****\n\n", d->getVarDecl()->varname); 
-    //fprintf(stderr, "new IR_chillScalarRef with a DECLREFEXPR  (has dre) \n"); 
     ir_ = ir;
     dre = d;
     //bop = NULL;
     chillvd = d->getVarDecl();
     op_pos_ = OP_UNKNOWN;
-
-    //fprintf(stderr, "\nScalarRef has:\n"); 
-    //fprintf(stderr, "assignment op  DOESNT EXIST\n"); 
-    //fprintf(stderr, "ins_pos %d\n", ins_pos_); 
-    //fprintf(stderr, "op_pos %d\n", op_pos_); 
-    //fprintf(stderr, "ref expr dre = 0x%x\n", dre); 
   }
 
   IR_chillScalarRef(const IR_Code *ir, chillAST_VarDecl *vardecl) {
@@ -201,12 +191,6 @@ struct IR_chillScalarRef : public IR_ScalarRef {
     //bop = NULL;
     chillvd = vardecl;
     op_pos_ = OP_UNKNOWN;
-
-    //fprintf(stderr, "\nScalarRef has:\n"); 
-    //fprintf(stderr, "assignment op  DOESNT EXIST\n"); 
-    //fprintf(stderr, "ins_pos %d\n", ins_pos_); 
-    //fprintf(stderr, "op_pos %d\n", op_pos_); 
-    //fprintf(stderr, "ref expr dre = 0x%x\n", dre); 
   }
 
 

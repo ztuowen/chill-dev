@@ -517,16 +517,6 @@ namespace omega {
       assign_repr = ocg->CreateInt(0);
     }
     
-    //fprintf(stderr, "assigned on the fly  %d\n", numfly );
-    //for (int i=0; i<numfly; i++) { 
-    //  //fprintf(stderr, "i %d\n", i); 
-    //  std::pair<CG_outputRepr *, int>p = assigned_on_the_fly[i];
-    //  CG_outputRepr *tr = NULL;
-    //  if (p.first != NULL) tr = p.first->clone();
-    //  int val = p.second;
-    //  //fprintf(stderr, "0x%x   %d\n", tr, val);
-    //} 
-    
     return std::make_pair(if_repr, std::make_pair(assign_repr, result.second));
   }
  
@@ -541,7 +531,6 @@ namespace omega {
                                           const Relation &R, 
                                           const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly,
                                           std::map<std::string, std::vector<CG_outputRepr *> > unin) {
-    //fprintf(stderr, "output_substitution_repr(  v = '%s' )\n", v->char_name()); 
     const_cast<Relation &>(R).setup_names(); // hack
     
     coef_t a = equality.get_coef(v);
@@ -550,7 +539,6 @@ namespace omega {
     CG_outputRepr *repr = NULL;
     for (Constr_Vars_Iter cvi(equality); cvi; cvi++)
       if (cvi.curr_var() != v) {
-        //fprintf(stderr, "cvi\n"); 
         CG_outputRepr *t;
         if (cvi.curr_var()->kind() == Wildcard_Var) {
           std::pair<bool, GEQ_Handle> result = find_floor_definition(R, cvi.curr_var());
@@ -561,14 +549,9 @@ namespace omega {
           t = output_inequality_repr(ocg, result.second, cvi.curr_var(), R, assigned_on_the_fly, unin);
         }
         else { 
-          //fprintf(stderr, "else t = output_ident()\n"); 
           t = output_ident(ocg, R, cvi.curr_var(), assigned_on_the_fly, unin);
-          //if (t== NULL) fprintf(stderr, "t NULL\n"); 
         }
         coef_t coef = cvi.curr_coef();
-        //fprintf(stderr, "coef %d\n", coef); 
-        
-        //fprintf(stderr, "a %d\n", a); 
         if (a > 0) {
           if (coef > 0) {
             if (coef == 1)
@@ -578,10 +561,7 @@ namespace omega {
           }
           else { // coef < 0
             if (coef == -1) {
-              //fprintf(stderr, "repr = ocg->CreatePlus(repr, t);\n"); 
               repr = ocg->CreatePlus(repr, t);
-              //if (repr == NULL) fprintf(stderr, "repr NULL\n"); 
-              //else fprintf(stderr, "repr NOT NULL\n"); 
             }
             else {
               repr = ocg->CreatePlus(repr, ocg->CreateTimes(ocg->CreateInt(-coef), t));
@@ -604,7 +584,6 @@ namespace omega {
         }
       }
     
-    //if (repr == NULL) fprintf(stderr, "before inequality, repr == NULL\n"); 
     int c = equality.get_const();
     if (a > 0) {
       if (c > 0)
@@ -624,8 +603,6 @@ namespace omega {
     if (apply_v_coef && abs(a) != 1)
       repr = ocg->CreateDivide(repr, ocg->CreateInt(abs(a)));
     
-    //if (repr == NULL) fprintf(stderr, "at end, repr == NULL\n"); 
-    //fprintf(stderr, "leaving output_substitution_repr()\n"); 
     return repr;
   }
   
@@ -1224,7 +1201,6 @@ namespace omega {
     // e.g. i>5j
     for (GEQ_Iterator e = c->GEQs(); e; e++)
       if (!(*e).has_wildcards()) {
-        //fprintf(stderr, "GEQ\n"); 
         CG_outputRepr *lhs = NULL;
         CG_outputRepr *rhs = NULL;
         for (Constr_Vars_Iter cvi(*e); cvi; cvi++) {
@@ -1270,7 +1246,6 @@ namespace omega {
     // e.g. 4i=5j+4alpha
     for (EQ_Iterator e = c->EQs(); e; e++)
       if ((*e).has_wildcards()) {
-        //fprintf(stderr, "EQ ??\n"); 
         Variable_ID wc;
         int num_wildcard = 0;
         int num_positive = 0;
@@ -1472,8 +1447,6 @@ namespace omega {
           result = ocg->CreateAnd(result, term);
         }
       }
-    
-    //fprintf(stderr, "output_guard returning at bottom 0x%x\n", result); 
     return result;
   }
   
@@ -1855,7 +1828,6 @@ namespace omega {
                                             const_cast<Relation &>(R).set_var(level), 
                                             assigned_on_the_fly, 
                                             unin);
-    //fprintf(stderr,"CG_utils.cc output_loop()  returning CreateInductive()\n"); 
     return ocg->CreateInductive(indexRepr, lbRepr, ubRepr, stRepr);
   }
   
@@ -2162,8 +2134,6 @@ namespace omega {
                                  const std::vector<CG_outputRepr *> &stmts,
                                  const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly,
                                  std::vector<std::map<std::string, std::vector<CG_outputRepr *> > > unin) {
-    //fprintf(stderr, "\n\nleaf_print_repr()\n"); 
-    
     if (active.num_elem() == 0)
       return NULL;
     
@@ -2628,8 +2598,6 @@ namespace omega {
     //--begin
     std::vector<std::pair<CG_outputRepr *, int> > aotf = assigned_on_the_fly;
     CG_outputRepr *new_guard_repr = output_guard(ocg, then_cond, aotf, unin[*(active.begin())]);
-
-    //fprintf(stderr, "new_guard_repr 0x%x\n", new_guard_repr); 
     if (j == i && end == j) {
       guard_repr = ocg->CreateAnd(guard_repr, new_guard_repr);
       Relation new_guard = Intersection(copy(guard), copy(then_cond));

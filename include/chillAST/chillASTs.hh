@@ -136,7 +136,7 @@ public:
 
   bool isAStruct() { return (isStruct || (typedefinition && typedefinition->isAStruct())); }
 
-  void setStruct(bool b) { isStruct = b;/*fprintf(stderr,"vardecl %s IS A STRUCT\n",varname);*/ };
+  void setStruct(bool b) { isStruct = b; };
 
   bool isPointer() { return isArray() && !knownArraySizes; }  //
 
@@ -325,7 +325,6 @@ public:
 
   void setStruct(bool tf) { isStruct = tf; };
 
-  //fprintf(stderr, "%s isStruct %d\n", structname, isStruct);  }; 
   void setUnion(bool tf) { isUnion = tf; };
 
   chillAST_SymbolTable *addVariableToSymbolTable(chillAST_VarDecl *vd); //  RecordDecl does NOTHING
@@ -400,16 +399,10 @@ public:
 
   chillAST_VarDecl *findArrayDecl(const char *name);
 
-  void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherDeclRefExprs(std::vector<chillAST_DeclRefExpr *> &refs);
-
   void cleanUpVarDecls();
 
   //void replaceVarDecls( chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl);
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bool forcesync = false);
-
-  chillAST_Node *constantFold();
 
 };  // end FunctionDecl
 
@@ -541,12 +534,8 @@ public:
     loops.push_back(this);
 
     int n = getBody()->children.size();
-    //fprintf(stderr, "get_deep_loops of a %s with %d children\n", getTypeString(), n); 
-    for (int i = 0; i < n; i++) {
-      //fprintf(stderr, "child %d is a %s\n", i, body->children[i]->getTypeString());
+    for (int i = 0; i < n; i++)
       getBody()->children[i]->get_deep_loops(loops);
-    }
-    //fprintf(stderr, "found %d deep loops\n", loops.size()); 
   }
 
 

@@ -218,8 +218,6 @@ namespace omega {
   CG_stringRepr* CG_stringBuilder::CreateAttribute(CG_outputRepr *control,
                                                    const std::string &commentText) const {
     
-    //fprintf(stderr, "CG_stringBuilder::CreateAttribute( jkadskjh, '%s')\n", commentText.c_str());
-
     if (commentText == std::string("")) {
       return static_cast<CG_stringRepr *> (control);
     }
