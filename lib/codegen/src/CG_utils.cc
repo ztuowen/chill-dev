@@ -2577,7 +2577,6 @@ namespace omega {
     }
     
     Relation then_cond = find_best_guard(R, loops, start, end);
-    fprintf(stderr, "then_cond  "); then_cond.print(stderr); 
     assert(!then_cond.is_obvious_tautology());
     Relation else_cond = Complement(copy(then_cond));
     else_cond.simplify();
@@ -2608,11 +2607,7 @@ namespace omega {
     else if (j == i && end > j) {
       int new_indent = (guard_repr==NULL)?indent:indent+1;
       Relation new_guard = Intersection(copy(guard), copy(then_cond));
-      new_guard.print(stderr); 
-      new_guard.print_with_subs(stderr); 
       new_guard.simplify();
-      new_guard.print(stderr); 
-      new_guard.print_with_subs(stderr); 
       CG_outputRepr *stmt_list = loop_print_repr(active,
                                                  loops, 
                                                  start, 

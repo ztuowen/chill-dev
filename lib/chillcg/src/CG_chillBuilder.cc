@@ -25,8 +25,8 @@ namespace omega {
   // substitute at chill AST level
   chillAST_Node *substituteChill( const char *oldvar, CG_chillRepr *newvar, chillAST_Node *n, chillAST_Node *parent = NULL ) {
     if (n == NULL) {
-      CG_ERROR(" pointer n == NULL\n");
-      exit(-1);
+      CG_DEBUG_PRINT(" pointer n == NULL\n");
+      return NULL;
     }
     
     chillAST_Node *r = n;
