@@ -25,12 +25,15 @@ set(CORE_SRC
         )
 
 set(IR_CHILL_SRC
-        src/ir_clang.cc
+        src/ir_chill.cc
         )
 set(AST_CHILL_SRC
-        src/chillASTs.cc
+        src/ast/chillASTs.cc
         src/ast/node.cpp
         )
+
+set(CLANG_FRONTEND
+        src/frontend/clang.cpp)
 
 set(PYTHON_SRC
         src/chillmodule.cc
@@ -94,6 +97,7 @@ add_executable(chill
         src/chill.cc
         ${CORE_SRC}
         ${PYTHON_SRC}
+        ${CLANG_FRONTEND}
         ${IR_CHILL_SRC}
         ${AST_CHILL_SRC}
         ${PRINTER_SRC})

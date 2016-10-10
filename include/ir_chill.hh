@@ -32,8 +32,7 @@
 #include "chillAST.h"
 
 extern std::vector<chillAST_VarDecl *> VariableDeclarations;  // a global.   TODO
-
-typedef llvm::SmallVector<clang::Stmt *, 16> StmtList;  // TODO delete 
+extern std::vector<chillAST_FunctionDecl *> FunctionDeclarations;
 
 struct IR_chillScalarSymbol : public IR_ScalarSymbol {
   chillAST_VarDecl *chillvd;
@@ -54,19 +53,16 @@ struct IR_chillScalarSymbol : public IR_ScalarSymbol {
 
 
 struct IR_chillArraySymbol : public IR_ArraySymbol {
-  //int indirect_;             // what was this? 
-  int offset_;                 // what is this? 
+  //int indirect_;             // TODO Doc
+  int offset_;                 // TODO Doc
   chillAST_VarDecl *chillvd;
 
   IR_chillArraySymbol(const IR_Code *ir, chillAST_VarDecl *vd, int offset = 0) {
-    //if ( vd == 0 ) 
-    //fprintf(stderr, "IR_chillArraySymbol::IR_chillArraySymbol (%s)  vd 0x%x\n", vd->varname, vd); 
     ir_ = ir;
     chillvd = vd;
     //indirect_ = indirect;
     offset_ = offset;
   }
-
 
   // No Fortran support!
   IR_ARRAY_LAYOUT_TYPE layout_type() const {
@@ -134,19 +130,22 @@ enum OP_POSITION {
 #define OP_RIGHT OP_SRC
 
 struct IR_chillScalarRef : public IR_ScalarRef {
-  OP_POSITION op_pos_; // -1 means destination operand, 0== unknown, 1 == source operand
-  //chillAST_BinaryOperator *bop;  // binary op that contains this scalar? 
-  chillAST_DeclRefExpr *dre;   // declrefexpr that uses this scalar ref, if that exists
-  chillAST_VarDecl *chillvd; // the vardecl for this scalar
+  /*!
+   * @brief the position of the operand
+   * -1 means destination operand, 0== unknown, 1 == source operand
+   */
+  OP_POSITION op_pos_;
+  //chillAST_BinaryOperator *bop;  // binary op that contains this scalar?
+  chillAST_DeclRefExpr *dre;  //!< declrefexpr that uses this scalar ref, if that exists
+  chillAST_VarDecl *chillvd; //!< the vardecl for this scalar
 
   IR_chillScalarRef(const IR_Code *ir, chillAST_BinaryOperator *ins, OP_POSITION pos) {
-    fprintf(stderr, "\n*****                         new IR_xxxxScalarRef( ir, ins, pos ) *****\n\n");
+    CHILL_ERROR("Not implemented");
     exit(-1);
     // this constructor takes a binary operation and an indicator of which side of the op to use,
-    // and finds the scalar in the lhs or rhs of the binary op. 
+    // and finds the scalar in the lhs or rhs of the binary op.
     ir_ = ir;
     dre = NULL;
-    //bop = ins; //   do we need this? 
     if (pos == OP_LEFT) {
       chillAST_Node *lhs = ins->getLHS();
       if (lhs->isDeclRefExpr()) {
@@ -156,7 +155,7 @@ struct IR_chillScalarRef : public IR_ScalarRef {
       } else if (lhs->isVarDecl()) {
         chillvd = (chillAST_VarDecl *) lhs;
       } else {
-        fprintf(stderr, "IR_chillScalarRef constructor, I'm confused\n");
+        CHILL_ERROR("IR_chillScalarRef constructor, I'm confused\n");
         exit(-1);
       }
     } else {
@@ -168,7 +167,7 @@ struct IR_chillScalarRef : public IR_ScalarRef {
       } else if (rhs->isVarDecl()) {
         chillvd = (chillAST_VarDecl *) rhs;
       } else {
-        fprintf(stderr, "IR_chillScalarRef constructor, I'm confused\n");
+        CHILL_ERROR("IR_chillScalarRef constructor, I'm confused\n");
         exit(-1);
       }
     }
@@ -176,37 +175,17 @@ struct IR_chillScalarRef : public IR_ScalarRef {
   }
 
   IR_chillScalarRef(const IR_Code *ir, chillAST_DeclRefExpr *d) {
-    // fprintf(stderr, "\n*****                         new IR_xxxxScalarRef( ir, REF EXPR sym %s ) *****\n\n", d->getVarDecl()->varname); 
-    //fprintf(stderr, "new IR_chillScalarRef with a DECLREFEXPR  (has dre) \n"); 
     ir_ = ir;
     dre = d;
-    //bop = NULL;
     chillvd = d->getVarDecl();
     op_pos_ = OP_UNKNOWN;
-
-    //fprintf(stderr, "\nScalarRef has:\n"); 
-    //fprintf(stderr, "assignment op  DOESNT EXIST\n"); 
-    //fprintf(stderr, "ins_pos %d\n", ins_pos_); 
-    //fprintf(stderr, "op_pos %d\n", op_pos_); 
-    //fprintf(stderr, "ref expr dre = 0x%x\n", dre); 
   }
 
   IR_chillScalarRef(const IR_Code *ir, chillAST_VarDecl *vardecl) {
-    fprintf(stderr,
-            "\n*****                         new IR_xxxxScalarRef( ir, sym 0x1234567 ) ***** THIS SHOULD NEVER HAPPEN\n\n");
-    fprintf(stderr, "vardecl %s\n", vardecl->varname);
     ir_ = ir;
     dre = NULL;
-    fprintf(stderr, "new IR_chillScalarRef with a vardecl but no dre\n");
-    //bop = NULL;
     chillvd = vardecl;
     op_pos_ = OP_UNKNOWN;
-
-    //fprintf(stderr, "\nScalarRef has:\n"); 
-    //fprintf(stderr, "assignment op  DOESNT EXIST\n"); 
-    //fprintf(stderr, "ins_pos %d\n", ins_pos_); 
-    //fprintf(stderr, "op_pos %d\n", op_pos_); 
-    //fprintf(stderr, "ref expr dre = 0x%x\n", dre); 
   }
 
 
@@ -510,6 +489,5 @@ public:
 
   friend class IR_chillArrayRef;
 };
-
 
 #endif
