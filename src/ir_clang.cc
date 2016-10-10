@@ -765,7 +765,8 @@ chillAST_NodeList* ConvertTranslationUnit(TranslationUnitDecl *TUD, char *filena
       exit(-1);
     }
     topnode -> addChild(child);
-    if (D->isImplicit()) child->isFromSourceFile = false;
+
+    if (D->isImplicit() || !globalSRCMAN->getFilename(D->getLocation()).equals(filename)) child->isFromSourceFile = false;
   }
 
   NL_RET(topnode);
@@ -829,39 +830,26 @@ chillAST_NodeList* ConvertGenericClangAST(Stmt *s) {
 
   } else {
     // more work to do
-    fprintf(stderr, "ir_clang.cc ConvertGenericClangAST() UNHANDLED ");
-    //if (isa<Decl>(D)) fprintf(stderr, "Decl of kind %s\n",  D->getDeclKindName() );
-    if (isa<Stmt>(s))fprintf(stderr, "Stmt of type %s\n", s->getStmtClassName());
+    if (isa<Decl>(D)) CHILL_ERROR("Decl of kind %s unhandled\n",  D->getDeclKindName() );
+    if (isa<Stmt>(s)) CHILL_ERROR("Stmt of type %s unhandled\n", s->getStmtClassName());
     exit(-1);
   }
 
   return ret;
 }
 
-
-
-
-
-
-
-
-
-
 // ----------------------------------------------------------------------------
 // Class: IR_chillScalarSymbol
 // ----------------------------------------------------------------------------
 
 std::string IR_chillScalarSymbol::name() const {
-  //return vd_->getNameAsString();   CLANG
-  //fprintf(stderr, "IR_chillScalarSymbol::name() %s\n", chillvd->varname); 
-  return std::string(chillvd->varname);  // CHILL 
+  return std::string(chillvd->varname);  // CHILL
 }
 
 
 // Return size in bytes
 int IR_chillScalarSymbol::size() const {
-  //return (vd_->getASTContext().getTypeSize(vd_->getType())) / 8;    // ??
-  fprintf(stderr, "IR_chillScalarSymbol::size()  probably WRONG\n");
+  CHILL_DEBUG_PRINT("IR_chillScalarSymbol::size()  probably WRONG\n");
   return (8); // bytes?? 
 }
 
@@ -902,39 +890,24 @@ int IR_chillArraySymbol::elem_size() const {
 
 
 int IR_chillArraySymbol::n_dim() const {
-  //fprintf(stderr, "IR_chillArraySymbol::n_dim()\n");
-  //fprintf(stderr, "variable %s %s %s\n", chillvd->vartype, chillvd->varname, chillvd->arraypart);
-  //fprintf(stderr, "IR_chillArraySymbol::n_dim() %d\n", chillvd->numdimensions); 
-  //fprintf(stderr, "IR_chillArraySymbol::n_dim()  TODO \n"); exit(-1); 
   return chillvd->numdimensions;
 }
 
 
 // TODO
 omega::CG_outputRepr *IR_chillArraySymbol::size(int dim) const {
-  fprintf(stderr, "IR_chillArraySymbol::n_size()  TODO \n");
+  CHILL_ERROR("IR_chillArraySymbol::n_size()  TODO \n");
   exit(-1);
   return NULL;
 }
 
 
 bool IR_chillArraySymbol::operator!=(const IR_Symbol &that) const {
-  //fprintf(stderr, "IR_xxxxArraySymbol::operator!=   NOT EQUAL\n"); 
-  //chillAST_VarDecl *chillvd;
   return chillvd != ((IR_chillArraySymbol *) &that)->chillvd;
 }
 
 bool IR_chillArraySymbol::operator==(const IR_Symbol &that) const {
-  //fprintf(stderr, "IR_xxxxArraySymbol::operator==   EQUAL\n"); 
-  //chillAST_VarDecl *chillvd;
   return chillvd == ((IR_chillArraySymbol *) &that)->chillvd;
-  /*
-  if (typeid(*this) != typeid(that))
-    return false;
-  
-  const IR_chillArraySymbol *l_that = static_cast<const IR_chillArraySymbol *>(&that);
-  return this->vd_ == l_that->vd_ && this->offset_ == l_that->offset_;
-  */
 }
 
 
@@ -1001,11 +974,9 @@ bool IR_chillScalarRef::is_write() const {
 
 
 IR_ScalarSymbol *IR_chillScalarRef::symbol() const {
-  //VarDecl *vd = static_cast<VarDecl *>(vs_->getDecl());
-  //fprintf(stderr, "ir_clang.cc  IR_chillScalarRef::symbol()\n"); //exit(-1);
   chillAST_VarDecl *vd = NULL;
   if (chillvd) vd = chillvd;
-  return new IR_chillScalarSymbol(ir_, vd); // IR_chillScalarRef::symbol()
+  return new IR_chillScalarSymbol(ir_, vd);
 }
 
 
@@ -1020,16 +991,15 @@ bool IR_chillScalarRef::operator==(const IR_Ref &that) const {
 
 
 omega::CG_outputRepr *IR_chillScalarRef::convert() {
-  //fprintf(stderr, "IR_chillScalarRef::convert() unimplemented\n"); exit(-1); 
-  if (!dre) fprintf(stderr, "IR_chillScalarRef::convert()   CLANG SCALAR REF has no dre\n");
+  if (!dre) CHILL_ERROR("IR_chillScalarRef::convert()   CLANG SCALAR REF has no dre\n");
   omega::CG_chillRepr *result = new omega::CG_chillRepr(dre);
   delete this;
   return result;
 }
 
 IR_Ref *IR_chillScalarRef::clone() const {
-  if (dre) return new IR_chillScalarRef(ir_, dre); // use declrefexpr if it exists
-  return new IR_chillScalarRef(ir_, chillvd); // uses vardecl
+  if (dre) return new IR_chillScalarRef(ir_, dre);
+  return new IR_chillScalarRef(ir_, chillvd);
 }
 
 
@@ -1038,8 +1008,7 @@ IR_Ref *IR_chillScalarRef::clone() const {
 // ----------------------------------------------------------------------------
 
 bool IR_chillArrayRef::is_write() const {
-
-  return (iswrite); // TODO 
+  return (iswrite); // TODO
 }
 
 
@@ -1318,11 +1287,10 @@ void findmanually(chillAST_Node *node, char *procname, std::vector<chillAST_Node
   // we don't really care what kind of node we're at. We just check the node itself
   // and then its children is needed. 
 
-  int numc = node->children.size();
+  int numc = node->getNumChildren();
 
-  for (int i = 0; i < numc; i++) {
-    findmanually(node->children[i], procname, procs);
-  }
+  for (int i = 0; i < numc; i++)
+    findmanually(node->getChild(i), procname, procs);
   return;
 }
 
@@ -1345,8 +1313,6 @@ IR_clangCode_Global_Init *IR_clangCode_Global_Init::Instance(char **argv) {
 
 
 aClangCompiler::aClangCompiler(char *filename) {
-
-  //fprintf(stderr, "making a clang compiler for file %s\n", filename);
   SourceFileName = strdup(filename);
 
   // Arguments to pass to the clang frontend
@@ -1354,15 +1320,10 @@ aClangCompiler::aClangCompiler(char *filename) {
   args.push_back(strdup(filename));
 
   // The compiler invocation needs a DiagnosticsEngine so it can report problems
-  //IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions(); // temp
   diagnosticOptions = new DiagnosticOptions(); // private member of aClangCompiler
 
   pTextDiagnosticPrinter = new clang::TextDiagnosticPrinter(llvm::errs(),
                                                             diagnosticOptions); // private member of aClangCompiler
-
-  //llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagID(new clang::DiagnosticIDs());
-
-  //clang::DiagnosticsEngine Diags(DiagID, &*DiagOpts, DiagClient);
   diagnosticsEngine = new clang::DiagnosticsEngine(diagID, diagnosticOptions, pTextDiagnosticPrinter);
 
   // Create the compiler invocation
@@ -1370,10 +1331,7 @@ aClangCompiler::aClangCompiler(char *filename) {
   // including data such as the include paths, the code generation options, 
   // the warning flags, and so on.   
   std::unique_ptr<clang::CompilerInvocation> CI(new clang::CompilerInvocation());
-  //CI = new clang::CompilerInvocation;
   clang::CompilerInvocation::CreateFromArgs(*CI, &args[0], &args[0] + args.size(), *diagnosticsEngine);
-
-
   // Create the compiler instance
   Clang = new clang::CompilerInstance();  // TODO should have a better name ClangCompilerInstance
 
@@ -1383,31 +1341,15 @@ aClangCompiler::aClangCompiler(char *filename) {
   //Clang.createDiagnostics(0, 0);
 
 
-//#ifdef KIDDINGME
-  //fprintf(stderr, "target\n");
-  // Initialize target info with the default triple for our platform.
-  //TargetOptions TO;
-  //TO.Triple = llvm::sys::getDefaultTargetTriple();
-  //TargetInfo *TI = TargetInfo::CreateTargetInfo( Clang->getDiagnostics(), TO);
-
-  // the above causes core dumps, because clang is stupid and frees the target multiple times, corrupting memory
   targetOptions = std::make_shared<clang::TargetOptions>();
   targetOptions->Triple = llvm::sys::getDefaultTargetTriple();
 
   TargetInfo *pti = TargetInfo::CreateTargetInfo(Clang->getDiagnostics(), targetOptions);
 
   Clang->setTarget(pti);
-
-//#endif
-
-
-  // ?? 
-  //fprintf(stderr, "filemgr\n");
   Clang->createFileManager();
   FileManager &FileMgr = Clang->getFileManager();
   fileManager = &FileMgr;
-
-  //fprintf(stderr, "sourcemgr\n");
   Clang->createSourceManager(FileMgr);
   SourceManager &SourceMgr = Clang->getSourceManager();
   sourceManager = &SourceMgr; // ?? aclangcompiler copy
@@ -1415,95 +1357,24 @@ aClangCompiler::aClangCompiler(char *filename) {
 
   Clang->setInvocation(CI.get()); // Replace the current invocation
 
-
-
-  //fprintf(stderr, "PP\n");
   Clang->createPreprocessor(TU_Complete);
 
-
-
-  //clang::Preprocessor Pre = Clang->getPreprocessor();
-  //preprocessor = &Pre;
-
-  //fprintf(stderr, "CONTEXT\n");
-  Clang->createASTContext();                              // needs preprocessor 
+  Clang->createASTContext();                              // needs preprocessor
   astContext_ = &Clang->getASTContext();
-
-
-  //fprintf(stderr, "filein\n"); 
   const FileEntry *FileIn = FileMgr.getFile(filename); // needs preprocessor
   SourceMgr.setMainFileID(SourceMgr.createFileID(FileIn, clang::SourceLocation(), clang::SrcMgr::C_User));
-  //DiagnosticConsumer DiagConsumer = Clang->getDiagnosticClient();
   Clang->getDiagnosticClient().BeginSourceFile(Clang->getLangOpts(), &Clang->getPreprocessor());
 
-
   NULLASTConsumer TheConsumer; // must pass a consumer in to ParseAST(). This one does nothing
-
-  //fprintf(stderr, "ready? Parse.\n");
   CHILL_DEBUG_PRINT("actually parsing file %s using clang\n", filename);
-
   ParseAST(Clang->getPreprocessor(), &TheConsumer, Clang->getASTContext());
-
-  // Translation Unit is contents of a file 
+  // Translation Unit is contents of a file
   TranslationUnitDecl *TUD = astContext_->getTranslationUnitDecl();
-  // TUD->dump();  // print it out 
-
   // create another AST, very similar to the clang AST but not written by idiots
   CHILL_DEBUG_PRINT("converting entire clang AST into chill AST (ir_clang.cc)\n");
   chillAST_Node *wholefile = unwrap(ConvertTranslationUnit(TUD, filename));
-
-  fflush(stdout);
-  //fprintf(stderr, "printing whole file\n"); 
-  //fprintf(stdout, "\n\n" );   fflush(stdout);
-  //wholefile->print();
-  //wholefile->dump(); 
-  //fflush(stdout);
-
   entire_file_AST = (chillAST_SourceFile *) wholefile;
-
-
   astContext_ = &Clang->getASTContext();
-
-  //#define DOUBLE
-#ifdef DOUBLE
-  fprintf(stderr, "DOUBLE\n");
-
-  fprintf(stderr, "\n\nCLANG dump of the file I parsed:\n"); 
-  llvm::OwningPtr<clang::FrontendAction> Act2(new clang::ASTDumpAction());
-  // here it actually does the FrontEndAction ?? 
-  if (!Clang->ExecuteAction(*Act2)) { // ast dump using builtin function
-    exit(3);
-  }
-#endif
-  fflush(stdout);
-  fflush(stderr);
-  fflush(stdout);
-  fflush(stderr);
-  fflush(stdout);
-  fflush(stderr);
-  fflush(stdout);
-  fflush(stderr);
-
-
-#ifdef DONTDOTHIS
-
-  // calling this Action seems to overwrite the astcontext and the AST. (!)
-  // don't ever do this, or you lose contact with the original AST (?)
-
-  // Create an action and make the compiler instance carry it out
-  //llvm::OwningPtr<clang::CodeGenAction> Act(new clang::EmitLLVMOnlyAction());
-  llvm::OwningPtr<clang::FrontendAction> Act(new clang::ASTDumpAction());
-  
-  fprintf(stderr, "\n\ndump of the file I parsed:\n"); 
-  // here it actually does the FrontEndAction ?? 
-  if (!Clang->ExecuteAction(*Act)) { // ast dump using builtin function
-    exit(3);
-  }
-  fflush(stdout);
-#endif
-
-
-  //fprintf(stderr, "leaving aClangCompiler::aClangCompiler( filename )\n"); 
 }
 
 
@@ -2048,9 +1919,9 @@ IR_Block *IR_clangCode::MergeNeighboringControlStructures(const std::vector<IR_C
         CHILL_DEBUG_PRINT("control %d is IR_CONTROL_LOOP\n", i);
         chillAST_ForStmt *loop = static_cast<IR_chillLoop *>(controls[i])->chillforstmt;
         if (parent == NULL) {
-          parent = loop->parent;
+          parent = loop->getParent();
         } else {
-          if (parent != loop->parent) {
+          if (parent != loop->getParent()) {
             throw chill::error::ir("controls to merge not at the same level");
           }
         }
@@ -2063,9 +1934,9 @@ IR_Block *IR_clangCode::MergeNeighboringControlStructures(const std::vector<IR_C
         std::vector<chillAST_Node *> blockstmts = CB->statements;
         for (int j = 0; j < blockstmts.size(); j++) {
           if (parent == NULL) {
-            parent = blockstmts[j]->parent;
+            parent = blockstmts[j]->getParent();
           } else {
-            if (parent != blockstmts[j]->parent) {
+            if (parent != blockstmts[j]->getParent()) {
               throw chill::error::ir(
                   "ir_clang.cc  IR_clangCode::MergeNeighboringControlStructures  controls to merge not at the same level");
             }
@@ -2132,7 +2003,7 @@ void IR_clangCode::ReplaceCode(IR_Control *old, omega::CG_outputRepr *repr) {
       cloop = (struct IR_chillLoop *) old;
       chillAST_ForStmt *forstmt = cloop->chillforstmt;
 
-      par = forstmt->parent;
+      par = forstmt->getParent();
       if (!par) {
         CHILL_ERROR("old parent was NULL\n");
         CHILL_ERROR("ir_clang.cc that will not work very well.\n");
@@ -2178,7 +2049,7 @@ void IR_clangCode::ReplaceCode(IR_Control *old, omega::CG_outputRepr *repr) {
       break;
     case IR_CONTROL_BLOCK: {
       CHILL_ERROR("old is IR_CONTROL_BLOCK\n");
-      par = ((IR_chillBlock*)old)->statements[0]->parent;
+      par = ((IR_chillBlock*)old)->statements[0]->getParent();
       if (!par) {
         CHILL_ERROR("old parent was NULL\n");
         CHILL_ERROR("ir_clang.cc that will not work very well.\n");
@@ -2214,60 +2085,24 @@ void IR_clangCode::ReplaceCode(IR_Control *old, omega::CG_outputRepr *repr) {
 
 
 void IR_clangCode::ReplaceExpression(IR_Ref *old, omega::CG_outputRepr *repr) {
-  fprintf(stderr, "IR_xxxxCode::ReplaceExpression()\n");
-
   if (typeid(*old) == typeid(IR_chillArrayRef)) {
-    //fprintf(stderr, "expressions is IR_chillArrayRef\n"); 
     IR_chillArrayRef *CAR = (IR_chillArrayRef *) old;
     chillAST_ArraySubscriptExpr *CASE = CAR->chillASE;
-    printf("\nreplacing old ");
-    CASE->print();
-    printf("\n");
-    fflush(stdout);
 
     omega::CG_chillRepr *crepr = (omega::CG_chillRepr *) repr;
     if (crepr->chillnodes.size() != 1) {
-      fprintf(stderr, "IR_clangCode::ReplaceExpression(), replacing with %d chillnodes???\n");
+      CHILL_ERROR("IR_clangCode::ReplaceExpression(), replacing with %d chillnodes???\n");
       //exit(-1);
     }
 
     chillAST_Node *newthing = crepr->chillnodes[0];
-    fprintf(stderr, "with new ");
-    newthing->print();
-    printf("\n\n");
-    fflush(stdout);
 
-    if (!CASE->parent) {
-      fprintf(stderr, "IR_clangCode::ReplaceExpression()  old has no parent ??\n");
+    if (!CASE->getParent()) {
+      CHILL_ERROR("IR_clangCode::ReplaceExpression()  old has no parent ??\n");
       exit(-1);
     }
 
-    fprintf(stderr, "OLD parent = "); // of type %s\n", CASE->parent->getTypeString()); 
-    if (CASE->parent->isImplicitCastExpr()) CASE->parent->parent->print();
-    else CASE->parent->print();
-    printf("\n");
-    fflush(stdout);
-
-    //CASE->parent->print(); printf("\n"); fflush(stdout); 
-    //CASE->parent->parent->print(); printf("\n"); fflush(stdout); 
-    //CASE->parent->parent->print(); printf("\n"); fflush(stdout); 
-    //CASE->parent->parent->parent->print(); printf("\n"); fflush(stdout); 
-
-    CASE->parent->replaceChild(CASE, newthing);
-
-    fprintf(stderr, "after replace parent is "); // of type %s\n", CASE->parent->getTypeString()); 
-    if (CASE->parent->isImplicitCastExpr()) CASE->parent->parent->print();
-    else CASE->parent->print();
-    printf("\n\n");
-    fflush(stdout);
-
-
-
-    //CASE->parent->print(); printf("\n"); fflush(stdout); 
-    //CASE->parent->parent->print(); printf("\n"); fflush(stdout); 
-    //CASE->parent->parent->print(); printf("\n"); fflush(stdout); 
-    //CASE->parent->parent->parent->print(); printf("\n"); fflush(stdout); 
-
+    CASE->getParent()->replaceChild(CASE, newthing);
 
   } else if (typeid(*old) == typeid(IR_chillScalarRef)) {
     fprintf(stderr, "IR_clangCode::ReplaceExpression()  IR_chillScalarRef unhandled\n");
@@ -2287,13 +2122,9 @@ IR_CONDITION_TYPE IR_clangCode::QueryBooleanExpOperation(const omega::CG_outputR
 
 
 IR_OPERATION_TYPE IR_clangCode::QueryExpOperation(const omega::CG_outputRepr *repr) const {
-  //fprintf(stderr, "IR_clangCode::QueryExpOperation()\n");
-
   CG_chillRepr *crepr = (CG_chillRepr *) repr;
   chillAST_Node *node = crepr->chillnodes[0];
-  //fprintf(stderr, "chillAST node type %s\n", node->getTypeString());
-
-  // really need to be more rigorous than this hack  // TODO 
+  // really need to be more rigorous than this hack  // TODO
   if (node->isImplicitCastExpr()) node = ((chillAST_ImplicitCastExpr *) node)->getSubExpr();
   if (node->isCStyleCastExpr()) node = ((chillAST_CStyleCastExpr *) node)->getSubExpr();
   if (node->isParenExpr()) node = ((chillAST_ParenExpr *) node)->getSubExpr();
@@ -2470,7 +2301,7 @@ IR_Ref *IR_clangCode::Repr2Ref(const omega::CG_outputRepr *repr) const {
   } else if (node->isDeclRefExpr()) {
     return new IR_chillScalarRef(this, (chillAST_DeclRefExpr *) node);  // uses DRE
   } else {
-    fprintf(stderr, "ir_clang.cc IR_clangCode::Repr2Ref() UNHANDLED node type %s\n", node->getTypeString());
+    CHILL_ERROR("ir_clang.cc IR_clangCode::Repr2Ref() UNHANDLED node type %s\n", node->getTypeString());
     exit(-1);
   }
 }

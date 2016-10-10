@@ -421,7 +421,7 @@ void chillAST_FunctionDecl::cleanUpVarDecls() {
   }
 
   for (int i = 0; i < deletethese.size(); i++) {
-    chillAST_Node *par = deletethese[i]->parent;
+    chillAST_Node *par = deletethese[i]->getParent();
     par->removeChild(par->findChild(deletethese[i]));
   }
 
@@ -1405,9 +1405,7 @@ chillAST_Node *chillAST_UnaryOperator::constantFold() {
         returnval = I;
       } else {
         chillAST_FloatingLiteral *FL = (chillAST_FloatingLiteral *) getSubExpr();
-        chillAST_FloatingLiteral *F = new chillAST_FloatingLiteral(FL); // clone
-        F->parent = FL->parent;
-
+        chillAST_FloatingLiteral *F = (chillAST_FloatingLiteral*)(FL->clone()); // clone
         F->value = -F->value;
         returnval = F;
       }
@@ -2045,12 +2043,12 @@ void findFunctionDeclRecursive(chillAST_Node *node, const char *procname, vector
   // this is where the children can be used effectively.
   // we don't really care what kind of node we're at. We just check the node itself
   // and then its children is needed.
-  int numc = node->children.size();
+  int numc = node->getNumChildren();
   for (int i = 0; i < numc; i++) {
     if (node->isSourceFile())
-      if (node->children[i]->isFunctionDecl())
-        chillAST_FunctionDecl *fd = (chillAST_FunctionDecl *) node->children[i];
-    findFunctionDeclRecursive(node->children[i], procname, funcs);
+      if (node->getChild(i)->isFunctionDecl())
+        chillAST_FunctionDecl *fd = (chillAST_FunctionDecl *) node->getChild(i);
+    findFunctionDeclRecursive(node->getChild(i), procname, funcs);
   }
   return;
 }

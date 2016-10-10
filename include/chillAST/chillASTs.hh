@@ -514,9 +514,9 @@ public:
     // ADD MYSELF!
     loops.push_back(this);
 
-    int n = getBody()->children.size();
+    int n = getBody()->getNumChildren();
     for (int i = 0; i < n; i++) {
-      getBody()->children[i]->get_deep_loops(loops);
+      getBody()->getChild(i)->get_deep_loops(loops);
     }
   }
 
@@ -524,10 +524,10 @@ public:
   void find_deepest_loops(std::vector<chillAST_ForStmt *> &loops) {
     std::vector<chillAST_ForStmt *> b; // deepest loops below me
 
-    int n = getBody()->children.size();
+    int n = getBody()->getNumChildren();
     for (int i = 0; i < n; i++) {
       std::vector<chillAST_ForStmt *> l; // deepest loops below one child
-      getBody()->children[i]->find_deepest_loops(l);
+      getBody()->getChild(i)->find_deepest_loops(l);
       if (l.size() > b.size()) { // a deeper nesting than we've seen
         b = l;
       }

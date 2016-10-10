@@ -40,8 +40,6 @@ protected:
    * @param nameMap a mapping from string to the corresponding declarations, stack is used to mimic scoping
    */
   void fixReference(std::map<std::string, std::stack<chillAST_Node*> > nameMap);
-public:
-  // TODO decide how to hide some data
   //! this Node's parent
   chillAST_Node *parent;
   //! this node's children the only entity that holds childs/subexpressions
@@ -54,6 +52,8 @@ public:
   chillAST_TypedefTable *typedefTable;
   //! recordDecl scoping
   std::vector<chillAST_RecordDecl*> *recordTable;
+public:
+  // TODO decide how to hide some data
   //! whether it is from a source file, when false it is from included files
   bool isFromSourceFile;
   //! the name of file this node from
@@ -180,12 +180,28 @@ public:
 
   virtual bool isAUnion() { return false; };
 
+  //! Get the symbol table in the contained scope
   virtual chillAST_SymbolTable *getSymbolTable() { return symbolTable; }
 
+  //! Get the typedef table in the contained scope
   virtual chillAST_TypedefTable *getTypedefTable() { return typedefTable; }
 
+  /*!
+   * @brief Add a variable declaration to the contained scope
+   *
+   * This will not automatically link the variable declaration as a child
+   *
+   * @param vd
+   */
   virtual void addVariableToScope(chillAST_VarDecl *vd);
 
+  /*!
+   * @brief Add a typedef to the contained scope
+   *
+   * This will not automatically link the typedef as a child
+   *
+   * @param tdd
+   */
   virtual void addTypedefToScope(chillAST_TypedefDecl *tdd);
 
   //! Non recursive version that tries to find the declaration in this node
@@ -207,6 +223,7 @@ public:
    * @return The number of subexpressions
    */
   virtual int getNumChildren() { return children.size(); };
+
   //! Deprecating, return the children as a list not eligible for multiplexing
   chillAST_NodeList *getChildren() { return &children; };
   /*!

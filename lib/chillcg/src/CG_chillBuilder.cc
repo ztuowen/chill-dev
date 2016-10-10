@@ -1077,7 +1077,7 @@ namespace omega {
         // vd did not have a name before 
         vd->varname = strdup(  data_members[i].c_str() ); 
 
-        vd->parent = rd;  // ??
+        vd->setParent(rd);  // ??
 
         bool simplepointer = (vd->numdimensions == 1 && !vd->knownArraySizes);
         if (simplepointer) {  
