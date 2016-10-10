@@ -136,7 +136,7 @@ public:
 
   bool isAStruct() { return (isStruct || (typedefinition && typedefinition->isAStruct())); }
 
-  void setStruct(bool b) { isStruct = b;/*fprintf(stderr,"vardecl %s IS A STRUCT\n",varname);*/ };
+  void setStruct(bool b) { isStruct = b; };
 
   bool isPointer() { return isArray() && !knownArraySizes; }  //
 
@@ -163,8 +163,6 @@ public:
 
   chillAST_VarDecl(chillAST_RecordDecl *astruct, const char *n, const char *arraypart);
 
-  void printName(int indent = 0, FILE *fp = stderr);
-
   bool isParmVarDecl() { return (isAParameter == 1); };
 
   bool isBuiltin() { return (isABuiltin == 1); };  // designate variable as a builtin
@@ -179,12 +177,11 @@ public:
 
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab,
                                 bool forcesync = false) { return false; }; // no loops under here
-  const char *getUnderlyingType() {  /* fprintf(stderr, "VarDecl getUnderLyingType()\n"); */return underlyingtype; };
+  const char *getUnderlyingType() { return underlyingtype; };
 
   virtual chillAST_VarDecl *getUnderlyingVarDecl() { return this; };
 
   chillAST_Node *clone();
-
 };
 
 //! referencing a previously defined node, Function or variable
@@ -268,27 +265,11 @@ public:
 
   chillAST_Node *clone();
 
-  void gatherVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherScalarVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls);
-
   void gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento);
 
   void gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento);
 
-  void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherDeclRefExprs(std::vector<chillAST_DeclRefExpr *> &refs);
-
-  void replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl);
-
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bool forcesync = false);
-
-  void loseLoopWithLoopVar(char *var); // special case this for not for debugging
-
-  void gatherStatements(std::vector<chillAST_Node *> &statements);
 };
 
 //! Declaration of the shape of a struct or union
@@ -398,10 +379,6 @@ public:
   void gatherArrayVarDecls(std::vector<chillAST_VarDecl *> &decls);
 
   chillAST_VarDecl *findArrayDecl(const char *name);
-
-  void gatherVarUsage(std::vector<chillAST_VarDecl *> &decls);
-
-  void gatherDeclRefExprs(std::vector<chillAST_DeclRefExpr *> &refs);
 
   void cleanUpVarDecls();
 
@@ -538,12 +515,9 @@ public:
     loops.push_back(this);
 
     int n = getBody()->children.size();
-    //fprintf(stderr, "get_deep_loops of a %s with %d children\n", getTypeString(), n); 
     for (int i = 0; i < n; i++) {
-      //fprintf(stderr, "child %d is a %s\n", i, body->children[i]->getTypeString());
       getBody()->children[i]->get_deep_loops(loops);
     }
-    //fprintf(stderr, "found %d deep loops\n", loops.size()); 
   }
 
 

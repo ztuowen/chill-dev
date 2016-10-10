@@ -348,13 +348,6 @@ public:
     exit(-1);;
   };
 
-  virtual void printName(int indent = 0, FILE *fp = stderr) {
-    fflush(fp);
-    fprintf(fp, "\n");
-    chillindent(indent, fp);
-    fprintf(fp, "(%s) forgot to implement printName()\n", getTypeString());
-  };// print CODE 
-
   virtual void getTopLevelLoops(std::vector<chillAST_ForStmt *> &loops);
 
   virtual void repairParentChild();

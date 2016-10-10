@@ -98,7 +98,7 @@ chillAST_VarDecl *variableDeclFindSubpart(chillAST_VarDecl *decl, const char *na
       CHILL_ERROR("NOT a VarDecl???\n"); // impossible
     }
   } else {
-    fprintf(stderr, "false alarm. %s is a variable, but doesn't have subparts\n", varname);
+    CHILL_DEBUG_PRINT("false alarm. %s is a variable, but doesn't have subparts\n", varname);
     return NULL;
   }
 }
@@ -329,9 +329,8 @@ chillAST_VarDecl *chillAST_RecordDecl::findSubpart(const char *nam) {
   for (int i = 0; i < nsub; i++) {
     if (!strcmp(nam, subparts[i]->varname)) return subparts[i];
   }
-  fprintf(stderr, "chillAST_RecordDecl::findSubpart() couldn't find member NAMED %s in ", nam);
+  CHILL_DEBUG_PRINT("chillAST_RecordDecl::findSubpart() couldn't find member NAMED %s in ", nam);
   print();
-
   return NULL;
 }
 
@@ -347,22 +346,6 @@ chillAST_VarDecl *chillAST_RecordDecl::findSubpartByType(const char *typ) {
 chillAST_SymbolTable *chillAST_RecordDecl::addVariableToSymbolTable(chillAST_VarDecl *vd) {
   // for now, just bail. or do we want the struct to have an actual symbol table?
   return NULL; // damn, I hope nothing uses this!
-}
-
-void chillAST_RecordDecl::printStructure(int indent, FILE *fp) {
-  chillindent(indent, fp);
-  if (isStruct) {
-    fprintf(fp, "struct { ", name);
-    for (int i = 0; i < subparts.size(); i++) {
-      subparts[i]->print(0, fp); // ?? TODO indent level
-      fprintf(fp, "; ");
-    }
-    fprintf(fp, "} ");
-  } else {
-    fprintf(fp, "/* UNKNOWN RECORDDECL printStructure() */  ");
-    exit(-1);
-  }
-  fflush(fp);
 }
 
 chillAST_FunctionDecl::chillAST_FunctionDecl(const char *rt, const char *fname, void *unique) {
@@ -381,49 +364,28 @@ chillAST_FunctionDecl::chillAST_FunctionDecl(const char *rt, const char *fname, 
 };
 
 void chillAST_FunctionDecl::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "chillAST_FunctionDecl::gatherVarDecls()\n");
-  //if (0 < children.size()) fprintf(stderr, "functiondecl has %d children\n", children.size());
-  //fprintf(stderr, "functiondecl has %d parameters\n", numParameters());
   for (int i = 0; i < getParameters()->size(); i++) (*getParameters())[i]->gatherVarDecls(decls);
-  //fprintf(stderr, "after parms, %d decls\n", decls.size());
   for (int i = 0; i < children.size(); i++) children[i]->gatherVarDecls(decls);
-  //fprintf(stderr, "after children, %d decls\n", decls.size());
-  getBody()->gatherVarDecls(decls);  // todo, figure out if functiondecl has actual children
-  //fprintf(stderr, "after body, %d decls\n", decls.size());
-  //for (int d=0; d<decls.size(); d++) {
-  //  decls[d]->print(0,stderr); fprintf(stderr, "\n");
-  //}
 }
 
 
 void chillAST_FunctionDecl::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //if (0 < children.size()) fprintf(stderr, "functiondecl has %d children\n", children.size());
-
   for (int i = 0; i < getParameters()->size(); i++) (*getSymbolTable())[i]->gatherScalarVarDecls(decls);
   for (int i = 0; i < children.size(); i++) children[i]->gatherScalarVarDecls(decls);
-  getBody()->gatherScalarVarDecls(decls);  // todo, figure out if functiondecl has actual children
 }
 
 
 void chillAST_FunctionDecl::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //if (0 < children.size()) fprintf(stderr, "functiondecl has %d children\n", children.size());
-
   for (int i = 0; i < getParameters()->size(); i++) (*getSymbolTable())[i]->gatherArrayVarDecls(decls);
   for (int i = 0; i < children.size(); i++) children[i]->gatherArrayVarDecls(decls);
-  getBody()->gatherArrayVarDecls(decls);  // todo, figure out if functiondecl has actual children
 }
 
 
 chillAST_VarDecl *chillAST_FunctionDecl::findArrayDecl(const char *name) {
-  //fprintf(stderr, "chillAST_FunctionDecl::findArrayDecl( %s )\n", name );
   chillAST_VarDecl *p = getVariableDeclaration(name);
-  //if (p) fprintf(stderr, "function %s has parameter named %s\n", functionName, name );
   if (p && p->isArray()) return p;
-
   chillAST_VarDecl *v = getBody()->getVariableDeclaration(name);
-  //if (v) fprintf(stderr, "function %s has symbol table variable named %s\n", functionName, name );
   if (v && v->isArray()) return v;
-
   // declared variables that may not be in symbol table but probably should be
   vector<chillAST_VarDecl *> decls;
   gatherArrayVarDecls(decls);
@@ -431,26 +393,10 @@ chillAST_VarDecl *chillAST_FunctionDecl::findArrayDecl(const char *name) {
     chillAST_VarDecl *vd = decls[i];
     if (0 == strcmp(vd->varname, name) && vd->isArray()) return vd;
   }
-
-  //fprintf(stderr, "can't find array named %s in function %s \n", name, functionName);
   return NULL;
 }
 
-
-void chillAST_FunctionDecl::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
-  for (int i = 0; i < children.size(); i++) children[i]->gatherVarUsage(decls);
-  getBody()->gatherVarUsage(decls);  // todo, figure out if functiondecl has actual children
-}
-
-
-void chillAST_FunctionDecl::gatherDeclRefExprs(vector<chillAST_DeclRefExpr *> &refs) {
-  for (int i = 0; i < children.size(); i++) children[i]->gatherDeclRefExprs(refs);
-  getBody()->gatherDeclRefExprs(refs);  // todo, figure out if functiondecl has actual children
-}
-
-
 void chillAST_FunctionDecl::cleanUpVarDecls() {
-  //fprintf(stderr, "\ncleanUpVarDecls() for function %s\n", functionName);
   vector<chillAST_VarDecl *> used;
   vector<chillAST_VarDecl *> defined;
   vector<chillAST_VarDecl *> deletethese;
@@ -458,43 +404,23 @@ void chillAST_FunctionDecl::cleanUpVarDecls() {
   gatherVarUsage(used);
   gatherVarDecls(defined);
 
-  //fprintf(stderr, "\nvars used: \n");
-  //for ( int i=0; i< used.size(); i++) {
-  //used[i]->print(0, stderr);  fprintf(stderr, "\n");
-  //}
-  //fprintf(stderr, "\n");
-  //fprintf(stderr, "\nvars defined: \n");
-  //for ( int i=0; i< defined.size(); i++) {
-  //  defined[i]->print(0, stderr);  fprintf(stderr, "\n");
-  //}
-  //fprintf(stderr, "\n");
-
   for (int j = 0; j < defined.size(); j++) {
-    //fprintf(stderr, "j %d  defined %s\n", j, defined[j]->varname);
     bool definedandused = false;
     for (int i = 0; i < used.size(); i++) {
       if (used[i] == defined[j]) {
-        //fprintf(stderr, "i %d used %s\n", i, used[i]->varname);
-        //fprintf(stderr, "\n");
         definedandused = true;
         break;
       }
     }
 
     if (!definedandused) {
-      if (defined[j]->isParmVarDecl()) {
-        //fprintf(stderr, "we'd remove %s except that it's a parameter. Maybe someday\n", defined[j]->varname);
-      } else {
-        //fprintf(stderr, "we can probably remove the definition of %s\n", defined[j]->varname);
+      if (!defined[j]->isParmVarDecl()) {
         deletethese.push_back(defined[j]);
       }
     }
   }
 
-
-  //fprintf(stderr, "deleting %d vardecls\n", deletethese.size());
   for (int i = 0; i < deletethese.size(); i++) {
-    //fprintf(stderr, "deleting varDecl %s\n",  deletethese[i]->varname);
     chillAST_Node *par = deletethese[i]->parent;
     par->removeChild(par->findChild(deletethese[i]));
   }
@@ -531,7 +457,6 @@ chillAST_MacroDefinition::chillAST_MacroDefinition(const char *mname = NULL, con
 
 
 chillAST_Node *chillAST_MacroDefinition::clone() {
-
   CHILL_ERROR("cloning a macro makes no sense\n");
   return this;
   chillAST_MacroDefinition *clo = new chillAST_MacroDefinition(macroName);
@@ -539,16 +464,10 @@ chillAST_Node *chillAST_MacroDefinition::clone() {
   for (int i = 0; i < parameters->size(); i++) clo->addVariableToScope((*parameters)[i]);
   clo->setBody(body->clone());
   return clo;
-
 }
 
 
 void chillAST_MacroDefinition::setBody(chillAST_Node *bod) {
-  fprintf(stderr, "%s chillAST_MacroDefinition::setBody( 0x%x )\n", macroName, bod);
-  body = bod;
-  fprintf(stderr, "body is:\n");
-  body->print(0, stderr);
-  fprintf(stderr, "\n\n");
   bod->setParent(this);  // well, ...
 }
 
@@ -587,99 +506,6 @@ chillAST_ForStmt::chillAST_ForStmt(chillAST_Node *ini, chillAST_Node *con, chill
   }
 }
 
-
-bool chillAST_ForStmt::lowerBound(int &l) { // l is an output (passed as reference)
-
-  // above, cond must be a binaryoperator ... ???
-  if (conditionoperator == IR_COND_LT ||
-      conditionoperator == IR_COND_LE) {
-
-    // lower bound is rhs of init
-    if (!getInit()->isBinaryOperator()) {
-      fprintf(stderr, "chillAST_ForStmt::lowerBound() init is not a chillAST_BinaryOperator\n");
-      exit(-1);
-    }
-
-    chillAST_BinaryOperator *bo = (chillAST_BinaryOperator *) getInit();
-    if (!getInit()->isAssignmentOp()) {
-      fprintf(stderr, "chillAST_ForStmt::lowerBound() init is not an assignment chillAST_BinaryOperator\n");
-      exit(-1);
-    }
-
-    //fprintf(stderr, "rhs "); bo->rhs->print(0,stderr);  fprintf(stderr, "   ");
-    l = bo->getRHS()->evalAsInt(); // float could be legal I suppose
-    //fprintf(stderr, "   %d\n", l);
-    return true;
-  } else if (conditionoperator == IR_COND_GT ||
-             conditionoperator == IR_COND_GE) {  // decrementing
-    // lower bound is rhs of cond (not init)
-    chillAST_BinaryOperator *bo = (chillAST_BinaryOperator *) getCond();
-    l = bo->getLHS()->evalAsInt(); // float could be legal I suppose
-    return true;
-  }
-
-  // some case we don't handle ??
-  fprintf(stderr, "chillAST_ForStmt::lowerBound() can't find lower bound of ");
-  print(0, stderr);
-  fprintf(stderr, "\n\n");
-  return false;      // or exit ???
-}
-
-
-bool chillAST_ForStmt::upperBound(int &u) { // u is an output (passed as reference)
-
-  // above, cond must be a binaryoperator ... ???
-  if (conditionoperator == IR_COND_GT ||
-      conditionoperator == IR_COND_GE) {  // decrementing
-
-    // upper bound is rhs of init
-    if (!getInit()->isBinaryOperator()) {
-      fprintf(stderr, "chillAST_ForStmt::upperBound() init is not a chillAST_BinaryOperator\n");
-      exit(-1);
-    }
-
-    chillAST_BinaryOperator *bo = (chillAST_BinaryOperator *) getInit();
-    if (!getInit()->isAssignmentOp()) {
-      fprintf(stderr, "chillAST_ForStmt::upperBound() init is not an assignment chillAST_BinaryOperator\n");
-      exit(-1);
-    }
-
-    u = bo->getRHS()->evalAsInt(); // float could be legal I suppose
-    return true;
-  } else if (conditionoperator == IR_COND_LT ||
-             conditionoperator == IR_COND_LE) {
-    //fprintf(stderr, "upper bound is rhs of cond   ");
-    // upper bound is rhs of cond (not init)
-    chillAST_BinaryOperator *bo = (chillAST_BinaryOperator *) getCond();
-    //bo->rhs->print(0,stderr);
-    u = bo->getRHS()->evalAsInt(); // float could be legal I suppose
-
-    if (conditionoperator == IR_COND_LT) u -= 1;
-
-    //fprintf(stderr, "    %d\n", u);
-    return true;
-  }
-
-  // some case we don't handle ??
-  fprintf(stderr, "chillAST_ForStmt::upperBound() can't find upper bound of ");
-  print(0, stderr);
-  fprintf(stderr, "\n\n");
-  return false;      // or exit ???
-}
-
-
-void chillAST_ForStmt::printControl(int in, FILE *fp) {
-  chillindent(in, fp);
-  fprintf(fp, "for (");
-  getInit()->print(0, fp);
-  fprintf(fp, "; ");
-  getCond()->print(0, fp);
-  fprintf(fp, "; ");
-  getInc()->print(0, fp);
-  fprintf(fp, ")");
-  fflush(fp);
-}
-
 chillAST_Node *chillAST_ForStmt::clone() {
   chillAST_ForStmt *fs = new chillAST_ForStmt(getInit()->clone(), getCond()->clone(), getInc()->clone(),
                                               getBody()->clone());
@@ -690,15 +516,6 @@ chillAST_Node *chillAST_ForStmt::clone() {
 }
 
 void chillAST_ForStmt::addSyncs() {
-  //fprintf(stderr, "\nchillAST_ForStmt::addSyncs()  ");
-  //fprintf(stderr, "for (");
-  //init->print(0, stderr);
-  //fprintf(stderr, "; ");
-  //cond->print(0, stderr);
-  //fprintf(stderr, "; ");
-  //incr->print(0, stderr);
-  //fprintf(stderr, ")\n");
-
   if (!parent) {
     CHILL_ERROR("uhoh, chillAST_ForStmt::addSyncs() ForStmt has no parent!\n");
 
@@ -706,35 +523,24 @@ void chillAST_ForStmt::addSyncs() {
   }
 
   if (parent->isCompoundStmt()) {
-    //fprintf(stderr, "ForStmt parent is CompoundStmt 0x%x\n", parent);
     vector<chillAST_Node *> *chillin = parent->getChildren();
     int numc = chillin->size();
-    //fprintf(stderr, "ForStmt parent is CompoundStmt 0x%x with %d children\n", parent, numc);
     for (int i = 0; i < numc; i++) {
       if (this == parent->getChild(i)) {
-        //fprintf(stderr, "forstmt 0x%x is child %d of %d\n", this, i, numc);
         chillAST_CudaSyncthreads *ST = new chillAST_CudaSyncthreads();
         parent->insertChild(i + 1, ST);  // corrupts something ...
-        //fprintf(stderr, "Create a call to __syncthreads() 2\n");
-        //parent->addChild(ST);  // wrong, but safer   still kills
       }
     }
-
     chillin = parent->getChildren();
     int nowc = chillin->size();
-    //fprintf(stderr, "old, new number of children = %d %d\n", numc, nowc);
-
   } else {
     fprintf(stderr, "chillAST_ForStmt::addSyncs() unhandled parent type %s\n", parent->getTypeString());
     exit(-1);
   }
-
-  //fprintf(stderr, "leaving addSyncs()\n");
 }
 
 
 void chillAST_ForStmt::removeSyncComment() {
-  //fprintf(stderr, "chillAST_ForStmt::removeSyncComment()\n");
   if (metacomment && strstr(metacomment, "~cuda~") && strstr(metacomment, "preferredIdx: ")) {
     char *ptr = strlen("preferredIdx: ") + strstr(metacomment, "preferredIdx: ");
     *ptr = '\0';
@@ -744,56 +550,34 @@ void chillAST_ForStmt::removeSyncComment() {
 
 bool chillAST_ForStmt::findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bool forcesync) {
   CHILL_DEBUG_PRINT("\nchillAST_ForStmt::findLoopIndexesToReplace( force = %d )\n", forcesync);
-  //if (metacomment) fprintf(stderr, "metacomment '%s'\n", metacomment);
-
   bool force = forcesync;
   bool didasync = false;
   if (forcesync) {
-    //fprintf(stderr, "calling addSyncs() because PREVIOUS ForStmt in a block had preferredIdx\n");
     addSyncs();
     didasync = true;
   }
-
-  //fprintf(stderr, "chillAST_ForStmt::findLoopIndexesToReplace()\n");
   if (metacomment && strstr(metacomment, "~cuda~") && strstr(metacomment, "preferredIdx: ")) {
-    //fprintf(stderr, "metacomment '%s'\n", metacomment);
-
     char *copy = strdup(metacomment);
     char *ptr = strstr(copy, "preferredIdx: ");
     char *vname = ptr + strlen("preferredIdx: ");
     char *space = strstr(vname, " "); // TODO index()
-    if (space) {
-      //fprintf(stderr, "vname = '%s'\n", vname);
+    if (space)
       force = true;
-    }
-
     if ((!didasync) && force) {
-      //fprintf(stderr, "calling addSyncs() because ForStmt metacomment had preferredIdx '%s'\n", vname);
       addSyncs();
       removeSyncComment();
       didasync = true;
     }
 
     if (space) *space = '\0'; // if this is multiple words, grab the first one
-    //fprintf(stderr, "vname = '%s'\n", vname);
-
-    //fprintf(stderr, "\nfor (");
-    //init->print(0, stderr);
-    //fprintf(stderr, "; ");
-    //cond->print(0, stderr);
-    //fprintf(stderr, "; ");
-    //incr->print(0, stderr);
-    //fprintf(stderr, ")    %s\n", metacomment );
-    //fprintf(stderr, "prefer '%s'\n", vname );
 
     vector<chillAST_VarDecl *> decls;
     getInit()->gatherVarLHSUsage(decls);
     //cond->gatherVarUsage( decls );
     //incr->gatherVarUsage( decls );
-    //fprintf(stderr, "forstmt has %d vardecls in init, cond, inc\n", decls.size());
 
     if (1 != decls.size()) {
-      fprintf(stderr, "uhoh, preferred index in for statement, but multiple variables used\n");
+      CHILL_ERROR("uhoh, preferred index in for statement, but multiple variables used\n");
       print(0, stderr);
       fprintf(stderr, "\nvariables are:\n");
       for (int i = 0; i < decls.size(); i++) {
@@ -806,25 +590,14 @@ bool chillAST_ForStmt::findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bo
 
     // RIGHT NOW, change all the references that this loop wants swapped out
     // find vardecl for named preferred index.  it has to already exist
-    fprintf(stderr, "RIGHT NOW, change all the references that this loop wants swapped out \n");
-
     chillAST_VarDecl *newguy = findVariableDecleration(vname); // recursive
-    if (!newguy) {
-      fprintf(stderr, "there was no variable named %s anywhere I could find\n", vname);
-    }
+    if (!newguy)
+      CHILL_ERROR("there was no variable named %s anywhere I could find\n", vname);
 
     // wrong - this only looks at variables defined in the forstmt, not
     // in parents of the forstmt
-    //int numsym = symtab->size();
-    //fprintf(stderr, "%d symbols\n", numsym);
-    //for (int i=0; i<numsym; i++) {
-    //  fprintf(stderr, "sym %d is '%s'\n", i, (*symtab)[i]->varname);
-    //  if (!strcmp(vname,  (*symtab)[i]->varname)) {
-    //    newguy = (*symtab)[i];
-    // }
-    //}
     if (!newguy) {
-      fprintf(stderr, "chillAST_ForStmt::findLoopIndexesToReplace() there is no defined variable %s\n", vname);
+      CHILL_DEBUG_PRINT("chillAST_ForStmt::findLoopIndexesToReplace() there is no defined variable %s\n", vname);
 
       // make one ??  seems like this should never happen
       newguy = new chillAST_VarDecl(olddecl->vartype, vname, ""/*?*/, NULL);
@@ -835,49 +608,29 @@ bool chillAST_ForStmt::findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bo
       // find parent^n of the Forstmt that is a FunctionDecl?
       chillAST_Node *contain = findContainingNonLoop();
       if (contain == NULL) {
-        fprintf(stderr, "nothing but loops all the way up?\n");
+        CHILL_ERROR("nothing but loops all the way up?\n");
         exit(0);
       }
-      fprintf(stderr, "containing non-loop is a %s\n", contain->getTypeString());
-
       contain->print(0, stderr);
       contain->insertChild(0, newguy); // TODO ugly order
       contain->addVariableToScope(newguy); // adds to first enclosing symbolTable
 
       if (!symbolTableFindName(contain->getSymbolTable(), vname)) {
-        fprintf(stderr, "container doesn't have a var names %s afterwards???\n", vname);
+        CHILL_ERROR("container doesn't have a var names %s afterwards???\n", vname);
         exit(-1);
       }
     }
-
-
     // swap out old for new in init, cond, incr, body
-    if (newguy) {
-      fprintf(stderr, "\nwill replace %s with %s in init, cond, incr\n", olddecl->varname, newguy->varname);
-
+    if (newguy)
       replaceVarDecls(olddecl, newguy);
-
-      fprintf(stderr, "\nafter recursing to body, this loop is   (there should be no %s)\n", olddecl->varname);
-      print(0, stderr);
-      fprintf(stderr, "\n");
-
-    }
-
-    //if (!space) // there was only one preferred
-    //fprintf(stderr, "removing metacomment\n");
     metacomment = NULL; // memleak
-
   }
-
   // check for more loops.  We may have already swapped variables out in body (right above here)
   getBody()->findLoopIndexesToReplace(symtab, false);
-
   return force;
 }
 
 void chillAST_ForStmt::gatherLoopIndeces(std::vector<chillAST_VarDecl *> &indeces) {
-  //fprintf(stderr, "chillAST_ForStmt::gatherLoopIndeces()\nloop is:\n"); print(0,stderr);
-
   vector<chillAST_VarDecl *> decls;
   getInit()->gatherVarLHSUsage(decls);
   getCond()->gatherVarLHSUsage(decls);
@@ -885,43 +638,22 @@ void chillAST_ForStmt::gatherLoopIndeces(std::vector<chillAST_VarDecl *> &indece
   // note: NOT GOING INTO BODY OF THE LOOP
 
   int numdecls = decls.size();
-  //fprintf(stderr, "gatherLoopIndeces(), %d lhs vardecls for this ForStmt\n", numdecls);
-
-  for (int i = 0; i < decls.size(); i++) {
-    //fprintf(stderr, "%s %p\n", decls[i]->varname, decls[i] );
+  for (int i = 0; i < decls.size(); i++)
     indeces.push_back(decls[i]);
-  }
 
   // Don't forget to keep heading upwards!
-  if (parent) {
-    //fprintf(stderr, "loop %p has parent of type %s\n", this, parent->getTypeString());
+  if (parent)
     parent->gatherLoopIndeces(indeces);
-  }
-  //else fprintf(stderr, "this loop has no parent???\n");
-
 }
 
 
 void chillAST_ForStmt::gatherLoopVars(std::vector<std::string> &loopvars) {
-  //fprintf(stderr, "gathering loop vars for loop   for (");
-  //init->print(0, stderr);
-  //fprintf(stderr, "; ");
-  //cond->print(0, stderr);
-  //fprintf(stderr, "; ");
-  //incr->print(0, stderr);
-  //fprintf(stderr, ")\n" );
-
-  //init->dump(0, stderr);
-
-
   vector<chillAST_VarDecl *> decls;
   getInit()->gatherVarLHSUsage(decls);
   getCond()->gatherVarLHSUsage(decls);
   getInc()->gatherVarLHSUsage(decls);
   // note: NOT GOING INTO BODY OF THE LOOP
-
   for (int i = 0; i < decls.size(); i++) loopvars.push_back(strdup(decls[i]->varname));
-
 }
 
 
@@ -1520,10 +1252,6 @@ void chillAST_VarDecl::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
 
 
 chillAST_Node *chillAST_VarDecl::clone() {
-  fprintf(stderr, "\nchillAST_VarDecl::clone()  cloning vardecl for %s\n", varname);
-  if (isAParameter) fprintf(stderr, "old vardecl IS a parameter\n");
-  //else  fprintf(stderr, "old vardecl IS NOT a parameter\n");
-
   chillAST_VarDecl *vd = new chillAST_VarDecl(vartype, strdup(varname), arraypart,
                                               NULL);  // NULL so we don't add the variable AGAIN to the (presumably) function
 
@@ -1543,10 +1271,8 @@ chillAST_Node *chillAST_VarDecl::clone() {
 
     if (arraysizes) {
       vd->arraysizes = (int *) malloc(sizeof(int *) * numdimensions);
-      for (int i = 0; i < numdimensions; i++) {
-        //fprintf(stderr, "i %d\n", i);
+      for (int i = 0; i < numdimensions; i++)
         vd->arraysizes[i] = arraysizes[i];
-      }
     }
   }
 
@@ -1554,8 +1280,6 @@ chillAST_Node *chillAST_VarDecl::clone() {
     vd->arraypointerpart = strdup(arraypointerpart);
 
   vd->isStruct = this->isStruct;
-  //vd->insideAStruct =  this->insideAStruct;
-
   vd->knownArraySizes = this->knownArraySizes;
   vd->isFromSourceFile = isFromSourceFile;
   if (filename) vd->filename = strdup(filename);
@@ -1638,13 +1362,9 @@ chillAST_FloatingLiteral::chillAST_FloatingLiteral(chillAST_FloatingLiteral *old
 }
 
 chillAST_Node *chillAST_FloatingLiteral::clone() {
-  //fprintf(stderr, "chillAST_FloatingLiteral::clone()  ");
-  //fprintf(stderr, "allthedigits %p \n", allthedigits);
   chillAST_FloatingLiteral *newone = new chillAST_FloatingLiteral(this);
-
   newone->isFromSourceFile = isFromSourceFile;
   if (filename) newone->filename = strdup(filename);
-  //print(); printf("  "); newone->print(); printf("\n"); fflush(stdout);
   return newone;
 }
 
@@ -1689,12 +1409,9 @@ chillAST_Node *chillAST_UnaryOperator::constantFold() {
         F->parent = FL->parent;
 
         F->value = -F->value;
-        F->print();
-        fprintf(stderr, "\n");
-
         returnval = F;
       }
-    } else fprintf(stderr, "can't fold op '%s' yet\n", op);
+    } else CHILL_DEBUG_PRINT("can't fold op '%s' yet\n", op);
   }
   return returnval;
 }
@@ -1749,8 +1466,13 @@ chillAST_CStyleCastExpr::chillAST_CStyleCastExpr(const char *to, chillAST_Node *
 
 chillAST_Node * chillAST_CStyleCastExpr::constantFold() {
   chillAST_Node::constantFold();
-  if (getSubExpr()->isConstant() && getSubExpr()->isIntegerLiteral()) {
-    long long val = getSubExpr()->evalAsInt();
+  if (getSubExpr()->isConstant()) {
+    double val;
+    if (getSubExpr() -> isIntegerLiteral()) {
+      val = getSubExpr()->evalAsInt();
+    } else if (getSubExpr() -> isFloatingLiteral()) {
+      val = ((chillAST_FloatingLiteral*)getSubExpr())->value;
+    } else return this;
     if (!strcmp(towhat,"float"))
       return new chillAST_FloatingLiteral(val,1,NULL);
     if (!strcmp(towhat, "double"))
@@ -1905,9 +1627,6 @@ chillAST_CallExpr::chillAST_CallExpr(chillAST_Node *c) : chillAST_CallExpr() {
 }
 
 chillAST_Node *chillAST_CallExpr::clone() {
-  //fprintf(stderr, "chillAST_CallExpr::clone()\n");
-  //print(0, stderr); fprintf(stderr, "\n");
-
   chillAST_CallExpr *CE = new chillAST_CallExpr(getCallee()->clone());
   for (int i = 1; i < getNumChildren(); i++) CE->addArg(getChild(i)->clone());
   CE->isFromSourceFile = isFromSourceFile;
@@ -1917,38 +1636,28 @@ chillAST_Node *chillAST_CallExpr::clone() {
 
 
 chillAST_VarDecl::chillAST_VarDecl() {
-  //fprintf(stderr, "0chillAST_VarDecl::chillAST_VarDecl()  %p\n", this);
-  fprintf(stderr, "0chillAST_VarDecl::chillAST_VarDecl()\n");
   vartype = underlyingtype = varname = arraypart = arraypointerpart = arraysetpart = NULL;
   typedefinition = NULL;
-
-  //fprintf(stderr, "setting underlying type NULL\n" );
   init = NULL;
   numdimensions = 0;
   arraysizes = NULL;
   parent = NULL;
   metacomment = NULL;
-
   vardef = NULL;
   isStruct = false;
-
-  //insideAStruct = false;
   isAParameter = false;
   byreference = false;
   isABuiltin = false;
-  isRestrict = isDevice = isShared = false; // fprintf(stderr, "RDS = false\n");
+  isRestrict = isDevice = isShared = false;
   knownArraySizes = false;
 };
 
 
 chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a) {
-  //fprintf(stderr, "1chillAST_VarDecl::chillAST_VarDecl( type %s, name %s, arraypart %s,  parent %p)  %p\n", t, n, a, par, this);
-  fprintf(stderr, "1chillAST_VarDecl::chillAST_VarDecl( type %s, name %s, arraypart %s)\n", t, n, a);
   vartype = strdup(t);
   typedefinition = NULL;
 
   underlyingtype = parseUnderlyingType(vartype);
-  //fprintf(stderr, "setting underlying type %s from %s\n",  underlyingtype, vartype );
   varname = strdup(n);
   arraypointerpart = arraysetpart = NULL;
   if (a) arraypart = strdup(a);
@@ -1961,7 +1670,6 @@ chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a) 
   uniquePtr = NULL;
 
   knownArraySizes = false;
-  //fprintf(stderr, "arraypart len %d\n", strlen(a));
   for (int i = 0; i < strlen(a); i++) {
     if (a[i] == '[') {
       numdimensions++;
@@ -1983,10 +1691,7 @@ chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a) 
 
 chillAST_VarDecl::chillAST_VarDecl(chillAST_RecordDecl *astruct, const char *nam, const char *array) {
   // define a variable whose type is a struct!
-
-  fprintf(stderr, "3chillAST_VarDecl::chillAST_VarDecl( %s  %p struct ", nam, this);
   const char *type = astruct->getName();
-  fprintf(stderr, "%s, name %s, arraypart %s parent ) %p\n", type, nam, array, this); // , par);
 
   vartype = strdup(type);
 
@@ -1994,11 +1699,7 @@ chillAST_VarDecl::chillAST_VarDecl(chillAST_RecordDecl *astruct, const char *nam
   vardef = astruct;// pointer to the thing that says what is inside the struct
   isStruct = true;  // ?? wrong if it's a union  ?? TODO
 
-  //insideAStruct = false;
-  //fprintf(stderr, "setting vardef of %s to %p\n", nam, vardef);
-
   underlyingtype = parseUnderlyingType(vartype);
-  //fprintf(stderr, "setting underlying type %s from %s\n",  underlyingtype, vartype );
   varname = strdup(nam);
   arraypart = strdup(array);
   arraypointerpart = arraysetpart = NULL;
@@ -2028,13 +1729,10 @@ chillAST_VarDecl::chillAST_VarDecl(chillAST_RecordDecl *astruct, const char *nam
 
 
 chillAST_VarDecl::chillAST_VarDecl(chillAST_TypedefDecl *tdd, const char *n, const char *a) {
-  fprintf(stderr, "4chillAST_VarDecl::chillAST_VarDecl( %s  typedef ", n);
   const char *type = tdd->getStructName();
-  //fprintf (stderr, "%s, name %s, arraypart %s parent ) %p\n", type, n, a,this); // , par);
   typedefinition = tdd;
   vartype = strdup(type);
   underlyingtype = parseUnderlyingType(vartype);
-  //fprintf(stderr, "setting underlying type %s from %s\n",  underlyingtype, vartype );
   varname = strdup(n);
   arraypart = strdup(a);
   arraypointerpart = arraysetpart = NULL;
@@ -2044,9 +1742,7 @@ chillAST_VarDecl::chillAST_VarDecl(chillAST_TypedefDecl *tdd, const char *n, con
   numdimensions = 0;
   arraysizes = NULL;
   uniquePtr = NULL;
-
   knownArraySizes = false;
-  //fprintf(stderr, "arraypart len %d\n", strlen(a));
   for (int i = 0; i < strlen(a); i++) {
     if (a[i] == '[') {
       numdimensions++;
@@ -2054,47 +1750,34 @@ chillAST_VarDecl::chillAST_VarDecl(chillAST_TypedefDecl *tdd, const char *n, con
     }
     if (!knownArraySizes && a[i] == '*') numdimensions++;
   }
-
   isStruct = tdd->isAStruct();
-
-  //insideAStruct = false;
-
   vardef = NULL;
-
-
   isAParameter = false;
   byreference = false;
   isABuiltin = false;
-  isRestrict = isDevice = isShared = false; // //fprintf(stderr, "RDS = false\n");
+  isRestrict = isDevice = isShared = false;
 };
 
 
 chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a, void *ptr) {
   CHILL_DEBUG_PRINT("chillAST_VarDecl::chillAST_VarDecl( type %s, name %s, arraypart '%s' ) %p\n", t, n, a, this);
-
   vartype = strdup(t);
   typedefinition = NULL;
   underlyingtype = parseUnderlyingType(vartype);
-  //fprintf(stderr, "setting underlying type %s from %s\n",  underlyingtype, vartype );
   varname = strdup(n);
-
   vardef = NULL;  // not a struct
   isStruct = false;
   isAParameter = false;
-
   if (a) arraypart = strdup(a);
   else arraypart = strdup(""); // should catch this earlier
   arraypointerpart = arraysetpart = NULL;
   splitarraypart();
-
   init = NULL;
   numdimensions = 0;
   arraysizes = NULL;
   uniquePtr = ptr;
   knownArraySizes = false;
 
-  //fprintf(stderr, "name arraypart len %d\n", strlen(a));
-  //fprintf(stderr, "arraypart '%s'\n", arraypart);
   for (int i = 0; i < strlen(a); i++) {
     if (a[i] == '[') {
       numdimensions++;
@@ -2102,17 +1785,6 @@ chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a, 
     }
     if (!knownArraySizes && a[i] == '*') numdimensions++; // fails for  a[4000 * 4]
   }
-  //if (0 == strlen(a) && numdimensions == 0) {
-  //  for (int i=0; i<strlen(t); i++) {   // handle float * x
-  //    if (t[i] == '[') numdimensions++;
-  //    if (t[i] == '*') numdimensions++;
-  //  }
-  //}
-  //fprintf(stderr, "2name %s numdimensions %d\n", n, numdimensions);
-
-
-
-
   // this is from ir_clang.cc ConvertVarDecl(), that got executed AFTER the vardecl was constructed. dumb
   int numdim = 0;
   //knownArraySizes = true;
@@ -2122,7 +1794,6 @@ chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a, 
   // note: vartype here, arraypart in next code..    is that right?
   if (index(vartype, '*')) {
     for (int i = 0; i < strlen(vartype); i++) if (vartype[i] == '*') numdim++;
-    //fprintf(stderr, "numd %d\n", numd);
     numdimensions = numdim;
   }
 
@@ -2132,19 +1803,16 @@ chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a, 
     int len = strlen(arraypart);
     for (int i = 0; i < len; i++) if (dupe[i] == '[') numdim++;
 
-    //fprintf(stderr, "numdim %d\n", numdim);
-
     numdimensions = numdim;
     int *as = (int *) malloc(sizeof(int *) * numdim);
     if (!as) {
-      fprintf(stderr, "can't malloc array sizes in ConvertVarDecl()\n");
+      CHILL_ERROR("can't malloc array sizes in ConvertVarDecl()\n");
       exit(-1);
     }
     arraysizes = as; // 'as' changed later!
 
 
     char *ptr = dupe;
-    //fprintf(stderr, "dupe '%s'\n", ptr);
     while (ptr = index(ptr, '[')) {                   // this fails for float a[4000*4]
       ptr++;
       char *leak = strdup(ptr);
@@ -2162,17 +1830,12 @@ chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a, 
               ((c == '+') || (c == '*') || (c == '*') || (c == '*')) || // math
               ((c == '(') || (c == ')')))
             ) {
-          //fprintf(stderr, " not justmath because '%c'\n", c);
           justmath = false;
         }
-
       }
-
-      //fprintf(stderr, "tmp '%s'\n", leak);
       if (justdigits) {
         int dim;
         sscanf(ptr, "%d", &dim);
-        //fprintf(stderr, "dim %d\n", dim);
         *as++ = dim;
       } else {
         if (justmath) fprintf(stderr, "JUST MATH\n");
@@ -2180,38 +1843,16 @@ chillAST_VarDecl::chillAST_VarDecl(const char *t, const char *n, const char *a, 
         *as++ = 16000; // temp TODO DFL
       }
       free(leak);
-
       ptr = index(ptr, ']');
-      //fprintf(stderr, "bottom of loop, ptr = '%s'\n", ptr);
     }
     free(dupe);
-    //for (int i=0; i<numdim; i++) {
-    //  fprintf(stderr, "dimension %d = %d\n", i,  arraysizes[i]);
-    //}
-
-    //fprintf(stderr, "need to handle [] array to determine num dimensions\n");
-    //exit(-1);
   }
 
-
-  //insideAStruct = false;
   byreference = false;
   isABuiltin = false;
-  isRestrict = isDevice = isShared = false; // fprintf(stderr, "RDS = false\n");
-
-  //print(); printf("\n"); fflush(stdout);
-
+  isRestrict = isDevice = isShared = false;
   // currently this is bad, because a struct does not have a symbol table, so the
   // members of a struct are passed up to the func or sourcefile.
-  CHILL_DEBUG_PRINT("LEAVING\n");
-  //parent->print(); fprintf(stderr, "\n\n");
-
-
-};
-
-void chillAST_VarDecl::printName(int in, FILE *fp) {
-  chillindent(in, fp);
-  fprintf(fp, "%s", varname);
 };
 
 chillAST_RecordDecl *chillAST_VarDecl::getStructDef() {
@@ -2222,100 +1863,28 @@ chillAST_RecordDecl *chillAST_VarDecl::getStructDef() {
 
 
 chillAST_CompoundStmt::chillAST_CompoundStmt() {
-  //fprintf(stderr, "chillAST_CompoundStmt::chillAST_CompoundStmt() %p\n", this);
   parent = NULL;
   symbolTable = new chillAST_SymbolTable;
   typedefTable = new chillAST_TypedefTable;
 };
 
 void chillAST_CompoundStmt::replaceChild(chillAST_Node *old, chillAST_Node *newchild) {
-  //fprintf(stderr, "chillAST_CompoundStmt::replaceChild( old %s, new %s)\n", old->getTypeString(), newchild->getTypeString() );
   vector<chillAST_Node *> dupe = children;
   int numdupe = dupe.size();
   int any = 0;
 
   for (int i = 0; i < numdupe; i++) {
-
-    //fprintf(stderr, "\ni %d\n",i);
-    //for (int j=0; j<numdupe; j++) {
-    //  fprintf(stderr, "this 0x%x   children[%d/%d] = 0x%x type %s\n", this, j, children.size(), children[j], children[j]->getTypeString());
-    //}
-
-
     if (dupe[i] == old) {
-      //fprintf(stderr, "replacing child %d of %d\n", i, numdupe);
-      //fprintf(stderr, "was \n"); print();
       children[i] = newchild;
       newchild->setParent(this);
-      //fprintf(stderr, "is  \n");  print(); fprintf(stderr, "\n\n");
-      // old->parent = NULL;
       any = 1;
     }
   }
 
   if (!any) {
-    fprintf(stderr, "chillAST_CompoundStmt::replaceChild(), could not find old\n");
+    CHILL_ERROR("chillAST_CompoundStmt::replaceChild(), could not find old\n");
     exit(-1);
   }
-}
-
-
-void chillAST_CompoundStmt::loseLoopWithLoopVar(char *var) {
-  //fprintf(stderr, "chillAST_CompoundStmt::loseLoopWithLoopVar( %s )\n", var);
-
-  //fprintf(stderr, "CompoundStmt 0x%x has parent 0x%x  ", this, this->parent);
-  //fprintf(stderr, "%s\n", parent->getTypeString());
-
-
-  //fprintf(stderr, "CompoundStmt node has %d children\n", children.size());
-  //fprintf(stderr, "before doing a damned thing, \n");
-  //print();
-  //dump(); fflush(stdout);
-  //fprintf(stderr, "\n\n");
-
-#ifdef DAMNED
-                                                                                                                          for (int j=0; j<children.size(); j++) {
-    fprintf(stderr, "j %d/%d  ", j, children.size());
-    fprintf(stderr, "subnode %d 0x%x  ", j, children[j] );
-    fprintf(stderr, "asttype %d  ", children[j]->getType());
-    fprintf(stderr, "%s    ", children[j]->getTypeString());
-    if (children[j]->isForStmt()) {
-      chillAST_ForStmt *FS = ((chillAST_ForStmt *)  children[j]);
-      fprintf(stderr, "for (");
-      FS->init->print(0, stderr);
-      fprintf(stderr, "; ");
-      FS->cond->print(0, stderr);
-      fprintf(stderr, "; ");
-      FS->incr->print(0, stderr);
-      fprintf(stderr, ")  with %d statements in body 0x%x\n",  FS->body->getNumChildren(), FS->body );
-    }
-    else fprintf(stderr, "\n");
-  }
-#endif
-
-
-  vector<chillAST_Node *> dupe = children; // simple enough?
-  for (int i = 0; i < dupe.size(); i++) {
-    //for (int j=0; j<dupe.size(); j++) {
-    //  fprintf(stderr, "j %d/%d\n", j, dupe.size());
-    //  fprintf(stderr, "subnode %d %s    ", j, children[j]->getTypeString());
-    //  if (children[j]->isForStmt()) {
-    //    chillAST_ForStmt *FS = ((chillAST_ForStmt *)  children[j]);
-    //    fprintf(stderr, "for (");
-    //     FS->init->print(0, stderr);
-    //    fprintf(stderr, "; ");
-    //    FS->cond->print(0, stderr);
-    //    fprintf(stderr, "; ");
-    //    FS->incr->print(0, stderr);
-    //    fprintf(stderr, ")  with %d statements in body 0x%x\n",  FS->body->getNumChildren(), FS->body );
-    //}
-    //else fprintf(stderr, "\n");
-    //}
-
-    //fprintf(stderr, "CompoundStmt 0x%x recursing to child %d/%d\n", this, i, dupe.size());
-    dupe[i]->loseLoopWithLoopVar(var);
-  }
-  //fprintf(stderr, "CompoundStmt node 0x%x done recursing\n", this );
 }
 
 chillAST_Node *chillAST_CompoundStmt::clone() {
@@ -2327,50 +1896,13 @@ chillAST_Node *chillAST_CompoundStmt::clone() {
   return cs;
 }
 
-
-void chillAST_CompoundStmt::gatherVarDecls(vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "chillAST_CompoundStmt::gatherVarDecls()\n");
-  for (int i = 0; i < children.size(); i++) children[i]->gatherVarDecls(decls);
-}
-
-
-void chillAST_CompoundStmt::gatherScalarVarDecls(vector<chillAST_VarDecl *> &decls) {
-  for (int i = 0; i < children.size(); i++) children[i]->gatherScalarVarDecls(decls);
-}
-
-
-void chillAST_CompoundStmt::gatherArrayVarDecls(vector<chillAST_VarDecl *> &decls) {
-  for (int i = 0; i < children.size(); i++) children[i]->gatherArrayVarDecls(decls);
-}
-
-
-void chillAST_CompoundStmt::gatherDeclRefExprs(vector<chillAST_DeclRefExpr *> &refs) {
-  for (int i = 0; i < children.size(); i++) children[i]->gatherDeclRefExprs(refs);
-}
-
-
-void chillAST_CompoundStmt::gatherVarUsage(vector<chillAST_VarDecl *> &decls) {
-  for (int i = 0; i < children.size(); i++) children[i]->gatherVarUsage(decls);
-}
-
-
 void chillAST_CompoundStmt::gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento) {
-  for (int i = 0; i < children.size(); i++) children[i]->gatherArrayRefs(refs, 0);
+  chillAST_Node::gatherArrayRefs(refs,false);
 }
 
 void chillAST_CompoundStmt::gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {
-  for (int i = 0; i < children.size(); i++) children[i]->gatherScalarRefs(refs, 0);
+  chillAST_Node::gatherScalarRefs(refs,false);
 }
-
-void chillAST_CompoundStmt::gatherStatements(std::vector<chillAST_Node *> &statements) {
-  for (int i = 0; i < children.size(); i++) children[i]->gatherStatements(statements);
-}
-
-
-void chillAST_CompoundStmt::replaceVarDecls(chillAST_VarDecl *olddecl, chillAST_VarDecl *newdecl) {
-  for (int i = 0; i < children.size(); i++) children[i]->replaceVarDecls(olddecl, newdecl);
-}
-
 
 bool chillAST_CompoundStmt::findLoopIndexesToReplace(chillAST_SymbolTable *symtab, bool forcesync) {
 
@@ -2381,20 +1913,15 @@ bool chillAST_CompoundStmt::findLoopIndexesToReplace(chillAST_SymbolTable *symta
   // this prevents inserts happening at the forstmt::addSync() from causing a
   // reallocation, which screwsup the loop below here
   children.reserve(2 * sofar);
-  //fprintf(stderr, "sofar %d   reserved %d\n", sofar, 2*sofar);
 
   bool force = false;
   for (int i = 0; i < children.size(); i++) {  // children.size() to see it gain each time
-    if (children.size() > sofar) {
-      //fprintf(stderr, "HEY! CompoundStmt::findLoopIndexesToReplace() noticed that children increased from %d to %d\n", sofar, children.size());
+    if (children.size() > sofar)
       sofar = children.size();
-    }
 
-    //fprintf(stderr, "compound child %d of type %s force %d\n", i, children[i]->getTypeString(), force );
     bool thisforces = children[i]->findLoopIndexesToReplace(symtab, force);
     force = force || thisforces; // once set, always
   }
-
   return false;
 
 /*
@@ -2455,94 +1982,6 @@ chillAST_Node *chillAST_Sizeof::clone() {
   return SO;
 }
 
-void insertNewDeclAtLocationOfOldIfNeeded(chillAST_VarDecl *newdecl, chillAST_VarDecl *olddecl) {
-  //fprintf(stderr, "insertNewDeclAtLocationOfOldIfNeeded( new 0x%x  old 0x%x\n", newdecl, olddecl );
-
-  if (newdecl == NULL || olddecl == NULL) {
-    fprintf(stderr, "chill_ast.cc insertNewDeclAtLocationOfOldIfNeeded() NULL decl\n");
-    exit(-1);
-  }
-
-  if (newdecl == olddecl) return;
-
-  newdecl->vartype = strdup(olddecl->vartype);
-
-  chillAST_Node *newparent = newdecl->parent;
-  chillAST_Node *oldparent = olddecl->parent;
-  //fprintf(stderr, "newparent 0x%x   oldparent 0x%x\n", newparent, oldparent );
-  if (newparent == oldparent) return;
-
-  if (newparent != NULL)
-    //fprintf(stderr, "chill_ast.cc insertNewDeclAtLocationOfOldIfNeeded() new decl already has parent??  probably wrong\n");
-    newdecl->parent = oldparent;  // will be true soon
-
-  // find actual location of old decl and insert new one there
-  //fprintf(stderr, "oldparent is of type %s\n", oldparent->getTypeString()); // better be compoundstmt ??
-  vector<chillAST_Node *> *children = oldparent->getChildren();
-
-  int numchildren = children->size();
-  //fprintf(stderr, "oldparent has %d children\n", numchildren);
-
-  if (numchildren == 0) {
-    fprintf(stderr,
-            "chill_ast.cc insertNewDeclAtLocationOfOldIfNeeded() impossible number of oldparent children (%d)\n",
-            numchildren);
-    exit(-1);
-  }
-
-  bool newalreadythere = false;
-  int index = -1;
-  //fprintf(stderr, "olddecl is 0x%x\n", olddecl);
-  //fprintf(stderr, "I know of %d variables\n", numchildren);
-  for (int i = 0; i < numchildren; i++) {
-    chillAST_Node *child = oldparent->getChild(i);
-    //fprintf(stderr, "child %d @ 0x%x is of type %s\n", i, child, child->getTypeString());
-    if ((*children)[i] == olddecl) {
-      index = i;
-      //fprintf(stderr, "found old decl at index %d\n", index);
-    }
-    if ((*children)[i] == newdecl) {
-      newalreadythere = true;
-      //fprintf(stderr, "new already there @ index %d\n", i);
-    }
-  }
-  if (index == -1) {
-    fprintf(stderr, "chill_ast.cc insertNewDeclAtLocationOfOldIfNeeded() can't find old decl for %s\n",
-            olddecl->varname);
-    exit(-1);
-  }
-
-  if (!newalreadythere) oldparent->insertChild(index, newdecl);
-
-}
-
-
-void gatherVarDecls(vector<chillAST_Node *> &code, vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "gatherVarDecls()\n");
-
-  int numcode = code.size();
-  //fprintf(stderr, "%d top level statements\n", numcode);
-  for (int i = 0; i < numcode; i++) {
-    chillAST_Node *statement = code[i];
-    statement->gatherVarDecls(decls);
-  }
-
-}
-
-
-void gatherVarUsage(vector<chillAST_Node *> &code, vector<chillAST_VarDecl *> &decls) {
-  //fprintf(stderr, "gatherVarUsage()\n");
-
-  int numcode = code.size();
-  //fprintf(stderr, "%d top level statements\n", numcode);
-  for (int i = 0; i < numcode; i++) {
-    chillAST_Node *statement = code[i];
-    statement->gatherVarUsage(decls);
-  }
-
-}
-
-
 chillAST_IfStmt::chillAST_IfStmt() {
   children.push_back(NULL);
   children.push_back(NULL);
@@ -2556,11 +1995,11 @@ chillAST_IfStmt::chillAST_IfStmt(chillAST_Node *c, chillAST_Node *t, chillAST_No
 }
 
 void chillAST_IfStmt::gatherArrayRefs(std::vector<chillAST_ArraySubscriptExpr *> &refs, bool writtento) {
-  chillAST_Node::gatherArrayRefs(refs, 0);
+  chillAST_Node::gatherArrayRefs(refs, false);
 }
 
 void chillAST_IfStmt::gatherScalarRefs(std::vector<chillAST_DeclRefExpr *> &refs, bool writtento) {
-  chillAST_Node::gatherScalarRefs(refs, 0);
+  chillAST_Node::gatherScalarRefs(refs, false);
 }
 
 chillAST_Node *chillAST_IfStmt::clone() {
@@ -2583,7 +2022,6 @@ bool chillAST_IfStmt::findLoopIndexesToReplace(chillAST_SymbolTable *symtab, boo
   return false; // ??
 }
 
-
 chillAST_Node *minmaxTernary(const char * op, chillAST_Node *left, chillAST_Node *right) {
 
   chillAST_Node *lp1 = left->clone();
@@ -2592,11 +2030,8 @@ chillAST_Node *minmaxTernary(const char * op, chillAST_Node *left, chillAST_Node
   chillAST_Node *lp2 = left->clone();
   chillAST_Node *rp2 = right->clone();
 
-  chillAST_TernaryOperator *t = new chillAST_TernaryOperator("?", cond, lp2, rp2);
-
-  return t;
+  return new chillAST_TernaryOperator("?", cond, lp2, rp2);
 }
-
 
 // look for function declaration with a given name, in the tree with root "node"
 void findFunctionDeclRecursive(chillAST_Node *node, const char *procname, vector<chillAST_FunctionDecl *> &funcs) {
@@ -2607,51 +2042,18 @@ void findFunctionDeclRecursive(chillAST_Node *node, const char *procname, vector
       return;
     }
   }
-
-
   // this is where the children can be used effectively.
   // we don't really care what kind of node we're at. We just check the node itself
   // and then its children is needed.
-
   int numc = node->children.size();
-  fprintf(stderr, "(top)node has %d children\n", numc);
-
   for (int i = 0; i < numc; i++) {
-    if (node->isSourceFile()) {
-      fprintf(stderr, "node of type %s is recursing to child %d of type %s\n", node->getTypeString(), i,
-              node->children[i]->getTypeString());
-      if (node->children[i]->isFunctionDecl()) {
+    if (node->isSourceFile())
+      if (node->children[i]->isFunctionDecl())
         chillAST_FunctionDecl *fd = (chillAST_FunctionDecl *) node->children[i];
-        fprintf(stderr, "child %d is functiondecl %s\n", i, fd->functionName);
-      }
-    }
     findFunctionDeclRecursive(node->children[i], procname, funcs);
-
   }
   return;
 }
-
-
-chillAST_FunctionDecl *findFunctionDecl(chillAST_Node *node, const char *procname) {
-  vector<chillAST_FunctionDecl *> functions;
-  findFunctionDeclRecursive(node, procname, functions);
-
-  if (functions.size() == 0) {
-    CHILL_ERROR("could not find function named '%s'\n", procname);
-    exit(-1);
-  }
-
-  if (functions.size() > 1) {
-    CHILL_ERROR("oddly, found %d functions named '%s'\n", functions.size(), procname);
-
-    for (int f = 0; f < functions.size(); f++) {
-      CHILL_ERROR("function %d  %p   %s\n", f, functions[f], functions[f]->functionName);
-    }
-    exit(-1);
-  }
-  return functions[0];
-}
-
 
 chillAST_SymbolTable *addSymbolToTable(chillAST_SymbolTable *st, chillAST_VarDecl *vd) // definition
 {
@@ -2671,7 +2073,6 @@ chillAST_SymbolTable *addSymbolToTable(chillAST_SymbolTable *st, chillAST_VarDec
   s->push_back(vd); // add it
   return s;
 }
-
 
 chillAST_TypedefTable *addTypedefToTable(chillAST_TypedefTable *tdt, chillAST_TypedefDecl *td) {
 
