@@ -60,7 +60,7 @@ namespace omega {
         // No op
         break;
       default:
-        CG_ERROR("UNHANDLED statement of type %s %s\n",n->getTypeString());
+        CG_ERROR("UNHANDLED statement of type %d\n",n->getType());
         exit(-1);
     }
     return r;
@@ -170,7 +170,7 @@ namespace omega {
     CG_chillRepr *old = (CG_chillRepr *) stmt; 
     std::vector<chillAST_Node*> oldnodes = old->getChillCode();
 
-    for (int j=0; j<numsubs; j++) { 
+    for (int j=0; j<numsubs; j++) {
       if (subs[j] != NULL) {
         // find the type of thing we'll be using to replace the old variable
         CG_chillRepr *CRSub = (CG_chillRepr *)(subs[j]); 
@@ -202,7 +202,6 @@ namespace omega {
     
     chillAST_BinaryOperator *bop = new chillAST_BinaryOperator(lAST->clone(), "=", rAST->clone()); // clone??
     
-    delete lhs; delete rhs;
     return new CG_chillRepr(bop);
   }
   
@@ -224,7 +223,6 @@ namespace omega {
     
     chillAST_BinaryOperator *bop = new chillAST_BinaryOperator(lAST->clone(), "+=", rAST->clone()); // clone??
     
-    delete lhs; delete rhs;
     return new CG_chillRepr(bop);
   }
   
@@ -336,7 +334,6 @@ namespace omega {
     //fprintf(stderr, "CG_chillBuilder::CreateIf()\n"); 
     
     if (true_stmtList == NULL && false_stmtList == NULL) {
-      delete guardList;
       return NULL;
     }
     else if (guardList == NULL) {  // this seems odd 
@@ -367,10 +364,6 @@ namespace omega {
     
     
     chillAST_IfStmt *if_stmt = new chillAST_IfStmt( conditional, then_part, else_part);
-    
-    delete guardList;  
-    delete true_stmtList;
-    delete false_stmtList;
     
     return new CG_chillRepr( if_stmt );
   }
@@ -511,7 +504,6 @@ namespace omega {
     //fprintf(stderr, "CG_chillBuilder::CreateLoop( indent %d)\n", indent); 
     
     if (stmtList == NULL) {
-      delete control;
       return NULL;
     }
     else if (control == NULL) {
@@ -533,7 +525,6 @@ namespace omega {
     
     forstmt->setBody(cs);
     
-    delete stmtList;
     return control;
   }
   
@@ -635,17 +626,15 @@ namespace omega {
     CG_chillRepr *crop = (CG_chillRepr *) rop;
     
     if(clop == NULL) {
+      chillAST_Node *lAST = new chillAST_IntegerLiteral(0);
       chillAST_Node *rAST = crop->chillnodes[0];
-      chillAST_UnaryOperator *ins = new chillAST_UnaryOperator("-", true, rAST->clone());
-      delete crop;
+      chillAST_BinaryOperator *ins = new chillAST_BinaryOperator(lAST,"-" , rAST->clone());
       return new CG_chillRepr(ins);
     } else {
       chillAST_Node *lAST = clop->chillnodes[0];
       chillAST_Node *rAST = crop->chillnodes[0];
 
       chillAST_BinaryOperator *bop = new chillAST_BinaryOperator(lAST->clone(), "-", rAST->clone());
-      
-      delete clop; delete crop;
       return new CG_chillRepr(bop);
     }
   }
@@ -663,7 +652,7 @@ namespace omega {
       if (lop != NULL) {
         lop->clear();
         delete lop;
-      }                 
+      }
       return NULL;
     }             
     
@@ -674,7 +663,6 @@ namespace omega {
     chillAST_Node *rAST = crop->chillnodes[0];
 
     chillAST_BinaryOperator *binop = new chillAST_BinaryOperator( lAST, "*", rAST);
-    delete lop; delete rop;
     return new CG_chillRepr( binop );
   }
   
@@ -706,7 +694,6 @@ namespace omega {
     chillAST_Node *rAST = crop->chillnodes[0];
 
     chillAST_BinaryOperator *binop = new chillAST_BinaryOperator( lAST, "/", rAST);
-    delete lop; delete rop; // ?? 
     return new CG_chillRepr( binop );
   }
   
@@ -772,7 +759,6 @@ namespace omega {
     chillAST_Node *rAST = crop->chillnodes[0];
 
     chillAST_BinaryOperator *binop = new chillAST_BinaryOperator( lAST, "<=", rAST);
-    delete lop; delete rop; // ?? 
     return new CG_chillRepr( binop );
   }
   
@@ -798,7 +784,6 @@ namespace omega {
     //fprintf(stderr, "  ??\n"); 
     
     chillAST_BinaryOperator *binop = new chillAST_BinaryOperator( lAST, "==", rAST);
-    delete lop; delete rop; // ?? 
     return new CG_chillRepr( binop );
   }
   
@@ -825,7 +810,6 @@ namespace omega {
     //fprintf(stderr, "  ??\n"); 
     
     chillAST_BinaryOperator *binop = new chillAST_BinaryOperator( lAST, "!=", rAST);
-    delete lop; delete rop; // ?? 
     return new CG_chillRepr( binop );
   }
   
@@ -873,7 +857,6 @@ namespace omega {
     chillAST_MemberExpr *memexpr = new chillAST_MemberExpr( DRE, rvd->varname, NULL, CHILLAST_MEMBER_EXP_DOT );
     
     
-    //delete lop; delete rop; // ??  
     return new CG_chillRepr( memexpr );
   }
   
@@ -928,7 +911,6 @@ namespace omega {
     }
     //fprintf(stderr, "after %d nodes\n", cr1->chillnodes.size() ); 
     
-    delete list2;
     return list1;
     
   }

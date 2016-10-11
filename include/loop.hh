@@ -116,8 +116,7 @@ protected:
   mutable int last_compute_effort_;
   
 protected:
-  bool init_loop(std::vector<ir_tree_node *> &ir_tree, std::vector<ir_tree_node *> &ir_stmt);
-  void buildIS(std::vector<ir_tree_node*> &ir_tree,std::stack<int> lexicalOrder);
+  void buildIS(std::vector<ir_tree_node*> &ir_tree,std::vector<int> &lexicalOrder,std::vector<ir_tree_node*> &ctrls, int level, int &substituted);
   int get_dep_dim_of(int stmt, int level) const;
   int get_last_dep_dim_before(int stmt, int level) const;
   std::vector<omega::Relation> getNewIS() const;

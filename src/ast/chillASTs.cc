@@ -856,10 +856,24 @@ class chillAST_Node *chillAST_BinaryOperator::constantFold() {
 
       }
     }
-    //else fprintf(stderr, "can't fold op '%s' yet\n", op);
+  } else {// Only one side is constant
+    if ((getLHS()->isIntegerLiteral() && getLHS()->evalAsInt() == 0) ||
+        (getLHS()->isFloatingLiteral() && ((chillAST_FloatingLiteral*)getLHS())->value ==0)) {
+      if (streq(op,"+"))
+        return getRHS();
+      else if (streq(op,"-"))
+        return (new chillAST_UnaryOperator("-",true,getRHS()))->constantFold();
+      else if (streq(op,"*") || streq(op,"/"))
+        return new chillAST_IntegerLiteral(0);
+    } if ((getRHS()->isIntegerLiteral() && getRHS()->evalAsInt() == 0) ||
+        (getRHS()->isFloatingLiteral() && ((chillAST_FloatingLiteral*)getRHS())->value ==0)) {
+      if (streq(op,"+") || streq(op,"-"))
+        return getRHS();
+      else if (streq(op,"*"))
+        return new chillAST_IntegerLiteral(0);
+    }
   }
 
-  //fprintf(stderr, "returning "); returnval->print(0,stderr); fprintf(stderr, "\n");
   return returnval;
 }
 
@@ -1410,6 +1424,10 @@ chillAST_Node *chillAST_UnaryOperator::constantFold() {
         returnval = F;
       }
     } else CHILL_DEBUG_PRINT("can't fold op '%s' yet\n", op);
+  } if (streq(op, "-") && getSubExpr()->isUnaryOperator()) {
+    chillAST_UnaryOperator *s = (chillAST_UnaryOperator*)getSubExpr();
+    if (streq(s->op,"-"))
+      returnval = s->getSubExpr();
   }
   return returnval;
 }

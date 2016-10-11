@@ -1210,6 +1210,18 @@ void IR_clangCode::ReplaceExpression(IR_Ref *old, omega::CG_outputRepr *repr) {
 
 // TODO 
 IR_CONDITION_TYPE IR_clangCode::QueryBooleanExpOperation(const omega::CG_outputRepr *repr) const {
+  CG_chillRepr *crepr = (CG_chillRepr *)repr;
+  chillAST_Node *node = crepr->chillnodes[0];
+  if (!node->isBinaryOperator())
+    return IR_COND_UNKNOWN;
+  chillAST_BinaryOperator *bin = (chillAST_BinaryOperator*)node;
+  const char * opstring = bin->getOp();
+  if (!strcmp(opstring, "==")) return IR_COND_EQ;
+  if (!strcmp(opstring, "<=")) return IR_COND_LE;
+  if (!strcmp(opstring, "<")) return IR_COND_LT;
+  if (!strcmp(opstring, ">")) return IR_COND_GT;
+  if (!strcmp(opstring, ">=")) return IR_COND_GE;
+  if (!strcmp(opstring, "!=")) return IR_COND_NE;
   return IR_COND_UNKNOWN;
 }
 
@@ -1307,12 +1319,9 @@ std::vector<omega::CG_outputRepr *> IR_clangCode::QueryExpOperand(const omega::C
     char *op = bop->op;  // TODO enum for operator types
     if (!strcmp(op, "=")) {
       v.push_back(new omega::CG_chillRepr(bop->getRHS()));  // for assign, return RHS
-    } else if (!strcmp(op, "+") || !strcmp(op, "-") || !strcmp(op, "*") || !strcmp(op, "/")) {
+    } else {
       v.push_back(new omega::CG_chillRepr(bop->getLHS()));  // for +*-/ return both lhs and rhs
       v.push_back(new omega::CG_chillRepr(bop->getRHS()));
-    } else {
-      CHILL_ERROR("Binary Operator  UNHANDLED op (%s)\n", op);
-      exit(-1);
     }
   } // BinaryOperator
   else if (e->isUnaryOperator()) {
