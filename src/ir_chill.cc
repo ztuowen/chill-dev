@@ -312,21 +312,22 @@ IR_chillLoop::IR_chillLoop(const IR_Code *ir, chillAST_ForStmt *achillforstmt) {
     fprintf(stderr, "loop is:\n");
     achillforstmt->print();
   CHILL_DEBUG_END
+  well_formed = true;
 
   ir_ = ir;
   chillforstmt = achillforstmt;
 
   chillAST_BinaryOperator *init = (chillAST_BinaryOperator *) chillforstmt->getInit();
   chillAST_BinaryOperator *cond = (chillAST_BinaryOperator *) chillforstmt->getCond();
-  // check to be sure  (assert) 
-  if (!init->isAssignmentOp() || !cond->isComparisonOp()) {
+  // check to be sure  (assert)
+  if (!init || !cond || !init->isAssignmentOp() || !cond->isComparisonOp()) {
     CHILL_ERROR("malformed loop init or cond:\n");
-    achillforstmt->print();
-    exit(-1);
+    well_formed = false;
+    return;
   }
 
-  chilllowerbound = init->getRHS();
-  chillupperbound = cond->getRHS();
+  chilllowerbound = new CG_chillRepr(init->getRHS());
+  chillupperbound = new CG_chillRepr(cond->getRHS());
   conditionoperator = achillforstmt->conditionoperator;
 
   chillAST_Node *inc = chillforstmt->getInc();
@@ -335,7 +336,7 @@ IR_chillLoop::IR_chillLoop(const IR_Code *ir, chillAST_ForStmt *achillforstmt) {
     if (!strcmp(((chillAST_UnaryOperator *) inc)->op, "++")) step_size_ = 1;
     else step_size_ = -1;
   } else if (inc->getType() == CHILLAST_NODE_BINARYOPERATOR) {
-    int beets = false;  // slang
+    int beets = false;
     chillAST_BinaryOperator *bop = (chillAST_BinaryOperator *) inc;
     if (bop->isAssignmentOp()) {        // I=I+1   or similar
       chillAST_Node *rhs = bop->getRHS();  // (I+1)
@@ -365,46 +366,34 @@ IR_chillLoop::IR_chillLoop(const IR_Code *ir, chillAST_ForStmt *achillforstmt) {
 
     if (beets) {
       CHILL_ERROR("malformed loop increment (or more likely unhandled case)\n");
-      inc->print();
-      exit(-1);
+      well_formed = false;
+      return;
     }
   } // binary operator 
   else {
     CHILL_ERROR("IR_chillLoop constructor, unhandled loop increment\n");
-    inc->print();
-    exit(-1);
+    well_formed = false;
+    return;
   }
-  //inc->print(0, stderr);fprintf(stderr, "\n"); 
-
   chillAST_DeclRefExpr *dre = (chillAST_DeclRefExpr *) init->getLHS();
   if (!dre->isDeclRefExpr()) {
-    CHILL_DEBUG_PRINT("malformed loop init.\n");
-    init->print();
+    CHILL_ERROR("Malformed loop init, unhandled loop increment\n");
+    well_formed = false;
+    return;
   }
-
   chillindex = dre; // the loop index variable
-
-  //fprintf(stderr, "\n\nindex is ");  dre->print(0, stderr);  fprintf(stderr, "\n"); 
-  //fprintf(stderr, "init is   "); 
-  //chilllowerbound->print(0, stderr);  fprintf(stderr, "\n");
-  //fprintf(stderr, "condition is  %s ", "<"); 
-  //chillupperbound->print(0, stderr);  fprintf(stderr, "\n");
-  //fprintf(stderr, "step size is %d\n\n", step_size_) ; 
-
   chillbody = achillforstmt->getBody();
-
-  CHILL_DEBUG_PRINT("IR_xxxxLoop::IR_xxxxLoop() DONE\n");
 }
 
 
 omega::CG_outputRepr *IR_chillLoop::lower_bound() const {
   CHILL_DEBUG_PRINT("IR_xxxxLoop::lower_bound()\n");
-  return new omega::CG_chillRepr(chilllowerbound);
+  return chilllowerbound;
 }
 
 omega::CG_outputRepr *IR_chillLoop::upper_bound() const {
   CHILL_DEBUG_PRINT("IR_xxxxLoop::upper_bound()\n");
-  return new omega::CG_chillRepr(chillupperbound);
+  return chillupperbound;
 }
 
 IR_Block *IR_chillLoop::body() const {

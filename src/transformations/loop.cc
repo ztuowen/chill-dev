@@ -298,9 +298,12 @@ bool Loop::isInitialized() const {
   return stmt.size() != 0 && !stmt[0].xform.is_null();
 }
 
-//--end Anand: added from CHiLL 0.2
+std::string index_name(int level) {
+  std::string iname = ("chill_idx"+to_string(level));
+  return iname;
+}
 
-void Loop::buildIS(std::vector<ir_tree_node*> &ir_tree,std::vector<int> &lexicalOrder,std::vector<ir_tree_node*> &ctrls, int level, int &substituted) {
+void Loop::buildIS(std::vector<ir_tree_node*> &ir_tree,std::vector<int> &lexicalOrder,std::vector<ir_tree_node*> &ctrls, int level) {
   for (int i = 0; i < ir_tree.size(); i++) {
     switch (ir_tree[i]->content->type()) {
       case IR_CONTROL_BLOCK: {
@@ -312,140 +315,99 @@ void Loop::buildIS(std::vector<ir_tree_node*> &ir_tree,std::vector<int> &lexical
         uninterpreted_symbols.push_back(std::map<std::string,std::vector<CG_outputRepr*> >());
         uninterpreted_symbols_stringrepr.push_back(std::map<std::string,std::vector<CG_outputRepr*> >());
         stmt_nesting_level_.push_back(level);
-        try {
-          int loc = ir_stmt.size() - 1;
-          // Setup the IS holder
-          CG_outputBuilder *ocg = ir->builder();
-          Relation r(num_dep_dim);
-          F_And *f_root = r.add_and();
-          std::vector<std::string> vars_to_be_replaced;
-          std::vector<CG_outputRepr*> vars_replacement;
+        int loc = ir_stmt.size() - 1;
+        // Setup the IS holder
+        Relation r(num_dep_dim);
+        F_And *f_root = r.add_and();
 
-          int current = 0;
+        int current = 0;
 
-          // Processing information from containing control structs
-          for (int j = 0; j < ctrls.size(); ++j) {
-            switch (ctrls[j]->content->type()) {
-              case IR_CONTROL_LOOP: {
-                IR_Loop *lp = static_cast<IR_Loop *>(ctrls[j]->content);
-                ++current;
-                Variable_ID v = r.set_var(current);
+        // Processing information from containing control structs
+        for (int j = 0; j < ctrls.size(); ++j) {
+          switch (ctrls[j]->content->type()) {
+            case IR_CONTROL_LOOP: {
+              IR_Loop *lp = static_cast<IR_Loop *>(ctrls[j]->content);
+              ++current;
+              Variable_ID v = r.set_var(current);
 
-                // Create index replacement
-                std::string iname = ("inp"+to_string(j));
-                r.name_set_var(current,iname);
-                CG_outputRepr* ivar = ocg->CreateIdent(iname);
-                vars_to_be_replaced.push_back(lp->index()->name());
-                vars_replacement.push_back(ivar);
+              // Create index replacement
+              std::string iname = index_name(current);
+              r.name_set_var(current,iname);
 
-                int step = lp->step_size();
-                CG_outputRepr *lb = lp->lower_bound();
-                CG_outputRepr *ub = lp->upper_bound();
-                // TODO This is very likely to fail
-                if (j>substituted) {
-                  lb = ocg->CreateSubstitutedStmt(0, lp->lower_bound(), vars_to_be_replaced, vars_replacement);
-                  ub = ocg->CreateSubstitutedStmt(0, lp->upper_bound(), vars_to_be_replaced, vars_replacement);
-                  substituted=j;
-                }
-                IR_CONDITION_TYPE cond = lp->stop_cond();
-                if (step < 0) {
-                  if (cond == IR_COND_GE) cond = IR_COND_LE;
-                  else if (cond == IR_COND_GT) cond = IR_COND_LT;
+              int step = lp->step_size();
+              CG_outputRepr *lb = lp->lower_bound();
+              CG_outputRepr *ub = lp->upper_bound();
+              IR_CONDITION_TYPE cond = lp->stop_cond();
+              exp2formula(ir,r,f_root,freevar,lb,v,'s',IR_COND_GE,false,uninterpreted_symbols[loc],uninterpreted_symbols_stringrepr[loc]);
+              if (cond == IR_COND_LT || cond == IR_COND_LE)
+                exp2formula(ir,r,f_root,freevar,ub,v,'s',cond,false,uninterpreted_symbols[loc],uninterpreted_symbols_stringrepr[loc]);
+              else throw chill::error::ir("loop condition not supported");
 
-                  lb = ocg->CreateMinus(NULL,lb);
-                  ub = ocg->CreateMinus(NULL,ub);
-
-                  // Generate replacement
-                  vars_to_be_replaced.push_back(iname);
-                  vars_replacement.push_back(ocg->CreateMinus(NULL,ivar));
-                  step = -step;
-                }
-                exp2formula(ir,r,f_root,freevar,lb,v,'s',IR_COND_GE,true,uninterpreted_symbols[loc],uninterpreted_symbols_stringrepr[loc]);
-                if (cond == IR_COND_LT || cond == IR_COND_LE)
-                  exp2formula(ir,r,f_root,freevar,ub,v,'s',cond,true,uninterpreted_symbols[loc],uninterpreted_symbols_stringrepr[loc]);
-                else throw chill::error::ir("loop condition not supported");
-
-                // strided
-                if (step != 1) {
-                  F_Exists *f_exists = f_root->add_exists();
-                  Variable_ID  e = f_exists -> declare();
-                  F_And *f_and = f_exists->add_and();
-                  Stride_Handle h = f_and->add_stride(step);
-                  h.update_coef(e ,1);
-                  h.update_coef(v, -1);
-                  // Here is using substituted lowerbound
-                  exp2formula(ir, r, f_and, freevar, lb,e,'s',IR_COND_EQ, true, uninterpreted_symbols[loc],uninterpreted_symbols_stringrepr[loc]);
-                }
-                break;
+              // strided
+              if (step != 1) {
+                F_Exists *f_exists = f_root->add_exists();
+                Variable_ID  e = f_exists -> declare();
+                F_And *f_and = f_exists->add_and();
+                Stride_Handle h = f_and->add_stride(step);
+                h.update_coef(e ,1);
+                h.update_coef(v, -1);
+                // Here is using substituted lowerbound
+                exp2formula(ir, r, f_and, freevar, lb,e,'s',IR_COND_EQ, false, uninterpreted_symbols[loc],uninterpreted_symbols_stringrepr[loc]);
               }
-              case IR_CONTROL_IF: {
-                IR_If *ip = static_cast<IR_If *>(ctrls[j]->content);
-                CG_outputRepr *cond = ip->condition();
-                if (j>substituted) {
-                  cond = ocg->CreateSubstitutedStmt(0, ip->condition(), vars_to_be_replaced, vars_replacement);
-                  substituted = j;
-                }
-                if (ctrls[j]->payload & 1)
-                  exp2constraint(ir,r,f_root,freevar,cond,true, uninterpreted_symbols[loc],uninterpreted_symbols_stringrepr[loc]);
-                else {
-                  F_Not *f_not = f_root->add_not();
-                  F_And *f_and = f_not->add_and();
-                  exp2constraint(ir,r,f_and,freevar,cond,true, uninterpreted_symbols[loc],uninterpreted_symbols_stringrepr[loc]);
-                }
-                break;
-              }
-              default:
-                throw chill::error::ir("unknown ir type"); // should never happen
+              break;
             }
+            case IR_CONTROL_IF: {
+              IR_If *ip = static_cast<IR_If *>(ctrls[j]->content);
+              CG_outputRepr *cond = ip->condition();
+              if (ctrls[j]->payload & 1)
+                exp2constraint(ir,r,f_root,freevar,cond,false, uninterpreted_symbols[loc],uninterpreted_symbols_stringrepr[loc]);
+              else {
+                F_Not *f_not = f_root->add_not();
+                F_And *f_and = f_not->add_and();
+                exp2constraint(ir,r,f_and,freevar,cond,false, uninterpreted_symbols[loc],uninterpreted_symbols_stringrepr[loc]);
+              }
+              break;
+            }
+            default:
+              throw chill::error::ir("unknown ir type"); // should never happen
           }
-
-          // add information for missing loops
-          for (int j = level; j < num_dep_dim; j++) {
-            Variable_ID v = r.set_var(j + 1);
-            EQ_Handle e = f_root->add_EQ();
-            e.update_coef(v, 1);
-          }
-          r.setup_names();
-          r.simplify();
-          // Replace vars
-          CG_outputRepr *code = ocg->CreateSubstitutedStmt(0, static_cast<IR_Block*>(ir_stmt[loc]->content)->extract(),vars_to_be_replaced,vars_replacement);
-          // Write back
-          stmt[loc].code = code;
-          stmt[loc].IS = r;
-          stmt[loc].loop_level = std::vector<LoopLevel>(num_dep_dim);
-          stmt[loc].has_inspector = false;
-          stmt[loc].ir_stmt_node = ir_tree[i];
-          for (int ii = 0; ii < num_dep_dim; ++ii) {
-            stmt[loc].loop_level[ii].type = LoopLevelOriginal;
-            stmt[loc].loop_level[ii].payload = ii;
-            stmt[loc].loop_level[ii].parallel_level = 0;
-          }
-          // Update lexical ordering for next statement
-          lexicalOrder.emplace_back(lexicalOrder[lexicalOrder.size()-1] + 1);
-        } catch (chill::error::ir &e) {
-          // roll back
-          ir_stmt.pop_back();
-          stmt.pop_back();
-          uninterpreted_symbols.pop_back();
-          uninterpreted_symbols_stringrepr.pop_back();
-          stmt_nesting_level_.pop_back();
-          // throw to the upper layer
-          throw e;
         }
+
+        // add information for missing loops
+        for (int j = level; j < num_dep_dim; j++) {
+          Variable_ID v = r.set_var(j + 1);
+          EQ_Handle e = f_root->add_EQ();
+          e.update_coef(v, 1);
+        }
+        r.setup_names();
+        r.simplify();
+        // Write back
+        stmt[loc].code = static_cast<IR_Block*>(ir_stmt[loc]->content)->extract();
+        stmt[loc].IS = r;
+        stmt[loc].loop_level = std::vector<LoopLevel>(num_dep_dim);
+        stmt[loc].has_inspector = false;
+        stmt[loc].ir_stmt_node = ir_tree[i];
+        for (int ii = 0; ii < num_dep_dim; ++ii) {
+          stmt[loc].loop_level[ii].type = LoopLevelOriginal;
+          stmt[loc].loop_level[ii].payload = ii;
+          stmt[loc].loop_level[ii].parallel_level = 0;
+        }
+        // Update lexical ordering for next statement
+        lexicalOrder.emplace_back(lexicalOrder[lexicalOrder.size()-1] + 1);
         break;
       }
       case IR_CONTROL_LOOP: {
         ir_tree[i]->payload = level;
         ctrls.push_back(ir_tree[i]);
         try {
-          buildIS(ir_tree[i]->children, lexicalOrder, ctrls, level +1,substituted);
+          buildIS(ir_tree[i]->children, lexicalOrder, ctrls, level +1);
           lexicalOrder.emplace_back(lexicalOrder[lexicalOrder.size()-1] + 1);
         } catch (chill::error::ir &e) {
           for (int j =0;j<ir_tree[i]->children.size(); ++j)
             delete ir_tree[i]->children[j];
           ir_tree[i]->children = std::vector<ir_tree_node*>();
           ir_tree[i]->content = ir_tree[i]->content->convert();
-          --i;
+          throw chill::error::build("converted ir_tree_node");
         }
         ctrls.pop_back();
         // Update lexical ordering for next statement
@@ -455,13 +417,13 @@ void Loop::buildIS(std::vector<ir_tree_node*> &ir_tree,std::vector<int> &lexical
         // need to change condition to align loop vars
         ctrls.push_back(ir_tree[i]);
         try {
-          buildIS(ir_tree[i]->children, lexicalOrder, ctrls, level,substituted);
+          buildIS(ir_tree[i]->children, lexicalOrder, ctrls, level);
         } catch (chill::error::ir &e) {
           for (int j =0;j<ir_tree[i]->children.size(); ++j)
             delete ir_tree[i]->children[j];
           ir_tree[i]->children = std::vector<ir_tree_node*>();
           ir_tree[i]->content = ir_tree[i]->content->convert();
-          --i;
+          throw chill::error::build("converted ir_tree_node");
         }
         ctrls.pop_back();
         // if statement shouldn't update the lexical ordering on its own.
@@ -470,8 +432,6 @@ void Loop::buildIS(std::vector<ir_tree_node*> &ir_tree,std::vector<int> &lexical
       default:
         throw std::invalid_argument("invalid ir tree");
     }
-    if (substituted>ctrls.size())
-      substituted=((int)ctrls.size())-1;
   }
 }
 
@@ -492,6 +452,57 @@ int find_depth(std::vector<ir_tree_node *> &ir_tree) {
         throw std::invalid_argument("invalid ir tree");
     }
   return maxd;
+}
+
+void Loop::align_loops(std::vector<ir_tree_node*> &ir_tree, std::vector<std::string> &vars_to_be_replaced, std::vector<CG_outputRepr*> &vars_replacement,int level) {
+  for (int i = 0; i < ir_tree.size(); i++) {
+    CG_outputBuilder *ocg = ir->builder();
+    switch (ir_tree[i]->content->type()) {
+      case IR_CONTROL_BLOCK: {
+        IR_Block *bp = static_cast<IR_Block *>(ir_tree[i]->content);
+        ocg->CreateSubstitutedStmt(0,bp->extract(),vars_to_be_replaced,vars_replacement,false);
+        break;
+      }
+      case IR_CONTROL_LOOP: {
+        IR_chillLoop *clp = static_cast<IR_chillLoop *>(ir_tree[i]->content);
+        if (!clp->well_formed) {
+          for (int j = 0; j < ir_tree[i]->children.size(); ++j)
+            delete ir_tree[i]->children[j];
+          ir_tree[i]->children = std::vector<ir_tree_node *>();
+          ir_tree[i]->content = ir_tree[i]->content->convert();
+        } else {
+          clp->chilllowerbound = ocg->CreateSubstitutedStmt(0,clp->chilllowerbound,vars_to_be_replaced,vars_replacement,false);
+          clp->chillupperbound = ocg->CreateSubstitutedStmt(0,clp->chillupperbound,vars_to_be_replaced,vars_replacement,false);
+          std::string iname = index_name(level);
+          CG_outputRepr *ivar = ocg->CreateIdent(iname);
+          vars_to_be_replaced.push_back(clp->index()->name());
+          vars_replacement.push_back(ivar);
+          // FIXME: this breaks abstraction
+          if (clp->step_size()<0) {
+            IR_CONDITION_TYPE cond = clp->conditionoperator;
+            if (cond == IR_COND_GE) cond = IR_COND_LE;
+            else if (cond == IR_COND_GT) cond = IR_COND_LT;
+            clp->conditionoperator = cond;
+            clp->chilllowerbound = ocg->CreateMinus(NULL, clp->chilllowerbound);
+            clp->chillupperbound = ocg->CreateMinus(NULL, clp->chillupperbound);
+            clp->step_size_ = -clp->step_size_;
+          }
+          // Ready to recurse
+          align_loops(ir_tree[i]->children,vars_to_be_replaced,vars_replacement,level+1);
+        }
+        break;
+      }
+      case IR_CONTROL_IF: {
+        IR_If *ip = static_cast<IR_If *>(ir_tree[i]->content);
+        ocg->CreateSubstitutedStmt(0,ip->condition(),vars_to_be_replaced,vars_replacement,false);
+        // Ready to recurse
+        align_loops(ir_tree[i]->children,vars_to_be_replaced,vars_replacement,level);
+        break;
+      }
+      default:
+        throw std::invalid_argument("invalid ir tree");
+    }
+  }
 }
 
 Loop::Loop(const IR_Control *control) {
@@ -518,14 +529,30 @@ Loop::Loop(const IR_Control *control) {
   CHILL_DEBUG_PRINT("calling build_ir_tree()\n");
   CHILL_DEBUG_PRINT("about to clone control\n");
   ir_tree = build_ir_tree(control->clone(), NULL);
-
-  num_dep_dim = find_depth(ir_tree);
   {
+    std::vector<std::string> vars_to_be_relaced;
+    std::vector<CG_outputRepr*> vars_replacement;
+    align_loops(ir_tree, vars_to_be_relaced,vars_replacement,/*loop_index_start*/1);
+  }
+  bool trybuild = true;
+  while (trybuild)
+  {
+    uninterpreted_symbols_stringrepr.clear();
+    uninterpreted_symbols.clear();
+    stmt.clear();
+    ir_stmt.clear();
+    stmt_nesting_level_.clear();
+    num_dep_dim = find_depth(ir_tree);
     std::vector<int> lexicalOrder;
     std::vector<ir_tree_node*> ctrls;
     lexicalOrder.push_back(0);
-    int substituted = -1;
-    buildIS(ir_tree,lexicalOrder,ctrls,0,substituted);
+    trybuild = false;
+    try{
+      buildIS(ir_tree,lexicalOrder,ctrls,0);
+    } catch (chill::error::build &e) {
+      CHILL_DEBUG_PRINT("Retry: %s", e.what());
+      trybuild=true;
+    }
   }
 
   CHILL_DEBUG_PRINT("after init_loop, %d freevar\n", (int) freevar.size());

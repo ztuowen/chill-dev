@@ -18,6 +18,10 @@ namespace chill {
       ir(const std::string &msg) : std::runtime_error(msg) {}
     };
 
+    struct build : public std::runtime_error {
+      build(const std::string &msg) : std::runtime_error(msg) {}
+    };
+
     //! for specific for expression to preburger math translation problem
     struct ir_exp : public ir {
       ir_exp(const std::string &msg) : ir(msg) {}

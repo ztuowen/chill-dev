@@ -232,11 +232,12 @@ struct IR_chillArrayRef : public IR_ArrayRef {
 
 struct IR_chillLoop : public IR_Loop {
   int step_size_;
+  int well_formed;  // Discard all non-welformed for loops early in the process
 
   chillAST_DeclRefExpr *chillindex;   // the loop index variable  (I)  // was DeclRefExpr
   chillAST_ForStmt *chillforstmt;
-  chillAST_Node *chilllowerbound;
-  chillAST_Node *chillupperbound;
+  omega::CG_outputRepr *chilllowerbound;
+  omega::CG_outputRepr *chillupperbound;
   chillAST_Node *chillbody;    // presumably a compound statement, but not guaranteeed
   IR_CONDITION_TYPE conditionoperator;
 
