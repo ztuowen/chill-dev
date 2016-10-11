@@ -300,6 +300,129 @@ bool Loop::isInitialized() const {
 
 //--end Anand: added from CHiLL 0.2
 
+void Loop::buildIS(std::vector<ir_tree_node*> &ir_tree,std::stack<int> &lexicalOrder,std::stack<IR_Loop *> &loops,
+             std::stack<IR_If *> &ifs) {
+  for (int i = 0; i < ir_tree.size(); i++)
+    switch (ir_tree[i]->content->type()) {
+      case IR_CONTROL_BLOCK: {
+        // A new stmt
+        // Setting up basic variables
+        ir_stmt.push_back(ir_tree[i]);
+        stmt.push_back(Statement());
+        stmt_nesting_level_.push_back(loops.size());
+        int loc = ir_stmt.size()-1;
+        // Setup the IS holder
+        Relation r(num_dep_dim);
+
+        // add information for missing loops
+        for (int j=0; j<num_dep_dim;j++)
+        r.setup_names();
+        r.simplify();
+        // THIS IS MISSING IN PROTONU's
+        for (int j = 0; j < insp_lb.size(); j++) {
+
+          std::string lb = insp_lb[j] + "_";
+          std::string ub = lb + "_";
+
+          Global_Var_ID u, l;
+          bool found_ub = false;
+          bool found_lb = false;
+          for (DNF_Iterator di(copy(r).query_DNF()); di; di++)
+            for (Constraint_Iterator ci = (*di)->constraints(); ci; ci++)
+
+              for (Constr_Vars_Iter cvi(*ci); cvi; cvi++) {
+                Variable_ID v = cvi.curr_var();
+                if (v->kind() == Global_Var)
+                  if (v->get_global_var()->arity() > 0) {
+
+                    std::string name =
+                        v->get_global_var()->base_name();
+                    if (name == lb) {
+                      l = v->get_global_var();
+                      found_lb = true;
+                    } else if (name == ub) {
+                      u = v->get_global_var();
+                      found_ub = true;
+                    }
+                  }
+
+              }
+
+          if (found_lb && found_ub) {
+            Relation known_(copy(r).n_set());
+            known_.copy_names(copy(r));
+            known_.setup_names();
+            Variable_ID index_lb = known_.get_local(l, Input_Tuple);
+            Variable_ID index_ub = known_.get_local(u, Input_Tuple);
+            F_And *fr = known_.add_and();
+            GEQ_Handle g = fr->add_GEQ();
+            g.update_coef(index_ub, 1);
+            g.update_coef(index_lb, -1);
+            g.update_const(-1);
+            addKnown(known_);
+          }
+        }
+        // Insert statement
+        CG_outputBuilder *ocg = ir->builder();
+        std::vector<CG_outputRepr *> reverse_expr;
+        for (int j = 1; j <= vars_to_be_reversed.size(); j++) {
+          CG_outputRepr *repl = ocg->CreateIdent(vars_to_be_reversed[j]);
+          repl = ocg->CreateMinus(NULL, repl);
+          reverse_expr.push_back(repl);
+        }
+        CG_outputBuilder *ocg = ir->builder();
+        CG_outputRepr *code = static_cast<IR_Block *>(ir_stmt[loc]->content)->extract();
+        code = ocg->CreateSubstitutedStmt(0, code, vars_to_be_reversed, reverse_expr);
+        // Write back
+        stmt[loc].code = code;
+        stmt[loc].IS = r;
+        stmt[loc].loop_level = std::vector<LoopLevel>(num_dep_dim);
+        stmt[loc].has_inspector = false;
+        stmt[loc].ir_stmt_node = ir_tree[i];
+        for (int ii = 0; ii< num_dep_dim;++ii) {
+          stmt[loc].loop_level[ii].type = LoopLevelOriginal;
+          stmt[loc].loop_level[ii].payload = ii;
+          stmt[loc].loop_level[ii].parallel_level = 0;
+        }
+        break;
+      }
+      case IR_CONTROL_LOOP: {
+        // clear loop payload from previous unsuccessful initialization process
+        ir_tree[i]->payload = -1;
+        loops.push(static_cast<IR_Loop *>(ir_tree[i]->content));
+        buildIS(ir_tree[i]->children,lexicalOrder,loops,ifs);
+        break;
+      }
+      case IR_CONTROL_IF: {
+        ifs.push(static_cast<IR_If *>(ir_tree[i]->content));
+        buildIS(ir_tree[i]->children,lexicalOrder,loops,ifs);
+        ifs.pop();
+        break;
+      }
+      default:
+        throw std::invalid_argument("invalid ir tree");
+    }
+}
+
+int find_depth(std::vector<ir_tree_node *> &ir_tree) {
+  int maxd = 0;
+  for (int i = 0; i < ir_tree.size(); i++)
+    switch (ir_tree[i]->content->type()) {
+      case IR_CONTROL_BLOCK:
+        // A new stmt
+        break;
+      case IR_CONTROL_LOOP:
+        maxd = max(maxd,find_depth(ir_tree[i]->children)+1);
+        break;
+      case IR_CONTROL_IF:
+        maxd = max(maxd,ir_tree[i]->children);
+        break;
+      default:
+        throw std::invalid_argument("invalid ir tree");
+    }
+  return maxd;
+}
+
 bool Loop::init_loop(std::vector<ir_tree_node *> &ir_tree,
                      std::vector<ir_tree_node *> &ir_stmt) {
 
@@ -752,8 +875,14 @@ Loop::Loop(const IR_Control *control) {
   CHILL_DEBUG_PRINT("about to clone control\n");
   ir_tree = build_ir_tree(control->clone(), NULL);
 
-  int count = 0;
-  while (!init_loop(ir_tree, ir_stmt));
+  num_dep_dim = find_depth(ir_tree);
+  {
+    std::stack<int> lexicalOrder;
+    std::stack<IR_Loop *> loops;
+    std::stack<IR_If *> ifs;
+    int stmtnum = 0;
+    buildIS(ir_tree,lexicalOrder,loops,ifs,stmtnum);
+  }
 
   CHILL_DEBUG_PRINT("after init_loop, %d freevar\n", (int) freevar.size());
 
@@ -906,7 +1035,7 @@ Loop::Loop(const IR_Control *control) {
   }
   CHILL_DEBUG_PRINT("done with dumb\n");
 
-  if (stmt.size() != 0)
+  if (stmt.size() != 0) // TODO this before everything
     num_dep_dim = stmt[0].IS.n_set();
   else
     num_dep_dim = 0;
