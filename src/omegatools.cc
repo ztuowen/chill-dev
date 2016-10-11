@@ -1072,11 +1072,13 @@ void exp2constraint(IR_Code *ir, Relation &r, F_And *f_root,
       F_And *fa = f_root->add_not()->add_and();
       std::vector<omega::CG_outputRepr *> op = ir->QueryExpOperand(repr);
       exp2constraint(ir, r, fa, freevars, op[0], false, uninterpreted_symbols, uninterpreted_symbols_stringrepr);
+      break;
     }
     case IR_COND_AND: {
       std::vector<omega::CG_outputRepr *> op = ir->QueryExpOperand(repr);
       exp2constraint(ir, r, f_root, freevars, op[0], false, uninterpreted_symbols, uninterpreted_symbols_stringrepr);
       exp2constraint(ir, r, f_root, freevars, op[1], false, uninterpreted_symbols, uninterpreted_symbols_stringrepr);
+      break;
     }
     case IR_COND_OR: {
       F_Or *f_or = f_root->add_or();

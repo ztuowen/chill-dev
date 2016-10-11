@@ -34,7 +34,7 @@ const char *ChillAST_Node_Names[] = {
     "ImplicitCastExpr", // not sure we need this
     "ReturnStmt",
     "CallExpr",
-    "DeclStmt",
+//    "DeclStmt",
     "ParenExpr",
     "CStyleCastExpr",
     "CStyleAddressOf",

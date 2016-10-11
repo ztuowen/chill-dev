@@ -1829,7 +1829,7 @@ namespace omega {
     
     CG_outputRepr *lbRepr = NULL;
     if (lbList.size() > 1) {
-      fprintf(stderr, "CG_utils.cc output_loop() createInvoke( max )\n"); 
+      CG_DEBUG_PRINT("CG_utils.cc output_loop() createInvoke( max )\n");
       lbRepr = ocg->CreateInvoke("max", lbList);
     }
     else { // (lbList.size() == 1)
@@ -1838,7 +1838,7 @@ namespace omega {
 
     CG_outputRepr *ubRepr = NULL;
     if (ubList.size() > 1) {
-      fprintf(stderr, "CG_utils.cc output_loop() createInvoke( min )\n"); 
+      CG_DEBUG_PRINT("CG_utils.cc output_loop() createInvoke( min )\n");
       ubRepr = ocg->CreateInvoke("min", ubList);
     }
     else { // (ubList.size() == 1)

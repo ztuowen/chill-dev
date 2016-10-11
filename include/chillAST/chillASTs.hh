@@ -1140,6 +1140,7 @@ public:
   void setSubExpr(chillAST_Node *sub) { setChild(0, sub); }
 
   // required methods that I can't seem to get to inherit
+  chillAST_Node *constantFold();
   chillAST_Node *clone();
 
   bool findLoopIndexesToReplace(chillAST_SymbolTable *symtab,

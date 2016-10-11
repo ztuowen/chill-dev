@@ -1986,6 +1986,11 @@ chillAST_Node *chillAST_ParenExpr::clone() {
   return PE;
 }
 
+chillAST_Node *chillAST_ParenExpr::constantFold() {
+  chillAST_Node::constantFold();
+  return getSubExpr();
+}
+
 chillAST_Sizeof::chillAST_Sizeof(char *athing) {
   thing = strdup(athing); // memory leak
 }

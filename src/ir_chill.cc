@@ -19,21 +19,6 @@ History:
 #include "loop.hh"
 #include "chill_error.hh"
 
-#include "clang/Frontend/FrontendActions.h"
-#include <clang/CodeGen/CodeGenAction.h>
-#include <clang/Frontend/CompilerInstance.h>
-#include <clang/Frontend/CompilerInvocation.h>
-#include <clang/Basic/DiagnosticOptions.h>
-#include <clang/Frontend/TextDiagnosticPrinter.h>
-#include <clang/AST/ASTContext.h>
-#include <clang/AST/RecordLayout.h>
-#include <clang/AST/Decl.h>
-#include <clang/Parse/ParseAST.h>
-#include <clang/Basic/TargetInfo.h>
-
-#include <llvm/ADT/IntrusiveRefCntPtr.h>
-#include <llvm/Support/Host.h>
-
 #include "code_gen/CG_chillRepr.h"
 #include "code_gen/CG_chillBuilder.h"
 #include <vector>
@@ -1201,6 +1186,7 @@ void IR_clangCode::ReplaceExpression(IR_Ref *old, omega::CG_outputRepr *repr) {
 IR_CONDITION_TYPE IR_clangCode::QueryBooleanExpOperation(const omega::CG_outputRepr *repr) const {
   CG_chillRepr *crepr = (CG_chillRepr *)repr;
   chillAST_Node *node = crepr->chillnodes[0];
+  node = node->constantFold();
   if (!node->isBinaryOperator()) {
     if (node->isUnaryOperator()) {
       chillAST_UnaryOperator *uop = (chillAST_UnaryOperator*)node;
@@ -1225,10 +1211,7 @@ IR_CONDITION_TYPE IR_clangCode::QueryBooleanExpOperation(const omega::CG_outputR
 IR_OPERATION_TYPE IR_clangCode::QueryExpOperation(const omega::CG_outputRepr *repr) const {
   CG_chillRepr *crepr = (CG_chillRepr *) repr;
   chillAST_Node *node = crepr->chillnodes[0];
-  // really need to be more rigorous than this hack  // TODO
-  if (node->isImplicitCastExpr()) node = ((chillAST_ImplicitCastExpr *) node)->getSubExpr();
-  if (node->isCStyleCastExpr()) node = ((chillAST_CStyleCastExpr *) node)->getSubExpr();
-  if (node->isParenExpr()) node = ((chillAST_ParenExpr *) node)->getSubExpr();
+  node = node->constantFold();
 
   if (node->isIntegerLiteral() || node->isFloatingLiteral()) return IR_OP_CONSTANT;
   else if (node->isBinaryOperator() || node->isUnaryOperator()) {
@@ -1252,39 +1235,6 @@ IR_OPERATION_TYPE IR_clangCode::QueryExpOperation(const omega::CG_outputRepr *re
     CHILL_ERROR("IR_clangCode::QueryExpOperation()  UNHANDLED NODE TYPE %s\n", node->getTypeString());
     exit(-1);
   }
-
-  /* CLANG 
-  Expr *e = static_cast<const omega::CG_chillRepr *>(repr)->GetExpression();
-  if(isa<IntegerLiteral>(e) || isa<FloatingLiteral>(e)) return IR_OP_CONSTANT;
-  else if(isa<DeclRefExpr>(e)) return IR_OP_VARIABLE;
-  else if(BinaryOperator *bop = dyn_cast<BinaryOperator>(e)) {
-    switch(bop->getOpcode()) {
-    case BO_Assign: return IR_OP_ASSIGNMENT;
-    case BO_Add: return IR_OP_PLUS;
-    case BO_Sub: return IR_OP_MINUS;
-    case BO_Mul: return IR_OP_MULTIPLY;
-    case BO_Div: return IR_OP_DIVIDE;
-    default: return IR_OP_UNKNOWN;
-    }
-  } else if(UnaryOperator *uop = dyn_cast<UnaryOperator>(e)) {
-    switch(uop->getOpcode()) {
-    case UO_Minus: return IR_OP_NEGATIVE;
-    case UO_Plus: return IR_OP_POSITIVE;
-    default: return IR_OP_UNKNOWN;
-    }
-  } else if(ConditionalOperator *cop = dyn_cast<ConditionalOperator>(e)) {
-    BinaryOperator *bop;
-    if(bop = dyn_cast<BinaryOperator>(cop->getCond())) {
-      if(bop->getOpcode() == BO_GT) return IR_OP_MAX;
-      else if(bop->getOpcode() == BO_LT) return IR_OP_MIN;
-    } else return IR_OP_UNKNOWN;
-    
-  } 
-  
-  else if(e == NULL) return IR_OP_NULL;
-  else return IR_OP_UNKNOWN;
-  }
-   END CLANG */
 }
 
 
@@ -1294,11 +1244,7 @@ std::vector<omega::CG_outputRepr *> IR_clangCode::QueryExpOperand(const omega::C
   CG_chillRepr *crepr = (CG_chillRepr *) repr;
   chillAST_Node *e = crepr->chillnodes[0]; // ??
 
-  // really need to be more rigorous than this hack  // TODO 
-  if (e->isImplicitCastExpr()) e = ((chillAST_ImplicitCastExpr *) e)->getSubExpr();
-  if (e->isCStyleCastExpr()) e = ((chillAST_CStyleCastExpr *) e)->getSubExpr();
-  if (e->isParenExpr()) e = ((chillAST_ParenExpr *) e)->getSubExpr();
-
+  e = e->constantFold();
 
   if (e->isIntegerLiteral() || e->isFloatingLiteral() || e->isDeclRefExpr()) {
     omega::CG_chillRepr *repr = new omega::CG_chillRepr(e);

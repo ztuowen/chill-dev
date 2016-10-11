@@ -378,7 +378,7 @@ chillAST_NodeList* ConvertIfStmt(IfStmt *clangIS) {
 
 chillAST_NodeList* ConvertUnaryOperator(UnaryOperator *clangUO) {
   const char *op = unops[clangUO->getOpcode()].c_str();
-  bool pre = clangUO->isPrefix();
+  bool pre = !clangUO->isPostfix();
   chillAST_Node *sub = unwrap(ConvertGenericClangAST(clangUO->getSubExpr()));
 
   chillAST_UnaryOperator *chillUO = new chillAST_UnaryOperator(op, pre, sub);
