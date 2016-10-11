@@ -1201,8 +1201,13 @@ void IR_clangCode::ReplaceExpression(IR_Ref *old, omega::CG_outputRepr *repr) {
 IR_CONDITION_TYPE IR_clangCode::QueryBooleanExpOperation(const omega::CG_outputRepr *repr) const {
   CG_chillRepr *crepr = (CG_chillRepr *)repr;
   chillAST_Node *node = crepr->chillnodes[0];
-  if (!node->isBinaryOperator())
+  if (!node->isBinaryOperator()) {
+    if (node->isUnaryOperator()) {
+      chillAST_UnaryOperator *uop = (chillAST_UnaryOperator*)node;
+      if (!strcmp(uop->op,"!")) return IR_COND_NOT;
+    }
     return IR_COND_UNKNOWN;
+  }
   chillAST_BinaryOperator *bin = (chillAST_BinaryOperator*)node;
   const char * opstring = bin->getOp();
   if (!strcmp(opstring, "==")) return IR_COND_EQ;
@@ -1211,6 +1216,8 @@ IR_CONDITION_TYPE IR_clangCode::QueryBooleanExpOperation(const omega::CG_outputR
   if (!strcmp(opstring, ">")) return IR_COND_GT;
   if (!strcmp(opstring, ">=")) return IR_COND_GE;
   if (!strcmp(opstring, "!=")) return IR_COND_NE;
+  if (!strcmp(opstring, "&&")) return IR_COND_AND;
+  if (!strcmp(opstring, "||")) return IR_COND_OR;
   return IR_COND_UNKNOWN;
 }
 
@@ -1282,13 +1289,10 @@ IR_OPERATION_TYPE IR_clangCode::QueryExpOperation(const omega::CG_outputRepr *re
 
 
 std::vector<omega::CG_outputRepr *> IR_clangCode::QueryExpOperand(const omega::CG_outputRepr *repr) const {
-  //fprintf(stderr, "IR_clangCode::QueryExpOperand()\n"); 
   std::vector<omega::CG_outputRepr *> v;
 
   CG_chillRepr *crepr = (CG_chillRepr *) repr;
-  //Expr *e = static_cast<const omega::CG_chillRepr *>(repr)->GetExpression(); wrong.. CLANG
-  chillAST_Node *e = crepr->chillnodes[0]; // ?? 
-  //e->print(); printf("\n"); fflush(stdout); 
+  chillAST_Node *e = crepr->chillnodes[0]; // ??
 
   // really need to be more rigorous than this hack  // TODO 
   if (e->isImplicitCastExpr()) e = ((chillAST_ImplicitCastExpr *) e)->getSubExpr();
@@ -1296,85 +1300,22 @@ std::vector<omega::CG_outputRepr *> IR_clangCode::QueryExpOperand(const omega::C
   if (e->isParenExpr()) e = ((chillAST_ParenExpr *) e)->getSubExpr();
 
 
-  //if(isa<IntegerLiteral>(e) || isa<FloatingLiteral>(e) || isa<DeclRefExpr>(e)) {
   if (e->isIntegerLiteral() || e->isFloatingLiteral() || e->isDeclRefExpr()) {
-    //fprintf(stderr, "it's a constant\n"); 
     omega::CG_chillRepr *repr = new omega::CG_chillRepr(e);
     v.push_back(repr);
-    //} else if(BinaryOperator *bop = dyn_cast<BinaryOperator>(e)) {
   } else if (e->isBinaryOperator()) {
-    //fprintf(stderr, "ir_clang.cc BOP TODO\n"); exit(-1); // 
     chillAST_BinaryOperator *bop = (chillAST_BinaryOperator *) e;
-    char *op = bop->op;  // TODO enum for operator types
-    if (!strcmp(op, "=")) {
-      v.push_back(new omega::CG_chillRepr(bop->getRHS()));  // for assign, return RHS
-    } else {
-      v.push_back(new omega::CG_chillRepr(bop->getLHS()));  // for +*-/ return both lhs and rhs
-      v.push_back(new omega::CG_chillRepr(bop->getRHS()));
-    }
+    v.push_back(new omega::CG_chillRepr(bop->getLHS()));
+    v.push_back(new omega::CG_chillRepr(bop->getRHS()));
   } // BinaryOperator
   else if (e->isUnaryOperator()) {
-    omega::CG_chillRepr *repr;
     chillAST_UnaryOperator *uop = (chillAST_UnaryOperator *) e;
-    char *op = uop->op; // TODO enum
-    if (!strcmp(op, "+") || !strcmp(op, "-")) {
-      v.push_back(new omega::CG_chillRepr(uop->getSubExpr()));
-    } else {
-      CHILL_ERROR("ir_clang.cc  IR_clangCode::QueryExpOperand() Unary Operator  UNHANDLED op (%s)\n", op);
-      exit(-1);
-    }
+    v.push_back(new omega::CG_chillRepr(uop->getSubExpr()));
   } // unaryoperator
   else {
     CHILL_ERROR("UNHANDLED node type %s\n", e->getTypeString());
     exit(-1);
   }
-
-
-  /*
-Expr *op1, *op2;
-  switch(bop->getOpcode()) {
-  case BO_Assign:
-    op2 = bop->getRHS();
-    repr = new omega::CG_chillRepr(op2);
-    v.push_back(repr);
-    break;
-  case BO_Add:
-  case BO_Sub:
-  case BO_Mul:
-  case BO_Div:
-    op1 = bop->getLHS();
-    repr = new omega::CG_chillRepr(op1);
-    v.push_back(repr);
-    op2 = bop->getRHS();
-    repr = new omega::CG_chillRepr(op2);
-    v.push_back(repr);
-    break;
-  default:
-    throw chill::error::ir("operation not supported");
-  }
-  */
-  //} else if(UnaryOperator *uop = dyn_cast<UnaryOperator>(e)) {
-  //} else if(e->isUnaryOperator()) {
-  /*
-  omega::CG_chillRepr *repr;
-
-  switch(uop->getOpcode()) {
-  case UO_Minus:
-  case UO_Plus:
-    op1 = uop->getSubExpr();
-    repr = new omega::CG_chillRepr(op1);
-    v.push_back(repr);
-    break;
-  default:
-    throw chill::error::ir("operation not supported");
-  }
-  */
-  //} else if(ConditionalOperator *cop = dyn_cast<ConditionalOperator>(e)) {
-  //omega::CG_chillRepr *repr;
-
-  // TODO: Handle conditional operator here
-  //} else  throw chill::error::ir("operand type UNsupported");
-
   return v;
 }
 

@@ -393,7 +393,7 @@ void Loop::buildIS(std::vector<ir_tree_node*> &ir_tree,std::vector<int> &lexical
           stmt[loc].loop_level[ii].parallel_level = 0;
         }
         // Update lexical ordering for next statement
-        lexicalOrder.emplace_back(lexicalOrder[lexicalOrder.size()-1] + 1);
+        lexicalOrder[lexicalOrder.size()-1]++;
         break;
       }
       case IR_CONTROL_LOOP: {
@@ -411,6 +411,7 @@ void Loop::buildIS(std::vector<ir_tree_node*> &ir_tree,std::vector<int> &lexical
         }
         ctrls.pop_back();
         // Update lexical ordering for next statement
+        lexicalOrder[lexicalOrder.size()-1]++;
         break;
       }
       case IR_CONTROL_IF: {

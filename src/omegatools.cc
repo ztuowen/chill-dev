@@ -165,7 +165,7 @@ void exp2formula(IR_Code *ir,
     case IR_OP_ASSIGNMENT: {
       CHILL_DEBUG_PRINT("IR_OP_ASSIGNMENT\n");
       std::vector<CG_outputRepr *> v = ir->QueryExpOperand(repr);
-      exp2formula(ir, r, f_root, freevars, v[0], lhs, side, rel, true,
+      exp2formula(ir, r, f_root, freevars, v[1], lhs, side, rel, true,
                   uninterpreted_symbols, uninterpreted_symbols_stringrepr);
       if (destroy)
         delete repr;
@@ -758,21 +758,10 @@ Relation arrays2relation(IR_Code *ir, std::vector<Free_Var_Decl *> &freevars,
                          const IR_ArrayRef *ref_dst, const Relation &IS_r,
                          std::map<std::string, std::vector<omega::CG_outputRepr *> > &uninterpreted_symbols,
                          std::map<std::string, std::vector<omega::CG_outputRepr *> > &uninterpreted_symbols_stringrepr) {
-
-  //fprintf(stderr, "arrays2relation()\n"); 
-  //fprintf(stderr, "%d freevars\n", freevars.size()); 
-  //for (int i=0; i<freevars.size(); i++) fprintf(stderr, "freevar %d %s\n", i, (const char *)(freevars[i]->base_name())); 
-
-
   Relation &IS1 = const_cast<Relation &>(IS_w);
   Relation &IS2 = const_cast<Relation &>(IS_r);
 
-  //Relation *helper;
-  //helper = new Relation(IS1); fprintf(stderr, "IS1  "); helper->print(); fflush(stdout); 
-  //helper = new Relation(IS2); fprintf(stderr, "IS2  "); helper->print(); fflush(stdout); 
-
   Relation r(IS1.n_set(), IS2.n_set());
-  //helper = new Relation(r); fprintf(stderr, "r    "); helper->print(); fflush(stdout);
 
   for (int i = 1; i <= IS1.n_set(); i++)
     r.name_input_var(i, IS1.set_var(i)->name());
@@ -780,25 +769,9 @@ Relation arrays2relation(IR_Code *ir, std::vector<Free_Var_Decl *> &freevars,
   for (int i = 1; i <= IS2.n_set(); i++)
     r.name_output_var(i, IS2.set_var(i)->name() + "'");
 
-  //fprintf(stderr, "omegatools.cc sym_src\n"); 
   IR_Symbol *sym_src = ref_src->symbol();
   IR_Symbol *sym_dst = ref_dst->symbol();
-  //fprintf(stderr, "omegatools.cc going to do IR_Symbol operator==\n"); 
-  //fprintf(stderr, "omegatools.cc comparing symbol 0x%x to symbol 0x%x\n", sym_src, sym_dst); 
-
-  //if (!(*sym_src == *sym_dst))  fprintf(stderr, "!(*sym_src == *sym_dst)\n"); 
-
-  //fprintf(stderr, "calling !=\n"); 
-  //if (*sym_src != *sym_dst)  fprintf(stderr, "omegatools.cc  (*sym_src != *sym_dst) TRUE\n"); 
-  //else fprintf(stderr, "omegatools.cc  (*sym_src != *sym_dst) FALSE\n"); 
-
-  //fprintf(stderr, "calling ==\n"); 
-  //if ((*sym_src == *sym_dst))  fprintf(stderr, "(*sym_src == *sym_dst))  TRUE \n"); 
-  //else fprintf(stderr, "(*sym_src == *sym_dst) FALSE \n"); 
-
   if (*sym_src != *sym_dst) {
-    //if (!(*sym_src == *sym_dst)) {
-    //fprintf(stderr, "False Relation\n"); 
     r.add_or(); // False Relation
     delete sym_src;
     delete sym_dst;
@@ -807,14 +780,8 @@ Relation arrays2relation(IR_Code *ir, std::vector<Free_Var_Decl *> &freevars,
     delete sym_src;
     delete sym_dst;
   }
-
-  //fprintf(stderr, "f_root\n"); 
   F_And *f_root = r.add_and();
-
-  //fprintf(stderr, "omegatools.cc ref_src->n_dim() %d\n", ref_src->n_dim()); 
   for (int i = 0; i < ref_src->n_dim(); i++) {
-    //fprintf(stderr, "arrays2 i %d\n", i); 
-
     F_Exists *f_exists = f_root->add_exists();
     Variable_ID e1 = f_exists->declare(tmp_e());
     Variable_ID e2 = f_exists->declare(tmp_e());
@@ -860,9 +827,6 @@ Relation arrays2relation(IR_Code *ir, std::vector<Free_Var_Decl *> &freevars,
   // reset the output variable names lost in restriction
   for (int i = 1; i <= IS2.n_set(); i++)
     r.name_output_var(i, IS2.set_var(i)->name() + "'");
-
-  //helper = new Relation(r); fprintf(stderr, "r    "); helper->print(); fflush(stdout);  
-  //fprintf(stderr, "leaving arrays2relation\n"); 
   return r;
 }
 
@@ -875,45 +839,26 @@ std::pair<std::vector<DependenceVector>, std::vector<DependenceVector> > relatio
     const IR_ArrayRef *ref_src,
     const IR_ArrayRef *ref_dst,
     const Relation &r) {
-  //fprintf(stderr, "relation2dependences()\n"); 
   assert(r.n_inp() == r.n_out());
 
   std::vector<DependenceVector> dependences1, dependences2;
-  //std::vector<DependenceVector*> dep1, dep2;  
   std::stack<DependenceLevel> working;
   working.push(DependenceLevel(r, r.n_inp()));
 
   while (!working.empty()) {
-    //fprintf(stderr, "!empty  size %d\n", working.size()); 
-
     DependenceLevel dep = working.top();
     working.pop();
 
-    //if (!dep.r.is_satisfiable()) fprintf(stderr, "NOT dep.r.is_satisfiable()\n"); 
-    //else                         fprintf(stderr, "    dep.r.is_satisfiable()\n"); 
-
     // No dependence exists, move on.
     if (!dep.r.is_satisfiable()) {
-      //fprintf(stderr, "No dependence exists, move on.\n"); 
       continue;
     }
-
-    //fprintf(stderr, "satisfiable\n"); 
-    //fprintf(stderr, "dep.level %d   r.n_inp() %d\n", dep.level, r.n_inp()); 
     if (dep.level == r.n_inp()) {
-      //fprintf(stderr, "dep.level == r.n_inp()\n"); 
       DependenceVector dv;
-
-      //fprintf(stderr, "\ndv created in if                                         ***\n"); 
-      //DependenceVector *dv2 = new DependenceVector; 
-
-      //fprintf(stderr, "for loop independent dependence  dep.dir %d\n", dep.dir); 
       // for loop independent dependence, use lexical order to
       // determine the correct source and destination
       if (dep.dir == 0) {
-        //fprintf(stderr, "dep.dir == 0\n"); 
         if (*ref_src == *ref_dst) {                             // c == c
-          //fprintf(stderr, "trivial\n"); 
           continue; // trivial self zero-dependence
         }
 
@@ -930,7 +875,6 @@ std::pair<std::vector<DependenceVector>, std::vector<DependenceVector> > relatio
         }
 
       } else if (dep.dir == 1) {
-        //fprintf(stderr, "dep.dir == 1\n"); 
         if (ref_src->is_write()) {
           if (ref_dst->is_write())
             dv.type = DEP_W2W;
@@ -943,7 +887,6 @@ std::pair<std::vector<DependenceVector>, std::vector<DependenceVector> > relatio
             dv.type = DEP_R2R;
         }
       } else { // dep.dir == -1
-        //fprintf(stderr, "dep.dir == -1\n"); 
         if (ref_dst->is_write()) {
           if (ref_src->is_write())
             dv.type = DEP_W2W;
@@ -960,78 +903,34 @@ std::pair<std::vector<DependenceVector>, std::vector<DependenceVector> > relatio
       dv.lbounds = dep.lbounds;
       dv.ubounds = dep.ubounds;
 
-      //fprintf(stderr, "omegatools.cc calling ref_src->symbol();\n"); 
       dv.sym = ref_src->symbol();
-      //fprintf(stderr, "dv.sym = %p\n", dv.sym); 
-
-      //fprintf(stderr, "symbol %s  ADDING A DEPENDENCE OF TYPE ", dv.sym->name().c_str()); 
-      //switch (dv.type) { 
-      //case DEP_W2W: fprintf(stderr, "DEP_W2W to "); break; 
-      //case DEP_W2R: fprintf(stderr, "DEP_W2R to "); break; 
-      //case DEP_R2W: fprintf(stderr, "DEP_R2W to "); break; 
-      //case DEP_R2R: fprintf(stderr, "DEP_R2R to "); break; 
-      //default: fprintf(stderr, "DEP_UNKNOWN to "); break;
-      //} 
-      //if (dep.dir == 0 || dep.dir == 1) fprintf(stderr, "dependences1\n"); 
-      //else fprintf(stderr, "dependences2\n"); 
 
       if (dep.dir == 0 || dep.dir == 1) {
-        //fprintf(stderr, "pushing dv\n"); 
         dependences1.push_back(dv);
-        //fprintf(stderr, "DONE pushing dv\n"); 
-
-        //fprintf(stderr, "now %d dependences1\n", dependences1.size() ); 
-        //for (int i=0; i<dependences1.size(); i++) {
-        //  fprintf(stderr, "dependences1[%d]: ", i ); 
-        //  //fprintf(stderr, "symbol %p ", dependences1[i].sym);
-        //  fprintf(stderr, "symbol ");
-        //  fprintf(stderr, "%s\n", dependences1[i].sym->name().c_str()); 
-        //} 
-        //fprintf(stderr, "\n"); 
       } else {
-        //fprintf(stderr, "pushing dv\n"); 
         dependences2.push_back(dv);
-        //fprintf(stderr, "DONE pushing dv\n"); 
-
-        //fprintf(stderr, "now %d dependences2\n", dependences2.size() ); 
-        //for (int i=0; i<dependences2.size(); i++) {
-        //  fprintf(stderr, "dependences2[%d]: ", i); 
-        //  //fprintf(stderr, "symbol %p ", dependences2[i].sym);
-        //  fprintf(stderr, "symbol "); 
-        //  fprintf(stderr, "%s\n", dependences2[i].sym->name().c_str()); 
-        //} 
-        //fprintf(stderr, "\n"); 
       }
 
-      //fprintf(stderr, "dv goes out of scope                                      ***\n"); 
     } else {
-      //fprintf(stderr, "now work on the next dimension level\n"); 
       // now work on the next dimension level
       int level = ++dep.level;
-      //fprintf(stderr, "level %d\n", level); 
 
       coef_t lbound, ubound;
       Relation delta = Deltas(copy(dep.r));
-      //delta.print(); fflush(stdout); 
       delta.query_variable_bounds(delta.set_var(level), lbound, ubound);
-      //fprintf(stderr, "delta   lb " coef_fmt " 0x%llx    ub " coef_fmt " 0x%llx\n", lbound,lbound,ubound,ubound);
-
 
       if (dep.dir == 0) {
-        //fprintf(stderr, "dep.dir == 0\n"); 
         if (lbound > 0) {
           dep.dir = 1;
           dep.lbounds[level - 1] = lbound;
           dep.ubounds[level - 1] = ubound;
 
-          //fprintf(stderr, "push 1\n"); 
           working.push(dep);
         } else if (ubound < 0) {
           dep.dir = -1;
           dep.lbounds[level - 1] = -ubound;
           dep.ubounds[level - 1] = -lbound;
 
-          //fprintf(stderr, "push 2\n"); 
           working.push(dep);
         } else {
           // split the dependence vector into flow- and anti-dependence
@@ -1048,14 +947,8 @@ std::pair<std::vector<DependenceVector>, std::vector<DependenceVector> > relatio
             h.update_coef(dep2.r.input_var(level), 1);
             h.update_coef(dep2.r.output_var(level), -1);
 
-            //fprintf(stderr, "push 3\n"); 
             working.push(dep2);
           }
-
-          //fprintf(stderr, "lbound %lld 0x%llx\n", lbound, lbound); 
-          //if (lbound < 0LL) fprintf(stderr, "lbound < 0LL\n"); 
-          //if (*ref_src != *ref_dst) fprintf(stderr, "(*ref_src != *ref_dst)\n"); 
-          //else fprintf(stderr, "(*ref_src EQUAL *ref_dst)\n"); 
 
           if (lbound < 0LL && (*ref_src != *ref_dst)) {                // c == c
             DependenceLevel dep2 = dep;
@@ -1076,12 +969,8 @@ std::pair<std::vector<DependenceVector>, std::vector<DependenceVector> > relatio
             dep2.lbounds[level - 1] = std::max(-ubound,
                                                static_cast<coef_t>(1)); // use max() to avoid Omega retardedness
             dep2.ubounds[level - 1] = -lbound;
-
-            //fprintf(stderr, "push 4\n"); 
             working.push(dep2);
           }
-
-          //fprintf(stderr, "ubound %d\n", ubound); 
           if (ubound > 0) {
             DependenceLevel dep2 = dep;
 
@@ -1099,8 +988,6 @@ std::pair<std::vector<DependenceVector>, std::vector<DependenceVector> > relatio
             dep2.dir = 1;
             dep2.lbounds[level - 1] = std::max(lbound, static_cast<coef_t>(1)); // use max() to avoid Omega retardness
             dep2.ubounds[level - 1] = ubound;
-
-            //fprintf(stderr, "push 5\n"); 
             working.push(dep2);
           }
         }
@@ -1108,7 +995,6 @@ std::pair<std::vector<DependenceVector>, std::vector<DependenceVector> > relatio
         // now deal with dependence vector with known direction
         // determined at previous levels
       else {
-        //fprintf(stderr, "else messy\n"); 
         // For messy bounds, further test to see if the dependence distance
         // can be reduced to positive/negative.  This is an omega hack.
         if (lbound == negInfinity && ubound == posInfinity) {
@@ -1162,47 +1048,10 @@ std::pair<std::vector<DependenceVector>, std::vector<DependenceVector> > relatio
           dep.lbounds[level - 1] = lbound;
           dep.ubounds[level - 1] = ubound;
         }
-
-        //fprintf(stderr, "push 6\n"); 
         working.push(dep);
       }
     }
-    //fprintf(stderr, "at bottom, size %d\n", working.size()); 
-
   }
-
-  //fprintf(stderr, "leaving relation2dependences, %d and %d dependences\n", dependences1.size(), dependences2.size()); 
-
-
-  //for (int i=0; i<dependences1.size(); i++) {
-  //fprintf(stderr, "dependences1[%d]: ", i); 
-  //fprintf(stderr, "symbol %s\n", dependences1[i].sym->name().c_str()); 
-
-  //fprintf(stderr, "symbol %s  HAS A left  DEPENDENCE OF TYPE ", dependences1[i].sym->name().c_str()); 
-  //switch (dependences1[i].type) { 
-  //case DEP_W2W: fprintf(stderr, "DEP_W2W\n");     break; 
-  //case DEP_W2R: fprintf(stderr, "DEP_W2R\n");     break; 
-  //case DEP_R2W: fprintf(stderr, "DEP_R2W\n");     break; 
-  //case DEP_R2R: fprintf(stderr, "DEP_R2R\n");     break; 
-  //default:      fprintf(stderr, "DEP_UNKNOWN\n"); break;
-  //} 
-  //} 
-
-
-  //for (int i=0; i<dependences2.size(); i++) {
-
-  //fprintf(stderr, "symbol %s  HAS A right DEPENDENCE OF TYPE ", dependences2[i].sym->name().c_str()); 
-  //switch (dependences2[i].type) { 
-  //case DEP_W2W: fprintf(stderr, "DEP_W2W\n");     break; 
-  //case DEP_W2R: fprintf(stderr, "DEP_W2R\n");     break; 
-  //case DEP_R2W: fprintf(stderr, "DEP_R2W\n");     break; 
-  //case DEP_R2R: fprintf(stderr, "DEP_R2R\n");     break; 
-  //default:      fprintf(stderr, "DEP_UNKNOWN\n"); break;
-  //} 
-  //} 
-
-
-
   return std::make_pair(dependences1, dependences2);
 }
 
@@ -1219,6 +1068,25 @@ void exp2constraint(IR_Code *ir, Relation &r, F_And *f_root,
                     std::map<std::string, std::vector<omega::CG_outputRepr *> > &uninterpreted_symbols_stringrepr) {
   IR_CONDITION_TYPE cond = ir->QueryBooleanExpOperation(repr);
   switch (cond) {
+    case IR_COND_NOT: {
+      F_And *fa = f_root->add_not()->add_and();
+      std::vector<omega::CG_outputRepr *> op = ir->QueryExpOperand(repr);
+      exp2constraint(ir, r, fa, freevars, op[0], false, uninterpreted_symbols, uninterpreted_symbols_stringrepr);
+    }
+    case IR_COND_AND: {
+      std::vector<omega::CG_outputRepr *> op = ir->QueryExpOperand(repr);
+      exp2constraint(ir, r, f_root, freevars, op[0], false, uninterpreted_symbols, uninterpreted_symbols_stringrepr);
+      exp2constraint(ir, r, f_root, freevars, op[1], false, uninterpreted_symbols, uninterpreted_symbols_stringrepr);
+    }
+    case IR_COND_OR: {
+      F_Or *f_or = f_root->add_or();
+      F_And *fa1 = f_or->add_and();
+      F_And *fa2 = f_or->add_and();
+      std::vector<omega::CG_outputRepr *> op = ir->QueryExpOperand(repr);
+      exp2constraint(ir, r, fa1, freevars, op[0], false, uninterpreted_symbols, uninterpreted_symbols_stringrepr);
+      exp2constraint(ir, r, fa2, freevars, op[0], false, uninterpreted_symbols, uninterpreted_symbols_stringrepr);
+      break;
+    }
     case IR_COND_LT:
     case IR_COND_LE:
     case IR_COND_EQ:
@@ -1228,11 +1096,10 @@ void exp2constraint(IR_Code *ir, Relation &r, F_And *f_root,
       Variable_ID e = f_exist->declare();
       F_And *f_and = f_exist->add_and();
       std::vector<omega::CG_outputRepr *> op = ir->QueryExpOperand(repr);
-      exp2formula(ir, r, f_and, freevars, op[0], e, 's', IR_COND_EQ, true,
+      exp2formula(ir, r, f_and, freevars, op[0], e, 's', IR_COND_EQ, false,
                   uninterpreted_symbols, uninterpreted_symbols_stringrepr);
-      exp2formula(ir, r, f_and, freevars, op[1], e, 's', cond, true,
+      exp2formula(ir, r, f_and, freevars, op[1], e, 's', cond, false,
                   uninterpreted_symbols, uninterpreted_symbols_stringrepr);
-
       if (destroy)
         delete repr;
       break;
@@ -2295,10 +2162,6 @@ Relation replace_set_var_as_another_set_var(const omega::Relation &new_relation,
   return r;
 
 }
-
-
-
-
 
 //-----------------------------------------------------------------------------
 // Copy all relations from r and add new bound at position indicated by level.
