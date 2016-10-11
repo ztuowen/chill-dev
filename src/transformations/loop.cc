@@ -338,11 +338,6 @@ void Loop::buildIS(std::vector<ir_tree_node*> &ir_tree,std::vector<int> &lexical
                 vars_to_be_replaced.push_back(lp->index()->name());
                 vars_replacement.push_back(ivar);
 
-                for (int k=0;k<vars_to_be_replaced.size();++k){
-                  std::cout<<vars_to_be_replaced[k]<<":";
-                  vars_replacement[k]->dump();
-                }
-
                 int step = lp->step_size();
                 CG_outputRepr *lb = lp->lower_bound();
                 CG_outputRepr *ub = lp->upper_bound();
@@ -365,13 +360,10 @@ void Loop::buildIS(std::vector<ir_tree_node*> &ir_tree,std::vector<int> &lexical
                   vars_replacement.push_back(ocg->CreateMinus(NULL,ivar));
                   step = -step;
                 }
-                lb -> dump();
                 exp2formula(ir,r,f_root,freevar,lb,v,'s',IR_COND_GE,true,uninterpreted_symbols[loc],uninterpreted_symbols_stringrepr[loc]);
-                r.print();
                 if (cond == IR_COND_LT || cond == IR_COND_LE)
                   exp2formula(ir,r,f_root,freevar,ub,v,'s',cond,true,uninterpreted_symbols[loc],uninterpreted_symbols_stringrepr[loc]);
                 else throw chill::error::ir("loop condition not supported");
-                r.print();
 
                 // strided
                 if (step != 1) {
@@ -432,7 +424,6 @@ void Loop::buildIS(std::vector<ir_tree_node*> &ir_tree,std::vector<int> &lexical
           lexicalOrder.emplace_back(lexicalOrder[lexicalOrder.size()-1] + 1);
         } catch (chill::error::ir &e) {
           // roll back
-          std::cout<<e.what()<<std::endl;
           ir_stmt.pop_back();
           stmt.pop_back();
           uninterpreted_symbols.pop_back();
