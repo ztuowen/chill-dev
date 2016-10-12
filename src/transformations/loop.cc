@@ -466,16 +466,16 @@ void Loop::buildIS(std::vector<ir_tree_node*> &ir_tree,std::vector<int> &lexical
 
         for (int j = 1; j <= num_dep_dim; j++) {
           EQ_Handle h = f_xform->add_EQ();
-          h.update_coef(stmt[i].xform.output_var(2 * j), 1);
-          h.update_coef(stmt[i].xform.input_var(j), -1);
+          h.update_coef(stmt[loc].xform.output_var(2 * j), 1);
+          h.update_coef(stmt[loc].xform.input_var(j), -1);
         }
 
         for (int j = 1; j <= 2 * num_dep_dim + 1; j += 2) {
           EQ_Handle h = f_xform->add_EQ();
-          h.update_coef(stmt[i].xform.output_var(j), 1);
+          h.update_coef(stmt[loc].xform.output_var(j), 1);
           h.update_const(-lexicalOrder[(j-1)/2]);
         }
-        stmt[i].xform.simplify();
+        stmt[loc].xform.simplify();
         // Update lexical ordering for next statement
         lexicalOrder[lexicalOrder.size()-1]++;
         break;
@@ -484,8 +484,9 @@ void Loop::buildIS(std::vector<ir_tree_node*> &ir_tree,std::vector<int> &lexical
         ir_tree[i]->payload = level;
         ctrls.push_back(ir_tree[i]);
         try {
+          lexicalOrder.push_back(0);
           buildIS(ir_tree[i]->children, lexicalOrder, ctrls, level +1);
-          lexicalOrder.emplace_back(lexicalOrder[lexicalOrder.size()-1] + 1);
+          lexicalOrder.pop_back();
         } catch (chill::error::ir &e) {
           for (int j =0;j<ir_tree[i]->children.size(); ++j)
             delete ir_tree[i]->children[j];

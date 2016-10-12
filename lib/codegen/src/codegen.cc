@@ -273,7 +273,6 @@ CG_result *CodeGen::buildAST(int level, const BoolSet<> &active, bool split_on_c
       if (r.is_obvious_tautology())
         continue;
       r = EQs_to_GEQs(r);
-      r.print();
 
       for (GEQ_Iterator e = r.single_conjunct()->GEQs(); e; e++) {
         if ((*e).has_wildcards())
