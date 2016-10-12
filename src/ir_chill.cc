@@ -1180,13 +1180,21 @@ void IR_clangCode::ReplaceExpression(IR_Ref *old, omega::CG_outputRepr *repr) {
 
   delete old;
 }
+// TODO move it somewhere else
+chillAST_Node *mild_unwrap(chillAST_Node* n) {
+  if (n->isParenExpr())
+    return (static_cast<chillAST_ParenExpr*>(n))->getSubExpr();
+  if (n->isCStyleCastExpr())
+    return (static_cast<chillAST_CStyleCastExpr*>(n))->getSubExpr();
+  if (n->isImplicitCastExpr())
+    return (static_cast<chillAST_ImplicitCastExpr*>(n))->getSubExpr();
+  return n;
+}
 
-
-// TODO 
 IR_CONDITION_TYPE IR_clangCode::QueryBooleanExpOperation(const omega::CG_outputRepr *repr) const {
   CG_chillRepr *crepr = (CG_chillRepr *)repr;
   chillAST_Node *node = crepr->chillnodes[0];
-  node = node->constantFold();
+  node = mild_unwrap(node);
   if (!node->isBinaryOperator()) {
     if (node->isUnaryOperator()) {
       chillAST_UnaryOperator *uop = (chillAST_UnaryOperator*)node;
@@ -1211,8 +1219,7 @@ IR_CONDITION_TYPE IR_clangCode::QueryBooleanExpOperation(const omega::CG_outputR
 IR_OPERATION_TYPE IR_clangCode::QueryExpOperation(const omega::CG_outputRepr *repr) const {
   CG_chillRepr *crepr = (CG_chillRepr *) repr;
   chillAST_Node *node = crepr->chillnodes[0];
-  node = node->constantFold();
-
+  node = mild_unwrap(node);
   if (node->isIntegerLiteral() || node->isFloatingLiteral()) return IR_OP_CONSTANT;
   else if (node->isBinaryOperator() || node->isUnaryOperator()) {
     char *opstring;
@@ -1244,7 +1251,7 @@ std::vector<omega::CG_outputRepr *> IR_clangCode::QueryExpOperand(const omega::C
   CG_chillRepr *crepr = (CG_chillRepr *) repr;
   chillAST_Node *e = crepr->chillnodes[0]; // ??
 
-  e = e->constantFold();
+  e = mild_unwrap(e);
 
   if (e->isIntegerLiteral() || e->isFloatingLiteral() || e->isDeclRefExpr()) {
     omega::CG_chillRepr *repr = new omega::CG_chillRepr(e);

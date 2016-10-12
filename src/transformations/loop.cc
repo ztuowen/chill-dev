@@ -487,6 +487,9 @@ void Loop::align_loops(std::vector<ir_tree_node*> &ir_tree, std::vector<std::str
             clp->chilllowerbound = ocg->CreateMinus(NULL, clp->chilllowerbound);
             clp->chillupperbound = ocg->CreateMinus(NULL, clp->chillupperbound);
             clp->step_size_ = -clp->step_size_;
+            CG_outputRepr *inv = ocg->CreateMinus(NULL,ivar);
+            vars_to_be_replaced.push_back(iname);
+            vars_replacement.push_back(inv);
           }
           // Ready to recurse
           align_loops(ir_tree[i]->children,vars_to_be_replaced,vars_replacement,level+1);
