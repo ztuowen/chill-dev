@@ -478,6 +478,9 @@ void Loop::align_loops(std::vector<ir_tree_node*> &ir_tree, std::vector<std::str
           CG_outputRepr *ivar = ocg->CreateIdent(iname);
           vars_to_be_replaced.push_back(clp->index()->name());
           vars_replacement.push_back(ivar);
+          ocg->CreateSubstitutedStmt(0,new CG_chillRepr(clp->chillforstmt->getInit()),vars_to_be_replaced,vars_replacement,false);
+          ocg->CreateSubstitutedStmt(0,new CG_chillRepr(clp->chillforstmt->getInc()),vars_to_be_replaced,vars_replacement,false);
+          ocg->CreateSubstitutedStmt(0,new CG_chillRepr(clp->chillforstmt->getCond()),vars_to_be_replaced,vars_replacement,false);
           // FIXME: this breaks abstraction
           if (clp->step_size()<0) {
             IR_CONDITION_TYPE cond = clp->conditionoperator;

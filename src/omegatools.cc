@@ -241,11 +241,15 @@ void exp2formula(IR_Code *ir,
 
       std::vector<CG_outputRepr *> v = ir->QueryExpOperand(repr);
       CHILL_DEBUG_PRINT("IR_OP_MINUS v has %d parts\n", (int) v.size());
-      exp2formula(ir, r, f_and, freevars, v[0], e1, side, IR_COND_EQ, true,
-                  uninterpreted_symbols, uninterpreted_symbols_stringrepr);
-
       if (v.size() > 1) {
+        exp2formula(ir, r, f_and, freevars, v[0], e1, side, IR_COND_EQ, true,
+                    uninterpreted_symbols, uninterpreted_symbols_stringrepr);
         exp2formula(ir, r, f_and, freevars, v[1], e2, side, IR_COND_EQ, true,
+                    uninterpreted_symbols, uninterpreted_symbols_stringrepr);
+      } else {
+        exp2formula(ir, r, f_and, freevars, new CG_chillRepr(new chillAST_IntegerLiteral(0)), e1, side, IR_COND_EQ, true,
+                    uninterpreted_symbols, uninterpreted_symbols_stringrepr);
+        exp2formula(ir, r, f_and, freevars, v[0], e2, side, IR_COND_EQ, true,
                     uninterpreted_symbols, uninterpreted_symbols_stringrepr);
       }
 
