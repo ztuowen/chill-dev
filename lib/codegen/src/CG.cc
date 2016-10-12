@@ -309,16 +309,7 @@ namespace omega {
     
     CG_DEBUG_PRINT("CG_split::printRepr()\n");
     int numfly =  assigned_on_the_fly.size();
-    //fprintf(stderr, "assigned on the fly  %d\n", numfly );
-    //for (int i=0; i<numfly; i++) { 
-    //  fprintf(stderr, "i %d\n", i); 
-    //  std::pair<CG_outputRepr *, int>p = assigned_on_the_fly[i];
-    //  CG_outputRepr *tr = NULL;
-    //  if (p.first != NULL) tr = p.first->clone();
-    //  int val = p.second;
-    //  fprintf(stderr, "0x%x   %d\n", tr, val);
-    //} 
-    
+
     CG_outputRepr *stmtList = NULL;
     std::vector<CG_result *> next_level = findNextLevel();
     

@@ -267,15 +267,13 @@ CG_result *CodeGen::buildAST(int level, const BoolSet<> &active, bool split_on_c
               break;
       }
     }
-  
-
-
 
     for (BoolSet<>::const_iterator i = active.begin(); i != active.end() && checkForSplits; i++) {
       Relation r = Gist(copy(Rs[*i]), copy(hull), 1);
       if (r.is_obvious_tautology())
         continue;
       r = EQs_to_GEQs(r);
+      r.print();
 
       for (GEQ_Iterator e = r.single_conjunct()->GEQs(); e; e++) {
         if ((*e).has_wildcards())

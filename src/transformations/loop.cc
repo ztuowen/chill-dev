@@ -286,9 +286,6 @@ void Loop::reduce(int stmt_num,
 
 
 
-
-
-
 //-----------------------------------------------------------------------------
 // Class Loop
 //-----------------------------------------------------------------------------
@@ -319,6 +316,9 @@ void Loop::buildIS(std::vector<ir_tree_node*> &ir_tree,std::vector<int> &lexical
         // Setup the IS holder
         Relation r(num_dep_dim);
         F_And *f_root = r.add_and();
+        // Setup inspector bounds
+        std::vector<std::string> insp_lb;
+        std::vector<std::string> insp_ub;
 
         int current = 0;
 
@@ -354,6 +354,30 @@ void Loop::buildIS(std::vector<ir_tree_node*> &ir_tree,std::vector<int> &lexical
                 // Here is using substituted lowerbound
                 exp2formula(ir, r, f_and, freevar, lb,e,'s',IR_COND_EQ, false, uninterpreted_symbols[loc],uninterpreted_symbols_stringrepr[loc]);
               }
+              if ((ir->QueryExpOperation(lp->lower_bound())
+                   == IR_OP_ARRAY_VARIABLE)
+                  && (ir->QueryExpOperation(lp->lower_bound())
+                      == ir->QueryExpOperation(
+                  lp->upper_bound()))) {
+                std::vector<CG_outputRepr *> v =
+                    ir->QueryExpOperand(lp->lower_bound());
+                IR_ArrayRef *ref =
+                    static_cast<IR_ArrayRef *>(ir->Repr2Ref(
+                        v[0]));
+                std::string s0 = ref->name();
+                std::vector<CG_outputRepr *> v2 =
+                    ir->QueryExpOperand(lp->upper_bound());
+                IR_ArrayRef *ref2 =
+                    static_cast<IR_ArrayRef *>(ir->Repr2Ref(
+                        v2[0]));
+                std::string s1 = ref2->name();
+
+                if (s0 == s1) {
+                  insp_lb.push_back(s0);
+                  insp_ub.push_back(s1);
+
+                }
+              }
               break;
             }
             case IR_CONTROL_IF: {
@@ -381,6 +405,50 @@ void Loop::buildIS(std::vector<ir_tree_node*> &ir_tree,std::vector<int> &lexical
         }
         r.setup_names();
         r.simplify();
+        // Inspector initialization
+        for (int j = 0; j < insp_lb.size(); j++) {
+
+          std::string lb = insp_lb[j] + "_";
+          std::string ub = lb + "_";
+
+          Global_Var_ID u, l;
+          bool found_ub = false;
+          bool found_lb = false;
+          for (DNF_Iterator di(copy(r).query_DNF()); di; di++)
+            for (Constraint_Iterator ci = (*di)->constraints(); ci; ci++)
+
+              for (Constr_Vars_Iter cvi(*ci); cvi; cvi++) {
+                Variable_ID v = cvi.curr_var();
+                if (v->kind() == Global_Var)
+                  if (v->get_global_var()->arity() > 0) {
+
+                    std::string name =
+                        v->get_global_var()->base_name();
+                    if (name == lb) {
+                      l = v->get_global_var();
+                      found_lb = true;
+                    } else if (name == ub) {
+                      u = v->get_global_var();
+                      found_ub = true;
+                    }
+                  }
+
+              }
+
+          if (found_lb && found_ub) {
+            Relation known_(copy(r).n_set());
+            known_.copy_names(copy(r));
+            known_.setup_names();
+            Variable_ID index_lb = known_.get_local(l, Input_Tuple);
+            Variable_ID index_ub = known_.get_local(u, Input_Tuple);
+            F_And *fr = known_.add_and();
+            GEQ_Handle g = fr->add_GEQ();
+            g.update_coef(index_ub, 1);
+            g.update_coef(index_lb, -1);
+            g.update_const(-1);
+            addKnown(known_);
+          }
+        }
         // Write back
         stmt[loc].code = static_cast<IR_Block*>(ir_stmt[loc]->content)->extract();
         stmt[loc].IS = r;

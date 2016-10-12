@@ -1177,7 +1177,7 @@ namespace omega {
                               const std::vector<std::pair<CG_outputRepr *, int> > &assigned_on_the_fly,
                               std::map<std::string, std::vector<CG_outputRepr *> > unin) {
     assert(R.n_out()==0);
-    
+
     CG_outputRepr *result = NULL;
     Conjunct *c = const_cast<Relation &>(R).single_conjunct();
     
@@ -1473,7 +1473,6 @@ namespace omega {
         }
       }
     
-    //fprintf(stderr, "output_guard returning at bottom 0x%x\n", result); 
     return result;
   }
   
