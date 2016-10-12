@@ -460,6 +460,22 @@ void Loop::buildIS(std::vector<ir_tree_node*> &ir_tree,std::vector<int> &lexical
           stmt[loc].loop_level[ii].payload = ii;
           stmt[loc].loop_level[ii].parallel_level = 0;
         }
+        // Lexical ordering
+        stmt[loc].xform = Relation(num_dep_dim, 2 * num_dep_dim + 1);
+        F_And *f_xform = stmt[loc].xform.add_and();
+
+        for (int j = 1; j <= num_dep_dim; j++) {
+          EQ_Handle h = f_xform->add_EQ();
+          h.update_coef(stmt[i].xform.output_var(2 * j), 1);
+          h.update_coef(stmt[i].xform.input_var(j), -1);
+        }
+
+        for (int j = 1; j <= 2 * num_dep_dim + 1; j += 2) {
+          EQ_Handle h = f_xform->add_EQ();
+          h.update_coef(stmt[i].xform.output_var(j), 1);
+          h.update_const(-lexicalOrder[(j-1)/2]);
+        }
+        stmt[i].xform.simplify();
         // Update lexical ordering for next statement
         lexicalOrder[lexicalOrder.size()-1]++;
         break;
@@ -740,29 +756,6 @@ Loop::Loop(const IR_Control *control) {
       stmt[canReduce[i]].reductionOp = opType;
     }
   }
-  // cleanup the IR tree
-
-  CHILL_DEBUG_PRINT("init dumb transformation relations\n");
-
-  // init dumb transformation relations e.g. [i, j] -> [ 0, i, 0, j, 0]
-  for (int i = 0; i < stmt.size(); i++) {
-    int n = stmt[i].IS.n_set();
-    stmt[i].xform = Relation(n, 2 * n + 1);
-    F_And *f_root = stmt[i].xform.add_and();
-
-    for (int j = 1; j <= n; j++) {
-      EQ_Handle h = f_root->add_EQ();
-      h.update_coef(stmt[i].xform.output_var(2 * j), 1);
-      h.update_coef(stmt[i].xform.input_var(j), -1);
-    }
-
-    for (int j = 1; j <= 2 * n + 1; j += 2) {
-      EQ_Handle h = f_root->add_EQ();
-      h.update_coef(stmt[i].xform.output_var(j), 1);
-    }
-    stmt[i].xform.simplify();
-  }
-  CHILL_DEBUG_PRINT("done with dumb\n");
 }
 
 Loop::~Loop() {
