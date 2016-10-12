@@ -549,8 +549,6 @@ IR_clangCode::IR_clangCode(const char *filename, const char *proc_name, const ch
 }
 IR_clangCode::IR_clangCode(const char *fname, const char *proc_name) : IR_Code() {
   CHILL_DEBUG_PRINT("IR_xxxxCode::IR_xxxxCode()\n");
-  //fprintf(stderr, "IR_clangCode::IR_clangCode( filename %s, procedure %s )\n", filename, proc_name);
-
   filename = strdup(fname); // filename is internal to IR_clangCode
   procedurename = strdup(proc_name);
   outfilename = NULL;
@@ -559,27 +557,15 @@ IR_clangCode::IR_clangCode(const char *fname, const char *proc_name) : IR_Code()
   char *argv[2];
   argv[0] = strdup("chill");
   argv[1] = strdup(filename);
-
-  // use clang to parse the input file  ?   (or is that already done?) 
-  //fprintf(stderr, "IR_clangCode::IR_clangCode(), parsing input file %s\n", argv[1]);
-
-  // this causes opening and parsing of the file.  
+  // this causes opening and parsing of the file.
   // this is the only call to Instance that has an argument list or file name 
   IR_clangCode_Global_Init *pInstance = IR_clangCode_Global_Init::Instance(argv);
 
   if (pInstance) {
-
     aClangCompiler *Clang = pInstance->ClangCompiler;
-    //fprintf(stderr, "Clang is 0x%x\n", Clang);
-
-    //fprintf(stderr, "want to get pointer to clang ast for procedure %s\n", proc_name); 
     pInstance->setCurrentFunction(NULL);  // we have no function AST yet
-
     entire_file_AST = Clang->entire_file_AST;  // ugly that same name, different classes
     chillAST_FunctionDecl *localFD = Clang->findprocedurebyname(strdup(proc_name));   // stored locally
-    //fprintf(stderr, "back from findprocedurebyname( %s )\n", proc_name ); 
-    //localFD->print();
-
     pInstance->setCurrentFunction(localFD);
 
     CHILL_DEBUG_BEGIN
@@ -592,11 +578,7 @@ IR_clangCode::IR_clangCode(const char *fname, const char *proc_name) : IR_Code()
     chillfunc = localFD;
 
   }
-
   CHILL_DEBUG_PRINT("returning after reading source file and finding function\n\n");
-
-  //chillfunc->dump( 0, stderr); 
-
 }
 
 
@@ -1022,15 +1004,6 @@ IR_Block *IR_clangCode::MergeNeighboringControlStructures(const std::vector<IR_C
 
 
 IR_Block *IR_clangCode::GetCode() const {    // return IR_Block corresponding to current function?
-  //fprintf(stderr, "IR_clangCode::GetCode()\n"); 
-  //Stmt *s = func_->getBody();  // clang statement, and clang getBody
-  //fprintf(stderr, "chillfunc 0x%x\n", chillfunc);
-
-  //chillAST_Node *bod = chillfunc->getBody();  // chillAST 
-  //fprintf(stderr, "printing the function getBody()\n"); 
-  //fprintf(stderr, "sourceManager 0x%x\n", sourceManager); 
-  //bod->print(); 
-
   return new IR_chillBlock(this, chillfunc);
 }
 

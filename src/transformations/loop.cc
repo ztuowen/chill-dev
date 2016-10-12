@@ -478,9 +478,6 @@ void Loop::align_loops(std::vector<ir_tree_node*> &ir_tree, std::vector<std::str
           CG_outputRepr *ivar = ocg->CreateIdent(iname);
           vars_to_be_replaced.push_back(clp->index()->name());
           vars_replacement.push_back(ivar);
-          ocg->CreateSubstitutedStmt(0,new CG_chillRepr(clp->chillforstmt->getInit()),vars_to_be_replaced,vars_replacement,false);
-          ocg->CreateSubstitutedStmt(0,new CG_chillRepr(clp->chillforstmt->getInc()),vars_to_be_replaced,vars_replacement,false);
-          ocg->CreateSubstitutedStmt(0,new CG_chillRepr(clp->chillforstmt->getCond()),vars_to_be_replaced,vars_replacement,false);
           // FIXME: this breaks abstraction
           if (clp->step_size()<0) {
             IR_CONDITION_TYPE cond = clp->conditionoperator;
@@ -493,7 +490,13 @@ void Loop::align_loops(std::vector<ir_tree_node*> &ir_tree, std::vector<std::str
             CG_outputRepr *inv = ocg->CreateMinus(NULL,ivar);
             vars_to_be_replaced.push_back(iname);
             vars_replacement.push_back(inv);
-          }
+            clp->chillforstmt->setCond(new chillAST_BinaryOperator(((CG_chillRepr*)(clp->chillupperbound))->chillnodes[0],((chillAST_BinaryOperator*)(clp->chillforstmt->getCond()))->getOp()
+                ,((CG_chillRepr*)ivar)->chillnodes[0]));
+          } else
+            clp->chillforstmt->setCond(new chillAST_BinaryOperator(((CG_chillRepr*)ivar)->chillnodes[0],((chillAST_BinaryOperator*)(clp->chillforstmt->getCond()))->getOp()
+                ,((CG_chillRepr*)(clp->chillupperbound))->chillnodes[0]));
+          clp->chillforstmt->setInit(new chillAST_BinaryOperator(((CG_chillRepr*)ivar)->chillnodes[0],"=",((CG_chillRepr*)(clp->chilllowerbound))->chillnodes[0]));
+          clp->chillforstmt->setInc(new chillAST_BinaryOperator(((CG_chillRepr*)ivar)->chillnodes[0],"+=",new chillAST_IntegerLiteral(clp->step_size_)));
           // Ready to recurse
           align_loops(ir_tree[i]->children,vars_to_be_replaced,vars_replacement,level+1);
         }
@@ -669,26 +672,6 @@ Loop::Loop(const IR_Control *control) {
       stmt[canReduce[i]].reductionOp = opType;
     }
   }
-
-  // printing out stuff for debugging
-  CHILL_DEBUG_BEGIN
-    std::cout << "STATEMENTS THAT CAN BE REDUCED: \n";
-    for (int i = 0; i < canReduce.size(); i++) {
-      std::cout << "------- " << canReduce[i] << " ------- "
-                << stmt[canReduce[i]].reduction << "\n";
-      ir->printStmt(stmt[canReduce[i]].code); // Manu
-      if (stmt[canReduce[i]].reductionOp == IR_OP_PLUS)
-        std::cout << "Reduction type:: + \n";
-      else if (stmt[canReduce[i]].reductionOp == IR_OP_MINUS)
-        std::cout << "Reduction type:: - \n";
-      else if (stmt[canReduce[i]].reductionOp == IR_OP_MULTIPLY)
-        std::cout << "Reduction type:: * \n";
-      else if (stmt[canReduce[i]].reductionOp == IR_OP_DIVIDE)
-        std::cout << "Reduction type:: / \n";
-      else
-        std::cout << "Unknown reduction type\n";
-    }
-  CHILL_DEBUG_END
   // cleanup the IR tree
 
   CHILL_DEBUG_PRINT("init dumb transformation relations\n");
