@@ -282,7 +282,7 @@ chill_dest(PyObject *self, PyObject* args) {
 
 static PyObject *chill_effort(PyObject *self, PyObject *args) {
   strict_arg_num(args, 1, "effort");
-  source_filename = intArg(args, 0);
+  effort = intArg(args,0);
   Py_RETURN_NONE;
 }
 
